@@ -1,33 +1,34 @@
 import type {
+  DeepReadonly,
   OrganizationSummary,
   UserIdentity,
   WorkspaceDashboard,
   WorkspaceSummary,
 } from "@/types/domain";
 
-function deepFreeze<T extends object>(value: T): T {
+function deepFreeze<T extends object>(value: T): DeepReadonly<T> {
   for (const nestedValue of Object.values(value)) {
     if (nestedValue !== null && typeof nestedValue === "object" && !Object.isFrozen(nestedValue)) {
       deepFreeze(nestedValue);
     }
   }
 
-  return Object.freeze(value);
+  return Object.freeze(value) as DeepReadonly<T>;
 }
 
-export const organization: OrganizationSummary = deepFreeze({
+export const organization: DeepReadonly<OrganizationSummary> = deepFreeze({
   id: "org-guangwei",
   name: "光位科技",
 });
 
-export const workspace: WorkspaceSummary = deepFreeze({
+export const workspace: DeepReadonly<WorkspaceSummary> = deepFreeze({
   id: "ws-ai",
   organizationId: organization.id,
   name: "AI 智能业务线",
   purpose: "建设并验证企业 AI 研发员工",
 });
 
-export const users: UserIdentity[] = deepFreeze([
+export const users: DeepReadonly<UserIdentity[]> = deepFreeze<UserIdentity[]>([
   { id: "user-pm", name: "林悦", role: "产品经理" },
   { id: "user-dev", name: "周航", role: "开发工程师" },
   { id: "user-lead", name: "陈明", role: "研发负责人" },
@@ -35,7 +36,7 @@ export const users: UserIdentity[] = deepFreeze([
   { id: "user-auditor", name: "赵岚", role: "Auditor" },
 ]);
 
-export const workspaceDashboard: WorkspaceDashboard = deepFreeze({
+export const workspaceDashboard: DeepReadonly<WorkspaceDashboard> = deepFreeze<WorkspaceDashboard>({
   organization,
   workspace,
   currentUser: users[2],

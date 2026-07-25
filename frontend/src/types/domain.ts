@@ -13,6 +13,14 @@ export type TaskType = "研发实现" | "技术方案" | "自动测试" | "分�
 
 export type ArtifactType = "技术方案" | "测试报告" | "需求分析报告";
 
+export type DeepReadonly<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends readonly (infer Item)[]
+    ? ReadonlyArray<DeepReadonly<Item>>
+    : T extends object
+      ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
+      : T;
+
 export interface UserIdentity {
   id: string;
   name: string;

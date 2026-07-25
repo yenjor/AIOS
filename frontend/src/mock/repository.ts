@@ -11,5 +11,5 @@ export async function getWorkspaceDashboard(workspaceId: string): Promise<Worksp
     throw new Error("Workspace not found");
   }
 
-  return structuredClone(workspaceDashboard);
+  return structuredClone(workspaceDashboard) as WorkspaceDashboard;
 }

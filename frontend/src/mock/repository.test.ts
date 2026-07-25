@@ -1,7 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { organization, users, workspace, workspaceDashboard } from "./fixtures";
 import { getWorkspaceDashboard } from "./repository";
+import type {
+  DeepReadonly,
+  OrganizationSummary,
+  TaskSummary,
+  UserIdentity,
+  WorkspaceDashboard,
+  WorkspaceSummary,
+} from "@/types/domain";
 
 const forbiddenKeyNames = new Set([
   "apikey",
@@ -43,6 +51,15 @@ function expectFixtureTreeToBeFrozen(value: unknown): void {
 }
 
 describe("getWorkspaceDashboard", () => {
+  it("exposes readonly fixtures and mutable repository results at the type boundary", () => {
+    expectTypeOf(users).toEqualTypeOf<readonly DeepReadonly<UserIdentity>[]>();
+    expectTypeOf(organization).toEqualTypeOf<DeepReadonly<OrganizationSummary>>();
+    expectTypeOf(workspace).toEqualTypeOf<DeepReadonly<WorkspaceSummary>>();
+    expectTypeOf(workspaceDashboard).toEqualTypeOf<DeepReadonly<WorkspaceDashboard>>();
+    expectTypeOf(workspaceDashboard.tasks).toEqualTypeOf<readonly DeepReadonly<TaskSummary>[]>();
+    expectTypeOf<Awaited<ReturnType<typeof getWorkspaceDashboard>>>().toEqualTypeOf<WorkspaceDashboard>();
+  });
+
   it("returns the approved AI workspace dashboard", async () => {
     const dashboard = await getWorkspaceDashboard("ws-ai");
 
@@ -58,12 +75,6 @@ describe("getWorkspaceDashboard", () => {
 
   it("rejects an unknown workspace instead of returning another scope", async () => {
     await expect(getWorkspaceDashboard("ws-unknown")).rejects.toThrow("Workspace not found");
-  });
-
-  it("does not expose credential-looking fields in the serialized snapshot", async () => {
-    const dashboard = await getWorkspaceDashboard("ws-ai");
-
-    expect(JSON.stringify(dashboard)).not.toMatch(/api[_-]?key|access[_-]?token|client[_-]?secret/i);
   });
 
   it("exports stable organization, workspace, and user fixture identities", () => {
@@ -108,8 +119,18 @@ describe("getWorkspaceDashboard", () => {
     expect(subsequentDashboard.tasks[0].title).toBe("用户中心登录流程重构");
   });
 
-  it("keeps the real fixture tree free of credential-like keys and secret values", () => {
-    assertFixtureTreeHasNoSecrets(workspaceDashboard);
+  it("keeps all public fixture roots free of credential-like keys and secret values", () => {
+    const fixtureRoots = [organization, workspace, users, workspaceDashboard];
+
+    expect(fixtureRoots.flatMap((root) => (Array.isArray(root) ? root : [])).map((user) => user.id)).toEqual([
+      "user-pm",
+      "user-dev",
+      "user-lead",
+      "user-admin",
+      "user-auditor",
+    ]);
+
+    fixtureRoots.forEach(assertFixtureTreeHasNoSecrets);
   });
 
   it("returns the approved todos and risks", async () => {
