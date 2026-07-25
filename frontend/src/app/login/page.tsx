@@ -14,8 +14,9 @@ export default function LoginPage() {
   const { selectUser } = useSession();
 
   function handleSelectUser(userId: string) {
-    selectUser(userId);
-    router.push("/organizations");
+    if (selectUser(userId)) {
+      router.push("/organizations");
+    }
   }
 
   return (

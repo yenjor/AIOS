@@ -40,8 +40,9 @@ export default function WorkspacesPage() {
   }
 
   function handleSelectWorkspace() {
-    selectWorkspace(workspace.id);
-    router.push("/workspace");
+    if (selectWorkspace(workspace.id)) {
+      router.push("/workspace");
+    }
   }
 
   return (

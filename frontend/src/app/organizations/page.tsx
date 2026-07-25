@@ -36,8 +36,9 @@ export default function OrganizationsPage() {
   }
 
   function handleSelectOrganization() {
-    selectOrganization(organization.id);
-    router.push("/workspaces");
+    if (selectOrganization(organization.id)) {
+      router.push("/workspaces");
+    }
   }
 
   return (
