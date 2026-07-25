@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type { HTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -8,11 +8,11 @@ const badgeVariants = cva(
   {
     variants: {
       tone: {
-        neutral: "bg-slate-100 text-slate-700",
-        info: "bg-cyan-100 text-cyan-800",
-        success: "bg-green-100 text-green-800",
-        warning: "bg-amber-100 text-amber-800",
-        error: "bg-orange-100 text-orange-800",
+        neutral: "bg-[var(--aios-canvas)] text-[var(--aios-muted)]",
+        info: "bg-[color-mix(in_srgb,var(--aios-accent)_16%,var(--aios-surface))] text-[var(--aios-accent)]",
+        success: "bg-[color-mix(in_srgb,var(--aios-success)_16%,var(--aios-surface))] text-[var(--aios-success)]",
+        warning: "bg-[color-mix(in_srgb,var(--aios-warning)_16%,var(--aios-surface))] text-[var(--aios-warning)]",
+        error: "bg-[color-mix(in_srgb,var(--aios-error)_16%,var(--aios-surface))] text-[var(--aios-error)]",
       },
     },
     defaultVariants: {
@@ -22,7 +22,7 @@ const badgeVariants = cva(
 );
 
 export interface BadgeProps
-  extends HTMLAttributes<HTMLSpanElement>,
+  extends ComponentPropsWithRef<"span">,
     VariantProps<typeof badgeVariants> {}
 
 export function Badge({ className, tone, ...props }: BadgeProps) {

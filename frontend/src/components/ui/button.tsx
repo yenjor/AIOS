@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -9,13 +9,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:outline-indigo-600",
+          "bg-[var(--aios-primary)] text-[var(--aios-surface)] hover:bg-[color-mix(in_srgb,var(--aios-primary)_85%,var(--aios-navigation))] focus-visible:outline-[var(--aios-primary)]",
         secondary:
-          "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus-visible:outline-slate-600",
+          "border border-[color-mix(in_srgb,var(--aios-muted)_35%,var(--aios-surface))] bg-[var(--aios-surface)] text-[var(--aios-text)] hover:bg-[var(--aios-canvas)] focus-visible:outline-[var(--aios-primary)]",
         danger:
-          "bg-[#C4320A] text-white hover:bg-[#9f2908] focus-visible:outline-[#C4320A]",
+          "bg-[var(--aios-error)] text-[var(--aios-surface)] hover:bg-[color-mix(in_srgb,var(--aios-error)_85%,var(--aios-navigation))] focus-visible:outline-[var(--aios-error)]",
         ghost:
-          "text-slate-700 hover:bg-slate-100 focus-visible:outline-slate-600",
+          "text-[var(--aios-text)] hover:bg-[var(--aios-canvas)] focus-visible:outline-[var(--aios-primary)]",
       },
     },
     defaultVariants: {
@@ -25,7 +25,7 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+  extends ComponentPropsWithRef<"button">,
     VariantProps<typeof buttonVariants> {}
 
 export function Button({ className, variant, type = "button", ...props }: ButtonProps) {

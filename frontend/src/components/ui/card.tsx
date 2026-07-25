@@ -1,9 +1,17 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import { cn } from "@/lib/cn";
 
-export type CardProps = HTMLAttributes<HTMLElement>;
+export type CardProps = ComponentPropsWithRef<"div">;
 
 export function Card({ className, ...props }: CardProps) {
-  return <section className={cn("rounded-[10px] border border-slate-200 bg-white shadow-sm", className)} {...props} />;
+  return (
+    <div
+      className={cn(
+        "rounded-[10px] border border-[color-mix(in_srgb,var(--aios-muted)_25%,var(--aios-surface))] bg-[var(--aios-surface)] shadow-sm",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
