@@ -45,7 +45,13 @@ describe("DashboardScreen", () => {
       ["累计 Artifact", "32"],
     ]) {
       const statistic = within(agent).getByRole("group", { name: label });
-      expect(within(statistic).getByText(value)).toBeVisible();
+      const term = within(statistic).getByText(label);
+      const description = within(statistic).getByText(value);
+
+      expect(term.tagName).toBe("DT");
+      expect(description.tagName).toBe("DD");
+      expect(term.nextElementSibling).toBe(description);
+      expect(description).toBeVisible();
     }
   });
 

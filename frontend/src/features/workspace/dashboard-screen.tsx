@@ -102,29 +102,41 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
               </div>
 
               <dl className="grid shrink-0 grid-cols-3 gap-3 text-center sm:gap-6">
-                <div role="group" aria-label="今日完成">
-                  <dd className="text-2xl font-semibold tabular-nums">
-                    {agent.completedToday}
-                  </dd>
-                  <dt className="mt-1 text-xs text-[var(--aios-muted)]">
+                <div
+                  role="group"
+                  aria-label="今日完成"
+                  className="flex flex-col"
+                >
+                  <dt className="order-2 mt-1 text-xs text-[var(--aios-muted)]">
                     今日完成
                   </dt>
-                </div>
-                <div role="group" aria-label="运行中">
-                  <dd className="text-2xl font-semibold tabular-nums">
-                    {agent.runningTasks}
+                  <dd className="order-1 text-2xl font-semibold tabular-nums">
+                    {agent.completedToday}
                   </dd>
-                  <dt className="mt-1 text-xs text-[var(--aios-muted)]">
+                </div>
+                <div
+                  role="group"
+                  aria-label="运行中"
+                  className="flex flex-col"
+                >
+                  <dt className="order-2 mt-1 text-xs text-[var(--aios-muted)]">
                     运行中
                   </dt>
-                </div>
-                <div role="group" aria-label="累计 Artifact">
-                  <dd className="text-2xl font-semibold tabular-nums">
-                    {agent.artifactsProduced}
+                  <dd className="order-1 text-2xl font-semibold tabular-nums">
+                    {agent.runningTasks}
                   </dd>
-                  <dt className="mt-1 text-xs text-[var(--aios-muted)]">
+                </div>
+                <div
+                  role="group"
+                  aria-label="累计 Artifact"
+                  className="flex flex-col"
+                >
+                  <dt className="order-2 mt-1 text-xs text-[var(--aios-muted)]">
                     累计 Artifact
                   </dt>
+                  <dd className="order-1 text-2xl font-semibold tabular-nums">
+                    {agent.artifactsProduced}
+                  </dd>
                 </div>
               </dl>
             </div>
