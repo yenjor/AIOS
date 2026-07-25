@@ -7,12 +7,18 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ScopeStatusBadge } from "@/features/session/scope-status-badge";
+import { SessionRecoveryState } from "@/features/session/session-recovery-state";
 import { useSession } from "@/features/session/session-provider";
 import { organization } from "@/mock/fixtures";
 
 export default function OrganizationsPage() {
   const router = useRouter();
-  const { user, selectOrganization } = useSession();
+  const { hydrated, user, selectOrganization } = useSession();
+
+  if (!hydrated) {
+    return <SessionRecoveryState />;
+  }
 
   if (!user) {
     return (
@@ -68,7 +74,7 @@ export default function OrganizationsPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-lg font-semibold">{organization.name}</h3>
-                    <Badge tone="success">{organization.accessStatus}</Badge>
+                    <ScopeStatusBadge status={organization.accessStatus} />
                   </div>
                   <p className="mt-1 font-mono text-xs text-[var(--aios-muted)]">
                     {organization.id}

@@ -26,7 +26,7 @@ beforeEach(() => {
 
 test("login does not navigate when identity selection fails", async () => {
   const interaction = userEvent.setup();
-  useSession.mockReturnValue({ selectUser: vi.fn(() => false) });
+  useSession.mockReturnValue({ hydrated: true, selectUser: vi.fn(() => false) });
 
   render(<LoginPage />);
 
@@ -40,6 +40,7 @@ test("login does not navigate when identity selection fails", async () => {
 test("organization selection failure does not navigate", async () => {
   const interaction = userEvent.setup();
   useSession.mockReturnValue({
+    hydrated: true,
     user: { id: "user-lead", name: "陈明", role: "研发负责人" },
     selectOrganization: vi.fn(() => false),
   });
@@ -54,6 +55,7 @@ test("organization selection failure does not navigate", async () => {
 test("workspace selection failure does not navigate", async () => {
   const interaction = userEvent.setup();
   useSession.mockReturnValue({
+    hydrated: true,
     user: { id: "user-lead", name: "陈明", role: "研发负责人" },
     organization: { id: "org-guangwei", name: "光位科技" },
     selectWorkspace: vi.fn(() => false),

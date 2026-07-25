@@ -39,7 +39,13 @@ test("offers the correct fallback while identity and organization are missing", 
     </SessionProvider>,
   );
 
-  expect(screen.getByRole("link", { name: "返回身份选择" })).toHaveAttribute(
+  expect(
+    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: "请先选择身份" }),
+  ).not.toBeInTheDocument();
+  expect(await screen.findByRole("link", { name: "返回身份选择" })).toHaveAttribute(
     "href",
     "/login",
   );
@@ -49,6 +55,35 @@ test("offers the correct fallback while identity and organization are missing", 
   expect(
     screen.getByRole("link", { name: "返回 Organization 选择" }),
   ).toHaveAttribute("href", "/organizations");
+});
+
+test("restores identity and Organization without flashing a scope error", async () => {
+  window.sessionStorage.setItem(
+    "aios.mock.session.v1",
+    JSON.stringify({
+      userId: "user-lead",
+      organizationId: "org-guangwei",
+    }),
+  );
+
+  render(
+    <SessionProvider>
+      <WorkspacesPage />
+    </SessionProvider>,
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: /请先选择/ }),
+  ).not.toBeInTheDocument();
+  expect(
+    await screen.findByRole("heading", { name: "选择 Workspace" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: /请先选择/ }),
+  ).not.toBeInTheDocument();
 });
 
 test("updates the workspace before navigating to the workspace home", async () => {
@@ -90,7 +125,12 @@ test("shows accessible and archived Workspace scope information", async () => {
   expect(screen.getByText("最近进入：2026-07-25 09:12")).toBeVisible();
   expect(screen.getByText("历史研发试验区")).toBeVisible();
   expect(screen.getByText("ws-archive-001")).toBeVisible();
-  expect(screen.getByText("已归档", { selector: "span" })).toBeVisible();
+  const accessBadge = screen.getByText("可访问", { selector: "span" });
+  const archivedBadge = screen.getByText("已归档", { selector: "span" });
+  expect(accessBadge).toBeVisible();
+  expect(archivedBadge).toBeVisible();
+  expect(accessBadge.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
+  expect(archivedBadge.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
   expect(
     screen.getByText("该 Workspace 已归档，仅可查看范围信息"),
   ).toBeVisible();

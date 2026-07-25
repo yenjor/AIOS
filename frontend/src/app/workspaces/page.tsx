@@ -7,12 +7,18 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ScopeStatusBadge } from "@/features/session/scope-status-badge";
+import { SessionRecoveryState } from "@/features/session/session-recovery-state";
 import { useSession } from "@/features/session/session-provider";
 import { workspaces } from "@/mock/fixtures";
 
 export default function WorkspacesPage() {
   const router = useRouter();
-  const { user, organization, selectWorkspace } = useSession();
+  const { hydrated, user, organization, selectWorkspace } = useSession();
+
+  if (!hydrated) {
+    return <SessionRecoveryState />;
+  }
 
   if (!user || !organization) {
     const missingIdentity = !user;
@@ -78,9 +84,7 @@ export default function WorkspacesPage() {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-lg font-semibold">{workspace.name}</h3>
-                            <Badge tone={accessible ? "success" : "neutral"}>
-                              {workspace.accessStatus}
-                            </Badge>
+                            <ScopeStatusBadge status={workspace.accessStatus} />
                           </div>
                           <p className="mt-1 font-mono text-xs text-[var(--aios-muted)]">
                             {workspace.id}

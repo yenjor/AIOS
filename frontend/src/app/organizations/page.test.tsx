@@ -28,18 +28,52 @@ beforeEach(() => {
   push.mockReset();
 });
 
-test("offers a login fallback when no identity has been selected", () => {
+test("shows recovery before offering a login fallback for an empty restored session", async () => {
   render(
     <SessionProvider>
       <OrganizationsPage />
     </SessionProvider>,
   );
 
-  expect(screen.getByRole("heading", { name: "请先选择身份" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: "请先选择身份" }),
+  ).not.toBeInTheDocument();
+  expect(
+    await screen.findByRole("heading", { name: "请先选择身份" }),
+  ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "返回身份选择" })).toHaveAttribute(
     "href",
     "/login",
   );
+});
+
+test("restores an identity without flashing the missing identity error", async () => {
+  window.sessionStorage.setItem(
+    "aios.mock.session.v1",
+    JSON.stringify({ userId: "user-lead" }),
+  );
+
+  render(
+    <SessionProvider>
+      <OrganizationsPage />
+    </SessionProvider>,
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: "请先选择身份" }),
+  ).not.toBeInTheDocument();
+  expect(
+    await screen.findByRole("heading", { name: "选择 Organization" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("heading", { name: "请先选择身份" }),
+  ).not.toBeInTheDocument();
 });
 
 test("updates the organization before navigating to workspaces", async () => {
@@ -76,5 +110,7 @@ test("shows the approved Organization scope information", async () => {
   expect(screen.getByText("当前职责：研发负责人")).toBeVisible();
   expect(screen.getByText("可访问 Workspace：1")).toBeVisible();
   expect(screen.getByText("最近进入：2026-07-24 18:30")).toBeVisible();
-  expect(screen.getByText("可访问", { selector: "span" })).toBeVisible();
+  const accessBadge = screen.getByText("可访问", { selector: "span" });
+  expect(accessBadge).toBeVisible();
+  expect(accessBadge.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
 });
