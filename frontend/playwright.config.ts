@@ -1,8 +1,62 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL =
-  process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
-const serverURL = new URL(baseURL);
+interface PlaywrightTargetEnvironment {
+  CI?: string;
+  PLAYWRIGHT_BASE_URL?: string;
+  PLAYWRIGHT_PORT?: string;
+}
+
+interface LocalWebServer {
+  command: string;
+  url: string;
+  reuseExistingServer: boolean;
+  timeout: number;
+}
+
+interface PlaywrightTarget {
+  baseURL: string;
+  webServer?: LocalWebServer;
+}
+
+export function resolvePlaywrightTarget(
+  environment: PlaywrightTargetEnvironment,
+): PlaywrightTarget {
+  if (environment.PLAYWRIGHT_BASE_URL !== undefined) {
+    return {
+      baseURL: environment.PLAYWRIGHT_BASE_URL,
+    };
+  }
+
+  const rawPort = environment.PLAYWRIGHT_PORT ?? "3000";
+  const port = Number(rawPort);
+
+  if (
+    !/^\d+$/.test(rawPort) ||
+    !Number.isInteger(port) ||
+    port < 1 ||
+    port > 65_535
+  ) {
+    throw new Error("PLAYWRIGHT_PORT must be an integer from 1 to 65535");
+  }
+
+  const baseURL = `http://127.0.0.1:${port}`;
+
+  return {
+    baseURL,
+    webServer: {
+      command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+      url: baseURL,
+      reuseExistingServer: !environment.CI,
+      timeout: 120_000,
+    },
+  };
+}
+
+const target = resolvePlaywrightTarget({
+  CI: process.env.CI,
+  PLAYWRIGHT_BASE_URL: process.env.PLAYWRIGHT_BASE_URL,
+  PLAYWRIGHT_PORT: process.env.PLAYWRIGHT_PORT,
+});
 
 export default defineConfig({
   testDir: "./tests",
@@ -17,7 +71,7 @@ export default defineConfig({
     timeout: 5_000,
   },
   use: {
-    baseURL,
+    baseURL: target.baseURL,
     trace: "retain-on-failure",
   },
   projects: [
@@ -26,10 +80,5 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: `npm run dev -- --hostname ${serverURL.hostname} --port ${serverURL.port || "3000"}`,
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  ...(target.webServer ? { webServer: target.webServer } : {}),
 });
