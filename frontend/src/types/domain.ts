@@ -9,6 +9,10 @@ export type TaskStatus = "执行中" | "待审批" | "已完成" | "需补充";
 
 export type BadgeTone = "info" | "warning" | "success" | "error";
 
+export type TaskType = "研发实现" | "技术方案" | "自动测试" | "分析需求";
+
+export type ArtifactType = "技术方案" | "测试报告" | "需求分析报告";
+
 export interface UserIdentity {
   id: string;
   name: string;
@@ -38,7 +42,7 @@ export interface AgentSummary {
   id: string;
   name: "AI 研发员工";
   status: "运行中" | "暂停" | "异常";
-  owner: UserIdentity;
+  owner: string;
   autonomyLevel: "L1 辅助";
   completedToday: number;
   runningTasks: number;
@@ -48,7 +52,7 @@ export interface AgentSummary {
 export interface TaskSummary {
   id: string;
   title: string;
-  stage: string;
+  type: TaskType;
   status: TaskStatus;
   tone: BadgeTone;
   updatedAt: string;
@@ -58,7 +62,7 @@ export interface TaskSummary {
 export interface TodoSummary {
   id: string;
   title: string;
-  artifactType: string;
+  artifactType: ArtifactType;
   action: "去审批" | "去验收" | "查看" | "去处理";
 }
 
