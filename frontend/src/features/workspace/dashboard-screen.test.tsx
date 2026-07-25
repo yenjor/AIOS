@@ -1,13 +1,36 @@
 import { render, screen, within } from "@testing-library/react";
+import { useEffect } from "react";
 import { describe, expect, it } from "vitest";
 
+import {
+  SessionProvider,
+  useSession,
+} from "@/features/session/session-provider";
 import { workspaceDashboard } from "@/mock/fixtures";
 
 import { DashboardScreen } from "./dashboard-screen";
 
+function DashboardHarness({ userId = "user-lead" }: { userId?: string }) {
+  const { selectUser } = useSession();
+
+  useEffect(() => {
+    selectUser(userId);
+  }, [selectUser, userId]);
+
+  return <DashboardScreen snapshot={workspaceDashboard} />;
+}
+
+function renderDashboard(userId = "user-lead") {
+  return render(
+    <SessionProvider>
+      <DashboardHarness userId={userId} />
+    </SessionProvider>,
+  );
+}
+
 describe("DashboardScreen", () => {
   it("summarizes the current responsibility and exact Workspace metrics", () => {
-    render(<DashboardScreen snapshot={workspaceDashboard} />);
+    renderDashboard();
 
     expect(
       screen.getByRole("heading", { name: "Workspace 工作台" }),
@@ -27,8 +50,15 @@ describe("DashboardScreen", () => {
     }
   });
 
+  it("shows the role from the active session instead of the dashboard fixture", () => {
+    renderDashboard("user-pm");
+
+    expect(screen.getByText("当前职责：产品经理")).toBeVisible();
+    expect(screen.queryByText("当前职责：研发负责人")).not.toBeInTheDocument();
+  });
+
   it("shows the AI employee owner, state, autonomy, and output statistics", () => {
-    render(<DashboardScreen snapshot={workspaceDashboard} />);
+    renderDashboard();
 
     const agent = screen.getByRole("region", { name: "AI 研发员工" });
 
@@ -56,31 +86,26 @@ describe("DashboardScreen", () => {
   });
 
   it("renders six disabled Task shortcuts with an accessible rollout explanation", () => {
-    render(<DashboardScreen snapshot={workspaceDashboard} />);
+    renderDashboard();
 
     const quickActions = screen.getByRole("region", { name: "快速创建" });
     const buttons = within(quickActions).getAllByRole("button");
 
     expect(buttons).toHaveLength(6);
-    expect(buttons.map((button) => button.textContent)).toEqual([
-      "理解代码",
-      "分析需求",
-      "生成技术方案",
-      "辅助编码",
-      "Code Review",
-      "自动测试",
-    ]);
-
-    for (const button of buttons) {
+    for (const [button, label] of buttons.map(
+      (button, index) =>
+        [button, workspaceDashboard.quickActions[index].label] as const,
+    )) {
+      expect(button).toHaveTextContent(label);
       expect(button).toBeDisabled();
-      expect(button).toHaveAccessibleDescription(
-        "将在 Task 创建流程实施阶段启用",
+      expect(button).toHaveAccessibleName(
+        `${label}：将在 Task 创建流程实施阶段启用`,
       );
     }
   });
 
   it("renders the recent Task table, Artifact todos, and risk list", () => {
-    render(<DashboardScreen snapshot={workspaceDashboard} />);
+    renderDashboard();
 
     const taskTable = screen.getByRole("table", { name: "最近 Task 列表" });
     expect(within(taskTable).getAllByRole("row")).toHaveLength(5);
@@ -99,6 +124,7 @@ describe("DashboardScreen", () => {
 
     const todos = screen.getByRole("region", { name: "我的待办" });
     expect(within(todos).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(todos).getByText("当前显示 3 项，共 5 项")).toBeVisible();
     for (const todo of workspaceDashboard.todos) {
       expect(within(todos).getByText(todo.artifactType)).toBeVisible();
     }
@@ -114,23 +140,52 @@ describe("DashboardScreen", () => {
   });
 
   it("keeps every future action inert and does not expose a chat input", () => {
-    render(<DashboardScreen snapshot={workspaceDashboard} />);
+    renderDashboard();
 
     const futureActions = screen.getAllByRole("button");
     expect(futureActions).toHaveLength(11);
     for (const action of futureActions) {
       expect(action).toBeDisabled();
-      expect(action).toHaveAccessibleDescription();
+      expect(action).toHaveAccessibleName(/将在 .+实施阶段启用/);
     }
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/聊天|消息|提问/)).not.toBeInTheDocument();
   });
 
+  it("keeps multiple dashboard instances free of duplicate IDs and explains every future action", () => {
+    const view = render(
+      <SessionProvider>
+        <div data-testid="dashboard-one">
+          <DashboardHarness />
+        </div>
+        <div data-testid="dashboard-two">
+          <DashboardHarness />
+        </div>
+      </SessionProvider>,
+    );
+
+    const ids = Array.from(view.container.querySelectorAll("[id]"), (element) =>
+      element.getAttribute("id"),
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+
+    for (const testId of ["dashboard-one", "dashboard-two"]) {
+      const dashboard = within(screen.getByTestId(testId));
+      const futureActions = dashboard.getAllByRole("button");
+
+      expect(futureActions).toHaveLength(11);
+      for (const action of futureActions) {
+        expect(action).toBeDisabled();
+        expect(action).toHaveAccessibleName(/将在 .+实施阶段启用/);
+      }
+    }
+  });
+
   it("accepts the canonical readonly fixture without modifying it", () => {
     const beforeRender = JSON.stringify(workspaceDashboard);
 
-    render(<DashboardScreen snapshot={workspaceDashboard} />);
+    renderDashboard();
 
     expect(JSON.stringify(workspaceDashboard)).toBe(beforeRender);
     expect(Object.isFrozen(workspaceDashboard)).toBe(true);

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { DeepReadonly, WorkspaceDashboard } from "@/types/domain";
 
+import { CurrentResponsibility } from "./current-responsibility";
 import { MetricCard } from "./metric-card";
 
 export interface DashboardScreenProps {
@@ -25,8 +26,7 @@ const ARTIFACT_ACTION_DESCRIPTION =
   "将在 Artifact 审批与验收流程实施阶段启用";
 
 export function DashboardScreen({ snapshot }: DashboardScreenProps) {
-  const { metrics, agent, quickActions, tasks, todos, risks, currentUser } =
-    snapshot;
+  const { metrics, agent, quickActions, tasks, todos, risks } = snapshot;
 
   return (
     <div className="mx-auto max-w-[1600px]">
@@ -38,24 +38,13 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             Workspace 工作台
           </h1>
-          <p className="mt-2 text-sm text-[var(--aios-muted)]">
-            当前职责：{currentUser.role}
-          </p>
+          <CurrentResponsibility />
         </div>
-        <Button disabled aria-describedby="task-creation-description">
+        <Button disabled>
           创建 Task
+          <span className="sr-only">：{TASK_CREATION_DESCRIPTION}</span>
         </Button>
       </header>
-
-      <p id="task-creation-description" className="sr-only">
-        {TASK_CREATION_DESCRIPTION}
-      </p>
-      <p id="task-center-description" className="sr-only">
-        {TASK_CENTER_DESCRIPTION}
-      </p>
-      <p id="artifact-action-description" className="sr-only">
-        {ARTIFACT_ACTION_DESCRIPTION}
-      </p>
 
       <section
         aria-label="Workspace 核心指标"
@@ -74,7 +63,7 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
         <div className="min-w-0 space-y-5">
           <Card
             role="region"
-            aria-labelledby="agent-summary-title"
+            aria-label="AI 研发员工"
             className="p-5"
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -87,9 +76,7 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                 </span>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 id="agent-summary-title" className="font-semibold">
-                      {agent.name}
-                    </h2>
+                    <h2 className="font-semibold">{agent.name}</h2>
                     <Badge tone="success">{agent.status}</Badge>
                   </div>
                   <p className="mt-2 text-sm text-[var(--aios-muted)]">
@@ -144,7 +131,7 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
 
           <Card
             role="region"
-            aria-labelledby="quick-actions-title"
+            aria-label="快速创建"
             className="p-5"
           >
             <div className="flex items-center gap-2">
@@ -153,9 +140,7 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                 size={19}
                 aria-hidden="true"
               />
-              <h2 id="quick-actions-title" className="font-semibold">
-                快速创建
-              </h2>
+              <h2 className="font-semibold">快速创建</h2>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
               {quickActions.map((action) => (
@@ -164,9 +149,11 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                   variant="secondary"
                   className="min-h-20 whitespace-normal px-3"
                   disabled
-                  aria-describedby="task-creation-description"
                 >
                   {action.label}
+                  <span className="sr-only">
+                    ：{TASK_CREATION_DESCRIPTION}
+                  </span>
                 </Button>
               ))}
             </div>
@@ -179,10 +166,10 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                 variant="ghost"
                 className="min-h-9 px-2"
                 disabled
-                aria-describedby="task-center-description"
               >
                 查看全部
                 <ArrowRight aria-hidden="true" size={16} />
+                <span className="sr-only">：{TASK_CENTER_DESCRIPTION}</span>
               </Button>
             </div>
             <div
@@ -242,13 +229,16 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
         <aside aria-label="个人待办与风险" className="min-w-0 space-y-5">
           <Card
             role="region"
-            aria-labelledby="todo-list-title"
+            aria-label="我的待办"
             className="p-5"
           >
             <div className="flex items-center justify-between gap-3">
-              <h2 id="todo-list-title" className="font-semibold">
-                我的待办
-              </h2>
+              <div>
+                <h2 className="font-semibold">我的待办</h2>
+                <p className="mt-1 text-xs text-[var(--aios-muted)]">
+                  当前显示 {todos.length} 项，共 {metrics.todo} 项
+                </p>
+              </div>
               <Badge tone="info">{metrics.todo}</Badge>
             </div>
             <ul className="mt-3 divide-y divide-[color-mix(in_srgb,var(--aios-muted)_18%,var(--aios-surface))]">
@@ -269,9 +259,11 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                     variant="ghost"
                     className="min-h-9 shrink-0 px-2"
                     disabled
-                    aria-describedby="artifact-action-description"
                   >
                     {todo.action}
+                    <span className="sr-only">
+                      ：{ARTIFACT_ACTION_DESCRIPTION}
+                    </span>
                   </Button>
                 </li>
               ))}
@@ -280,12 +272,10 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
 
           <Card
             role="region"
-            aria-labelledby="risk-list-title"
+            aria-label="风险提示"
             className="p-5"
           >
-            <h2 id="risk-list-title" className="font-semibold">
-              风险提示
-            </h2>
+            <h2 className="font-semibold">风险提示</h2>
             <ul className="mt-4 space-y-3">
               {risks.map((risk) => {
                 const severity = risk.tone === "error" ? "错误" : "警告";
