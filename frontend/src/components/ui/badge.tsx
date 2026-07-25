@@ -9,10 +9,10 @@ const badgeVariants = cva(
     variants: {
       tone: {
         neutral: "bg-[var(--aios-canvas)] text-[var(--aios-muted)]",
-        info: "bg-[color-mix(in_srgb,var(--aios-accent)_16%,var(--aios-surface))] text-[var(--aios-accent)]",
-        success: "bg-[color-mix(in_srgb,var(--aios-success)_16%,var(--aios-surface))] text-[var(--aios-success)]",
-        warning: "bg-[color-mix(in_srgb,var(--aios-warning)_16%,var(--aios-surface))] text-[var(--aios-warning)]",
-        error: "bg-[color-mix(in_srgb,var(--aios-error)_16%,var(--aios-surface))] text-[var(--aios-error)]",
+        info: "bg-[color-mix(in_srgb,var(--aios-accent)_16%,var(--aios-surface))] text-[var(--aios-info-foreground)]",
+        success: "bg-[color-mix(in_srgb,var(--aios-success)_16%,var(--aios-surface))] text-[var(--aios-success-foreground)]",
+        warning: "bg-[color-mix(in_srgb,var(--aios-warning)_16%,var(--aios-surface))] text-[var(--aios-warning-foreground)]",
+        error: "bg-[color-mix(in_srgb,var(--aios-error)_16%,var(--aios-surface))] text-[var(--aios-error-foreground)]",
       },
     },
     defaultVariants: {

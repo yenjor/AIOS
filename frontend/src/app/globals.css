@@ -11,6 +11,11 @@
   --aios-success: #16803c;
   --aios-warning: #b54708;
   --aios-error: #c4320a;
+  --aios-info-foreground: color-mix(in srgb, var(--aios-accent) 75%, var(--aios-navigation));
+  --aios-success-foreground: color-mix(in srgb, var(--aios-success) 75%, var(--aios-navigation));
+  --aios-warning-foreground: color-mix(in srgb, var(--aios-warning) 75%, var(--aios-navigation));
+  --aios-error-foreground: color-mix(in srgb, var(--aios-error) 75%, var(--aios-navigation));
+  --aios-control-border: color-mix(in srgb, var(--aios-muted) 75%, var(--aios-surface));
 }
 
 *,

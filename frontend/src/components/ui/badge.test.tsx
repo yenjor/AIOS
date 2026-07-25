@@ -12,11 +12,11 @@ describe("Badge", () => {
   });
 
   it.each([
-    ["info", "--aios-accent"],
-    ["success", "--aios-success"],
-    ["warning", "--aios-warning"],
-    ["error", "--aios-error"],
-  ] as const)("uses the %s token for %s status text", (tone, token) => {
+    ["info", "--aios-info-foreground"],
+    ["success", "--aios-success-foreground"],
+    ["warning", "--aios-warning-foreground"],
+    ["error", "--aios-error-foreground"],
+  ] as const)("uses the accessible %s foreground token for %s status text", (tone, token) => {
     render(<Badge tone={tone}>Status</Badge>);
 
     expect(screen.getByText("Status")).toHaveClass(`text-[var(${token})]`);

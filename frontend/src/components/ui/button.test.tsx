@@ -19,6 +19,14 @@ describe("Button", () => {
     expect(button).not.toHaveClass("rounded-lg");
   });
 
+  it("uses the accessible control border token for the secondary variant", () => {
+    render(<Button variant="secondary">创建 Task</Button>);
+
+    expect(screen.getByRole("button", { name: "创建 Task" })).toHaveClass(
+      "border-[var(--aios-control-border)]",
+    );
+  });
+
   it("defaults to button type and forwards native attributes and refs", () => {
     const ref = createRef<HTMLButtonElement>();
 
