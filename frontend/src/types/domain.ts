@@ -13,6 +13,8 @@ export type TaskType = "研发实现" | "技术方案" | "自动测试" | "分�
 
 export type ArtifactType = "技术方案" | "测试报告" | "需求分析报告";
 
+export type AccessStatus = "可访问" | "无权限" | "已归档";
+
 export type DeepReadonly<T> = T extends (...args: never[]) => unknown
   ? T
   : T extends readonly (infer Item)[]
@@ -30,6 +32,11 @@ export interface UserIdentity {
 export interface OrganizationSummary {
   id: string;
   name: string;
+  purpose: string;
+  accessibleWorkspaceCount: number;
+  lastEnteredAt: string;
+  accessStatus: AccessStatus;
+  unavailableReason?: string;
 }
 
 export interface WorkspaceSummary {
@@ -37,6 +44,9 @@ export interface WorkspaceSummary {
   organizationId: string;
   name: string;
   purpose: string;
+  lastEnteredAt: string;
+  accessStatus: AccessStatus;
+  unavailableReason?: string;
 }
 
 export interface DashboardMetricSet {

@@ -1,8 +1,5 @@
-import { DashboardScreen } from "@/features/workspace/dashboard-screen";
-import { getWorkspaceDashboard } from "@/mock/repository";
+import { WorkspaceDashboardLoader } from "@/features/workspace/workspace-dashboard-loader";
 
-export default async function WorkspacePage() {
-  const snapshot = await getWorkspaceDashboard("ws-ai");
-
-  return <DashboardScreen snapshot={snapshot} />;
+export default function WorkspacePage() {
+  return <WorkspaceDashboardLoader />;
 }

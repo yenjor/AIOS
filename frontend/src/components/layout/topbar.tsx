@@ -75,11 +75,14 @@ export function Topbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <span className="hidden text-xs font-medium text-[var(--aios-muted)] lg:inline">
+          只读演示 · 功能未启用
+        </span>
         <span id={createTaskDescriptionId} className="sr-only">
           Task 功能将在对应实施阶段启用
         </span>
         <Button
-          className="hidden sm:inline-flex"
+          className="hidden xl:inline-flex"
           disabled
           aria-describedby={createTaskDescriptionId}
           title="Task 功能将在对应实施阶段启用"

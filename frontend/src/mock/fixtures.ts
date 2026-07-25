@@ -19,6 +19,10 @@ function deepFreeze<T extends object>(value: T): DeepReadonly<T> {
 export const organization: DeepReadonly<OrganizationSummary> = deepFreeze({
   id: "org-guangwei",
   name: "光位科技",
+  purpose: "管理光位科技企业 AI 资源与工作范围",
+  accessibleWorkspaceCount: 1,
+  lastEnteredAt: "2026-07-24 18:30",
+  accessStatus: "可访问",
 });
 
 export const workspace: DeepReadonly<WorkspaceSummary> = deepFreeze({
@@ -26,7 +30,23 @@ export const workspace: DeepReadonly<WorkspaceSummary> = deepFreeze({
   organizationId: organization.id,
   name: "AI 智能业务线",
   purpose: "建设并验证企业 AI 研发员工",
+  lastEnteredAt: "2026-07-25 09:12",
+  accessStatus: "可访问",
 });
+
+const archivedWorkspace: DeepReadonly<WorkspaceSummary> = deepFreeze({
+  id: "ws-archive-001",
+  organizationId: organization.id,
+  name: "历史研发试验区",
+  purpose: "保留已结束的研发协作试点记录",
+  lastEnteredAt: "2026-05-18 16:20",
+  accessStatus: "已归档",
+  unavailableReason: "该 Workspace 已归档，仅可查看范围信息",
+});
+
+export const workspaces: DeepReadonly<WorkspaceSummary[]> = deepFreeze<
+  WorkspaceSummary[]
+>([workspace, archivedWorkspace]);
 
 export const users: DeepReadonly<UserIdentity[]> = deepFreeze<UserIdentity[]>([
   { id: "user-pm", name: "林悦", role: "产品经理" },

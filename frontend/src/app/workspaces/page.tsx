@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/features/session/session-provider";
-import { workspace } from "@/mock/fixtures";
+import { workspaces } from "@/mock/fixtures";
 
 export default function WorkspacesPage() {
   const router = useRouter();
@@ -39,8 +39,8 @@ export default function WorkspacesPage() {
     );
   }
 
-  function handleSelectWorkspace() {
-    if (selectWorkspace(workspace.id)) {
+  function handleSelectWorkspace(workspaceId: string) {
+    if (selectWorkspace(workspaceId)) {
       router.push("/workspace");
     }
   }
@@ -60,32 +60,70 @@ export default function WorkspacesPage() {
 
         <section className="mt-8" aria-labelledby="workspace-list-title">
           <h2 id="workspace-list-title" className="sr-only">可用 Workspace</h2>
-          <Card className="p-6 sm:p-8">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-4">
-                <span
-                  className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--aios-accent)_14%,var(--aios-surface))] text-[var(--aios-info-foreground)]"
-                  aria-hidden="true"
-                >
-                  <PanelsTopLeft size={23} />
-                </span>
-                <div>
-                  <h3 className="text-lg font-semibold">{workspace.name}</h3>
-                  <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--aios-muted)]">
-                    {workspace.purpose}
-                  </p>
-                </div>
-              </div>
-              <Button
-                className="w-full shrink-0 sm:w-auto"
-                aria-label={`选择 Workspace ${workspace.name}`}
-                onClick={handleSelectWorkspace}
-              >
-                进入 Workspace
-                <ArrowRight size={17} aria-hidden="true" />
-              </Button>
-            </div>
-          </Card>
+          <ul className="space-y-4">
+            {workspaces.map((workspace) => {
+              const accessible = workspace.accessStatus === "可访问";
+
+              return (
+                <li key={workspace.id}>
+                  <Card className="p-6 sm:p-8">
+                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-4">
+                        <span
+                          className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--aios-accent)_14%,var(--aios-surface))] text-[var(--aios-info-foreground)]"
+                          aria-hidden="true"
+                        >
+                          <PanelsTopLeft size={23} />
+                        </span>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-semibold">{workspace.name}</h3>
+                            <Badge tone={accessible ? "success" : "neutral"}>
+                              {workspace.accessStatus}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 font-mono text-xs text-[var(--aios-muted)]">
+                            {workspace.id}
+                          </p>
+                          <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--aios-muted)]">
+                            {workspace.purpose}
+                          </p>
+                          <dl className="mt-4 grid gap-2 text-sm text-[var(--aios-muted)] sm:grid-cols-2">
+                            <div>
+                              <dt className="sr-only">当前职责</dt>
+                              <dd>当前职责：{user.role}</dd>
+                            </div>
+                            <div>
+                              <dt className="sr-only">最近进入时间</dt>
+                              <dd>最近进入：{workspace.lastEnteredAt}</dd>
+                            </div>
+                          </dl>
+                          {workspace.unavailableReason ? (
+                            <p className="mt-3 text-sm font-medium text-[var(--aios-warning-foreground)]">
+                              {workspace.unavailableReason}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full shrink-0 sm:w-auto"
+                        aria-label={
+                          accessible
+                            ? `选择 Workspace ${workspace.name}`
+                            : `Workspace ${workspace.name} 不可进入`
+                        }
+                        disabled={!accessible}
+                        onClick={() => handleSelectWorkspace(workspace.id)}
+                      >
+                        {accessible ? "进入 Workspace" : "不可进入"}
+                        <ArrowRight size={17} aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       </div>
     </main>

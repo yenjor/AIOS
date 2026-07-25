@@ -96,7 +96,19 @@ export function Sidebar({
     >
       <div className="flex min-h-11 items-start justify-between gap-3 px-2 md:justify-center md:px-0 xl:justify-between xl:px-2">
         <div className="min-w-0">
-          <p className="text-2xl font-bold tracking-tight md:text-center xl:text-left">AIOS</p>
+          <div
+            role="img"
+            aria-label="AIOS"
+            data-testid="sidebar-brand"
+            className="text-2xl font-bold tracking-tight md:text-center xl:text-left"
+          >
+            <span aria-hidden="true" className="md:hidden xl:inline">
+              AIOS
+            </span>
+            <span aria-hidden="true" className="hidden md:inline xl:hidden">
+              A
+            </span>
+          </div>
           <p className="mt-1 text-xs text-slate-400 md:hidden xl:block">
             企业 AI 工作操作系统
           </p>

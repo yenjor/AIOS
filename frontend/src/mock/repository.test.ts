@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { organization, users, workspace, workspaceDashboard } from "./fixtures";
+import { organization, users, workspace, workspaces, workspaceDashboard } from "./fixtures";
 import { getWorkspaceDashboard } from "./repository";
 import type {
   DeepReadonly,
@@ -55,6 +55,7 @@ describe("getWorkspaceDashboard", () => {
     expectTypeOf(users).toEqualTypeOf<readonly DeepReadonly<UserIdentity>[]>();
     expectTypeOf(organization).toEqualTypeOf<DeepReadonly<OrganizationSummary>>();
     expectTypeOf(workspace).toEqualTypeOf<DeepReadonly<WorkspaceSummary>>();
+    expectTypeOf(workspaces).toEqualTypeOf<readonly DeepReadonly<WorkspaceSummary>[]>();
     expectTypeOf(workspaceDashboard).toEqualTypeOf<DeepReadonly<WorkspaceDashboard>>();
     expectTypeOf(workspaceDashboard.tasks).toEqualTypeOf<readonly DeepReadonly<TaskSummary>[]>();
     expectTypeOf<Awaited<ReturnType<typeof getWorkspaceDashboard>>>().toEqualTypeOf<WorkspaceDashboard>();
@@ -78,7 +79,7 @@ describe("getWorkspaceDashboard", () => {
   });
 
   it("exports stable organization, workspace, and user fixture identities", () => {
-    expect(organization).toEqual({ id: "org-guangwei", name: "光位科技" });
+    expect(organization).toMatchObject({ id: "org-guangwei", name: "光位科技" });
     expect(workspace).toMatchObject({
       id: "ws-ai",
       organizationId: "org-guangwei",
@@ -90,6 +91,10 @@ describe("getWorkspaceDashboard", () => {
       { id: "user-lead", name: "陈明", role: "研发负责人" },
       { id: "user-admin", name: "吴桐", role: "Workspace Admin" },
       { id: "user-auditor", name: "赵岚", role: "Auditor" },
+    ]);
+    expect(workspaces.map(({ id, accessStatus }) => ({ id, accessStatus }))).toEqual([
+      { id: "ws-ai", accessStatus: "可访问" },
+      { id: "ws-archive-001", accessStatus: "已归档" },
     ]);
   });
 
@@ -120,9 +125,9 @@ describe("getWorkspaceDashboard", () => {
   });
 
   it("keeps all public fixture roots free of credential-like keys and secret values", () => {
-    const fixtureRoots = [organization, workspace, users, workspaceDashboard];
+    const fixtureRoots = [organization, workspace, workspaces, users, workspaceDashboard];
 
-    expect(fixtureRoots.flatMap((root) => (Array.isArray(root) ? root : [])).map((user) => user.id)).toEqual([
+    expect(users.map((user) => user.id)).toEqual([
       "user-pm",
       "user-dev",
       "user-lead",

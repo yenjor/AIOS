@@ -70,3 +70,31 @@ test("updates the workspace before navigating to the workspace home", async () =
   expect(screen.getByLabelText("当前 Workspace")).toHaveTextContent("AI 智能业务线");
   expect(push).toHaveBeenCalledWith("/workspace");
 });
+
+test("shows accessible and archived Workspace scope information", async () => {
+  const interaction = userEvent.setup();
+
+  render(
+    <SessionProvider>
+      <WorkspaceTestControls />
+      <WorkspacesPage />
+    </SessionProvider>,
+  );
+
+  await interaction.click(screen.getByRole("button", { name: "建立演示身份" }));
+  await interaction.click(screen.getByRole("button", { name: "建立组织范围" }));
+
+  expect(screen.getByText("ws-ai")).toBeVisible();
+  expect(screen.getByText("建设并验证企业 AI 研发员工")).toBeVisible();
+  expect(screen.getAllByText("当前职责：研发负责人")).toHaveLength(2);
+  expect(screen.getByText("最近进入：2026-07-25 09:12")).toBeVisible();
+  expect(screen.getByText("历史研发试验区")).toBeVisible();
+  expect(screen.getByText("ws-archive-001")).toBeVisible();
+  expect(screen.getByText("已归档", { selector: "span" })).toBeVisible();
+  expect(
+    screen.getByText("该 Workspace 已归档，仅可查看范围信息"),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Workspace 历史研发试验区 不可进入" }),
+  ).toBeDisabled();
+});

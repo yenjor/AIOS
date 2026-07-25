@@ -65,7 +65,9 @@ describe("DashboardScreen", () => {
     expect(
       within(agent).getByRole("heading", { name: "AI 研发员工" }),
     ).toBeVisible();
-    expect(within(agent).getByText("运行中", { selector: "span" })).toBeVisible();
+    const agentStatus = within(agent).getByText("运行中", { selector: "span" });
+    expect(agentStatus).toBeVisible();
+    expect(agentStatus.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
     expect(within(agent).getByText("责任人：陈明")).toBeVisible();
     expect(within(agent).getByText("自治等级：L1 辅助")).toBeVisible();
 
@@ -120,6 +122,9 @@ describe("DashboardScreen", () => {
       const row = within(taskTable).getByRole("row", { name: new RegExp(task.title) });
       expect(within(row).getByText(task.type)).toBeVisible();
       expect(within(row).getByText(task.status)).toBeVisible();
+      expect(
+        within(row).getByText(task.status).querySelector("svg[aria-hidden='true']"),
+      ).toBeInTheDocument();
     }
 
     const todos = screen.getByRole("region", { name: "我的待办" });
@@ -136,6 +141,33 @@ describe("DashboardScreen", () => {
     ).toBeVisible();
     expect(
       within(risks).getByRole("listitem", { name: "错误风险：Task 超期" }),
+    ).toBeVisible();
+  });
+
+  it("renders explicit empty states for Task, todo, and risk collections", () => {
+    const emptySnapshot = {
+      ...workspaceDashboard,
+      tasks: [],
+      todos: [],
+      risks: [],
+    };
+
+    render(
+      <SessionProvider>
+        <DashboardScreen snapshot={emptySnapshot} />
+      </SessionProvider>,
+    );
+
+    expect(screen.getByText("暂无最近 Task")).toBeVisible();
+    expect(screen.getByText("暂无待办")).toBeVisible();
+    expect(screen.getByText("暂无风险提示")).toBeVisible();
+  });
+
+  it("shows a visible read-only rollout explanation", () => {
+    renderDashboard();
+
+    expect(
+      screen.getByText("当前为只读演示，Task 创建与处理尚未启用。"),
     ).toBeVisible();
   });
 

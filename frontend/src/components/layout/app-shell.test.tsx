@@ -64,7 +64,7 @@ afterEach(() => {
 });
 
 describe("AppShell", () => {
-  it("guards incomplete sessions without inventing a user or scope", () => {
+  it("shows recovery before guarding incomplete sessions without inventing a user or scope", async () => {
     render(
       <SessionProvider>
         <AppShell>
@@ -73,7 +73,12 @@ describe("AppShell", () => {
       </SessionProvider>,
     );
 
-    expect(screen.getByRole("heading", { name: "尚未选择完整工作范围" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+    ).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "尚未选择完整工作范围" }),
+    ).toBeVisible();
     expect(screen.getByRole("link", { name: "前往选择身份" })).toHaveAttribute(
       "href",
       "/login",

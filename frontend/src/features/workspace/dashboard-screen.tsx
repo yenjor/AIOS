@@ -1,15 +1,24 @@
 import {
   ArrowRight,
+  AlertCircle,
   Bot,
+  CheckCircle2,
+  CircleDot,
   ClipboardCheck,
   FileCheck2,
   ShieldAlert,
+  XCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { DeepReadonly, WorkspaceDashboard } from "@/types/domain";
+import type {
+  BadgeTone,
+  DeepReadonly,
+  WorkspaceDashboard,
+} from "@/types/domain";
 
 import { CurrentResponsibility } from "./current-responsibility";
 import { MetricCard } from "./metric-card";
@@ -25,6 +34,30 @@ const TASK_CENTER_DESCRIPTION =
 const ARTIFACT_ACTION_DESCRIPTION =
   "将在 Artifact 审批与验收流程实施阶段启用";
 
+const statusIcons: Record<BadgeTone, LucideIcon> = {
+  info: CircleDot,
+  success: CheckCircle2,
+  warning: AlertCircle,
+  error: XCircle,
+};
+
+function StatusBadge({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: BadgeTone;
+}) {
+  const Icon = statusIcons[tone];
+
+  return (
+    <Badge tone={tone} className="gap-1.5">
+      <Icon size={13} aria-hidden="true" />
+      {label}
+    </Badge>
+  );
+}
+
 export function DashboardScreen({ snapshot }: DashboardScreenProps) {
   const { metrics, agent, quickActions, tasks, todos, risks } = snapshot;
 
@@ -39,6 +72,9 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
             Workspace 工作台
           </h1>
           <CurrentResponsibility />
+          <p className="mt-2 text-sm text-[var(--aios-muted)]">
+            当前为只读演示，Task 创建与处理尚未启用。
+          </p>
         </div>
         <Button disabled>
           创建 Task
@@ -77,7 +113,16 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-semibold">{agent.name}</h2>
-                    <Badge tone="success">{agent.status}</Badge>
+                    <StatusBadge
+                      label={agent.status}
+                      tone={
+                        agent.status === "运行中"
+                          ? "success"
+                          : agent.status === "暂停"
+                            ? "warning"
+                            : "error"
+                      }
+                    />
                   </div>
                   <p className="mt-2 text-sm text-[var(--aios-muted)]">
                     责任人：{agent.owner}
@@ -213,13 +258,23 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                       </td>
                       <td className="px-5 py-3">{task.agentName}</td>
                       <td className="px-5 py-3">
-                        <Badge tone={task.tone}>{task.status}</Badge>
+                        <StatusBadge label={task.status} tone={task.tone} />
                       </td>
                       <td className="px-5 py-3 text-[var(--aios-muted)]">
                         {task.updatedAt}
                       </td>
                     </tr>
                   ))}
+                  {tasks.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-5 py-8 text-center text-[var(--aios-muted)]"
+                      >
+                        暂无最近 Task
+                      </td>
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
@@ -268,6 +323,11 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                 </li>
               ))}
             </ul>
+            {todos.length === 0 ? (
+              <p className="mt-4 rounded-lg bg-[var(--aios-canvas)] px-4 py-5 text-center text-sm text-[var(--aios-muted)]">
+                暂无待办
+              </p>
+            ) : null}
           </Card>
 
           <Card
@@ -308,6 +368,11 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                 );
               })}
             </ul>
+            {risks.length === 0 ? (
+              <p className="mt-4 rounded-lg bg-[var(--aios-canvas)] px-4 py-5 text-center text-sm text-[var(--aios-muted)]">
+                暂无风险提示
+              </p>
+            ) : null}
           </Card>
         </aside>
       </div>

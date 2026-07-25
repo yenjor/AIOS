@@ -78,6 +78,7 @@ describe("Topbar", () => {
     expect(notifications).toHaveAccessibleDescription(
       "通知功能将在对应实施阶段启用",
     );
+    expect(screen.getByText("只读演示 · 功能未启用")).toBeVisible();
   });
 
   it("opens the mobile navigation from an explicitly labelled control", async () => {

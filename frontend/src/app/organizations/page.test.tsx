@@ -58,3 +58,23 @@ test("updates the organization before navigating to workspaces", async () => {
   expect(screen.getByLabelText("当前 Organization")).toHaveTextContent("光位科技");
   expect(push).toHaveBeenCalledWith("/workspaces");
 });
+
+test("shows the approved Organization scope information", async () => {
+  const interaction = userEvent.setup();
+
+  render(
+    <SessionProvider>
+      <OrganizationTestControls />
+      <OrganizationsPage />
+    </SessionProvider>,
+  );
+
+  await interaction.click(screen.getByRole("button", { name: "建立演示身份" }));
+
+  expect(screen.getByText("org-guangwei")).toBeVisible();
+  expect(screen.getByText("管理光位科技企业 AI 资源与工作范围")).toBeVisible();
+  expect(screen.getByText("当前职责：研发负责人")).toBeVisible();
+  expect(screen.getByText("可访问 Workspace：1")).toBeVisible();
+  expect(screen.getByText("最近进入：2026-07-24 18:30")).toBeVisible();
+  expect(screen.getByText("可访问", { selector: "span" })).toBeVisible();
+});

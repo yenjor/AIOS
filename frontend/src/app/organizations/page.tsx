@@ -66,8 +66,32 @@ export default function OrganizationsPage() {
                   <Building2 size={23} />
                 </span>
                 <div>
-                  <h3 className="text-lg font-semibold">{organization.name}</h3>
-                  <p className="mt-1 text-sm text-[var(--aios-muted)]">企业治理与 Workspace 归属组织</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-semibold">{organization.name}</h3>
+                    <Badge tone="success">{organization.accessStatus}</Badge>
+                  </div>
+                  <p className="mt-1 font-mono text-xs text-[var(--aios-muted)]">
+                    {organization.id}
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-[var(--aios-muted)]">
+                    {organization.purpose}
+                  </p>
+                  <dl className="mt-4 grid gap-2 text-sm text-[var(--aios-muted)] sm:grid-cols-2">
+                    <div>
+                      <dt className="sr-only">当前职责</dt>
+                      <dd>当前职责：{user.role}</dd>
+                    </div>
+                    <div>
+                      <dt className="sr-only">可访问 Workspace 数量</dt>
+                      <dd>
+                        可访问 Workspace：{organization.accessibleWorkspaceCount}
+                      </dd>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <dt className="sr-only">最近进入时间</dt>
+                      <dd>最近进入：{organization.lastEnteredAt}</dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
               <Button

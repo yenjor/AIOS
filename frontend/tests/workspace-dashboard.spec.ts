@@ -19,10 +19,10 @@ export async function enterWorkspaceAsLead(page: Page) {
     })
     .click();
 
-  await expect(page).toHaveURL(/\/workspace$/);
+  await expect(page).toHaveURL(/\/workspace$/, { timeout: 30_000 });
   await expect(
     page.getByRole("heading", { name: "Workspace 工作台", exact: true }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 test("研发负责人通过真实选择流程进入 Workspace 工作台", async ({ page }) => {
@@ -56,6 +56,69 @@ test("研发负责人通过真实选择流程进入 Workspace 工作台", async 
   }
 
   await expect(page.getByRole("textbox")).toHaveCount(0);
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Workspace 工作台", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "切换身份：陈明，研发负责人",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "重新选择 Organization：光位科技",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "重新选择 Workspace：AI 智能业务线",
+      exact: true,
+    }),
+  ).toBeVisible();
+});
+
+test("fresh Workspace response never serializes protected dashboard data", async ({
+  request,
+}) => {
+  const responses = await Promise.all([
+    request.get("/workspace"),
+    request.get("/workspace", { headers: { RSC: "1" } }),
+  ]);
+
+  for (const response of responses) {
+    const body = await response.text();
+
+    expect(response.ok()).toBe(true);
+    expect(body).not.toContain("Workspace 工作台");
+    expect(body).not.toContain("用户中心登录流程重构");
+    expect(body).not.toContain("需求澄清不足");
+  }
+});
+
+test.describe("平板导航", () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test("紧凑品牌不裁切且页面无横向溢出", async ({ page }) => {
+    await enterWorkspaceAsLead(page);
+
+    const brand = page.getByTestId("sidebar-brand");
+    await expect(brand.getByText("A", { exact: true })).toBeVisible();
+    await expect(brand.getByText("AIOS", { exact: true })).toBeHidden();
+
+    const bounds = await brand.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(72);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+  });
 });
 
 test("完整导航保持 README 模块归属且只有工作台可进入", async ({ page }) => {

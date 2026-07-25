@@ -87,4 +87,16 @@ describe("Sidebar", () => {
 
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it("provides a compact tablet logo without losing the accessible AIOS name", () => {
+    render(<Sidebar open onClose={vi.fn()} />);
+
+    const brand = screen.getByTestId("sidebar-brand");
+    expect(brand).toHaveTextContent("AIOS");
+    expect(within(brand).getByText("A")).toHaveClass("md:inline", "xl:hidden");
+    expect(within(brand).getByText("AIOS", { selector: "[aria-hidden='true']" })).toHaveClass(
+      "md:hidden",
+      "xl:inline",
+    );
+  });
 });
