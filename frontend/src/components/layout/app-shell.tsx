@@ -3,7 +3,7 @@
 import { ArrowRight, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -21,9 +21,16 @@ export function AppShell({ children }: AppShellProps) {
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const navigationTriggerRef = useRef<HTMLButtonElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
+  const pendingFocusTargetRef = useRef<"trigger" | "content" | null>(null);
+  const navigationId = `${useId()}-main-navigation`;
 
   const closeMobileNavigation = useCallback(() => {
-    navigationTriggerRef.current?.focus();
+    pendingFocusTargetRef.current = "trigger";
+    setMobileNavigationOpen(false);
+  }, []);
+
+  const finishMobileNavigation = useCallback(() => {
+    pendingFocusTargetRef.current = "content";
     setMobileNavigationOpen(false);
   }, []);
 
@@ -57,8 +64,7 @@ export function AppShell({ children }: AppShellProps) {
 
     function closeAtDesktopBreakpoint(event: Pick<MediaQueryListEvent, "matches">) {
       if (event.matches && mobileNavigationOpen) {
-        setMobileNavigationOpen(false);
-        mainContentRef.current?.focus();
+        finishMobileNavigation();
       }
     }
 
@@ -68,6 +74,21 @@ export function AppShell({ children }: AppShellProps) {
     return () => {
       desktopMedia.removeEventListener("change", closeAtDesktopBreakpoint);
     };
+  }, [finishMobileNavigation, mobileNavigationOpen]);
+
+  useEffect(() => {
+    if (mobileNavigationOpen || !pendingFocusTargetRef.current) {
+      return;
+    }
+
+    const focusTarget = pendingFocusTargetRef.current;
+    pendingFocusTargetRef.current = null;
+
+    if (focusTarget === "trigger") {
+      navigationTriggerRef.current?.focus();
+    } else {
+      mainContentRef.current?.focus();
+    }
   }, [mobileNavigationOpen]);
 
   if (!user || !organization || !workspace) {
@@ -117,10 +138,21 @@ export function AppShell({ children }: AppShellProps) {
         />
       ) : null}
 
-      <Sidebar open={mobileNavigationOpen} onClose={closeMobileNavigation} />
+      <Sidebar
+        navigationId={navigationId}
+        open={mobileNavigationOpen}
+        onClose={closeMobileNavigation}
+        onNavigate={mobileNavigationOpen ? finishMobileNavigation : undefined}
+      />
 
-      <div className="min-w-0 flex-1">
+      <div
+        data-testid="app-shell-background"
+        className="min-w-0 flex-1"
+        inert={mobileNavigationOpen ? true : undefined}
+        aria-hidden={mobileNavigationOpen ? "true" : undefined}
+      >
         <Topbar
+          navigationId={navigationId}
           navigationOpen={mobileNavigationOpen}
           navigationTriggerRef={navigationTriggerRef}
           onOpenNavigation={() => setMobileNavigationOpen(true)}

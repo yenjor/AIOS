@@ -45,23 +45,38 @@ describe("Sidebar", () => {
     render(<Sidebar open onClose={vi.fn()} />);
 
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
-    const links = within(navigation).getAllByRole("link");
+    const enabledLinks = navigation.querySelectorAll("a[href]");
 
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAccessibleName("工作台");
-    expect(links[0]).toHaveAttribute("href", "/workspace");
-    expect(links[0]).toHaveAttribute("aria-current", "page");
+    expect(enabledLinks).toHaveLength(1);
+    expect(enabledLinks[0]).toHaveAccessibleName("工作台");
+    expect(enabledLinks[0]).toHaveAttribute("href", "/workspace");
+    expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
 
-    const disabledItems = within(navigation).getAllByLabelText(
-      /将在对应实施阶段启用$/,
-    );
+    const disabledLabels = [
+      "Task",
+      "审批待办，3 项待处理",
+      "Artifact",
+      "AI 员工",
+      "Knowledge",
+      "Capability",
+      "Workflow",
+      "Tool",
+      "MCP 连接",
+      "Plugin 管理",
+      "Organization",
+      "成员与权限",
+      "Audit",
+    ];
 
-    expect(disabledItems).toHaveLength(13);
-    for (const item of disabledItems) {
+    for (const label of disabledLabels) {
+      const item = within(navigation).getByRole("link", { name: label });
       expect(item).toHaveAttribute("aria-disabled", "true");
+      expect(item).toHaveAccessibleDescription("将在对应实施阶段启用");
       expect(item).not.toHaveAttribute("href");
       expect(item).not.toHaveAttribute("tabindex");
     }
+
+    expect(within(navigation).getAllByRole("link")).toHaveLength(14);
   });
 
   it("exposes a mobile close control", () => {

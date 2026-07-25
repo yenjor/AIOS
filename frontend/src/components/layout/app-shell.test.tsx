@@ -14,8 +14,10 @@ vi.mock("next/navigation", () => ({
 
 const desktopMediaListeners = new Set<(event: MediaQueryListEvent) => void>();
 let desktopMediaMatches = false;
+const originalMatchMedia = window.matchMedia;
 
 beforeEach(() => {
+  document.body.style.overflow = "";
   desktopMediaMatches = false;
   desktopMediaListeners.clear();
   window.matchMedia = vi.fn((query: string) => ({
@@ -58,7 +60,7 @@ function SessionBootstrap() {
 }
 
 afterEach(() => {
-  document.body.style.overflow = "";
+  window.matchMedia = originalMatchMedia;
 });
 
 describe("AppShell", () => {
@@ -96,6 +98,12 @@ describe("AppShell", () => {
     await interaction.click(openButton);
 
     expect(openButton).toHaveAttribute("aria-expanded", "true");
+    const dialog = screen.getByRole("dialog", { name: "AIOS 主导航" });
+    const background = screen.getByTestId("app-shell-background");
+
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(background).toHaveAttribute("inert");
+    expect(background).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("button", { name: "关闭主导航" })).toHaveFocus();
     expect(document.body.style.overflow).toBe("hidden");
 
@@ -109,6 +117,8 @@ describe("AppShell", () => {
     expect(openButton).toHaveAttribute("aria-expanded", "false");
     expect(openButton).toHaveFocus();
     expect(document.body.style.overflow).toBe("");
+    expect(background).not.toHaveAttribute("inert");
+    expect(background).not.toHaveAttribute("aria-hidden");
   });
 
   it("closes the mobile drawer from its overlay and close button", async () => {
@@ -166,5 +176,97 @@ describe("AppShell", () => {
     const workspaceLink = screen.getByRole("link", { name: "工作台" });
     workspaceLink.focus();
     expect(fireEvent.keyDown(workspaceLink, { key: "Tab" })).toBe(true);
+  });
+
+  it("closes the drawer and restores the page when its enabled link is selected", async () => {
+    const interaction = userEvent.setup();
+
+    render(
+      <CompleteSession>
+        <AppShell>
+          <p>Workspace 内容</p>
+        </AppShell>
+      </CompleteSession>,
+    );
+
+    const openButton = await screen.findByRole("button", { name: "打开主导航" });
+    await interaction.click(openButton);
+    await interaction.click(screen.getByRole("link", { name: "工作台" }));
+
+    expect(openButton).toHaveAttribute("aria-expanded", "false");
+    expect(document.body.style.overflow).toBe("");
+    expect(screen.getByRole("main")).toHaveFocus();
+    expect(screen.getByTestId("app-shell-background")).not.toHaveAttribute("inert");
+  });
+
+  it("uses unique instance-scoped IDs for controls and descriptions", async () => {
+    render(
+      <>
+        <CompleteSession>
+          <AppShell>
+            <p>第一个 Workspace</p>
+          </AppShell>
+        </CompleteSession>
+        <CompleteSession>
+          <AppShell>
+            <p>第二个 Workspace</p>
+          </AppShell>
+        </CompleteSession>
+      </>,
+    );
+
+    const openButtons = await screen.findAllByRole("button", { name: "打开主导航" });
+    const navigationIds = openButtons.map((button) => button.getAttribute("aria-controls"));
+    expect(new Set(navigationIds).size).toBe(2);
+    for (const id of navigationIds) {
+      expect(id).toBeTruthy();
+      expect(document.getElementById(id!)).toBeInTheDocument();
+    }
+
+    const createTaskButtons = screen.getAllByRole("button", { name: "创建 Task" });
+    const createDescriptionIds = createTaskButtons.map((button) =>
+      button.getAttribute("aria-describedby"),
+    );
+    expect(new Set(createDescriptionIds).size).toBe(2);
+
+    const disabledTaskItems = screen.getAllByRole("link", { name: "Task" });
+    const disabledDescriptionIds = disabledTaskItems.map((item) =>
+      item.getAttribute("aria-describedby"),
+    );
+    expect(new Set(disabledDescriptionIds).size).toBe(2);
+
+    for (const id of [...createDescriptionIds, ...disabledDescriptionIds]) {
+      expect(id).toBeTruthy();
+      expect(document.getElementById(id!)).toBeInTheDocument();
+    }
+  });
+
+  it("cleans listeners, scroll lock, and isolated background state on unmount", async () => {
+    const interaction = userEvent.setup();
+    document.body.style.overflow = "clip";
+
+    const { unmount } = render(
+      <CompleteSession>
+        <AppShell>
+          <p>Workspace 内容</p>
+        </AppShell>
+      </CompleteSession>,
+    );
+
+    const openButton = await screen.findByRole("button", { name: "打开主导航" });
+    await interaction.click(openButton);
+    const background = screen.getByTestId("app-shell-background");
+
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(background).toHaveAttribute("inert");
+    expect(desktopMediaListeners.size).toBe(1);
+
+    unmount();
+
+    expect(document.body.style.overflow).toBe("clip");
+    expect(desktopMediaListeners.size).toBe(0);
+    expect(document.body).not.toContainElement(background);
+
+    document.body.style.overflow = "";
   });
 });

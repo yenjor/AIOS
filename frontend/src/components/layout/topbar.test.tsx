@@ -33,7 +33,11 @@ describe("Topbar", () => {
   it("shows the real selected scope and identity with correct selection links", async () => {
     render(
       <CompleteSession>
-        <Topbar onOpenNavigation={vi.fn()} navigationOpen={false} />
+        <Topbar
+          navigationId="test-navigation"
+          onOpenNavigation={vi.fn()}
+          navigationOpen={false}
+        />
       </CompleteSession>,
     );
 
@@ -55,7 +59,11 @@ describe("Topbar", () => {
   it("keeps future actions disabled with accessible explanations", async () => {
     render(
       <CompleteSession>
-        <Topbar onOpenNavigation={vi.fn()} navigationOpen={false} />
+        <Topbar
+          navigationId="test-navigation"
+          onOpenNavigation={vi.fn()}
+          navigationOpen={false}
+        />
       </CompleteSession>,
     );
 
@@ -78,12 +86,16 @@ describe("Topbar", () => {
 
     render(
       <CompleteSession>
-        <Topbar onOpenNavigation={onOpenNavigation} navigationOpen={false} />
+        <Topbar
+          navigationId="test-navigation"
+          onOpenNavigation={onOpenNavigation}
+          navigationOpen={false}
+        />
       </CompleteSession>,
     );
 
     const openButton = await screen.findByRole("button", { name: "打开主导航" });
-    expect(openButton).toHaveAttribute("aria-controls", "aios-main-navigation");
+    expect(openButton).toHaveAttribute("aria-controls", "test-navigation");
     expect(openButton).toHaveAttribute("aria-expanded", "false");
 
     await interaction.click(openButton);

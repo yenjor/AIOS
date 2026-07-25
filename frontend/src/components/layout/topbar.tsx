@@ -9,23 +9,27 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import type { Ref } from "react";
+import { useId, type Ref } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/features/session/session-provider";
 
 export interface TopbarProps {
+  navigationId: string;
   navigationOpen: boolean;
   onOpenNavigation: () => void;
   navigationTriggerRef?: Ref<HTMLButtonElement>;
 }
 
 export function Topbar({
+  navigationId,
   navigationOpen,
   onOpenNavigation,
   navigationTriggerRef,
 }: TopbarProps) {
   const { organization, user, workspace } = useSession();
+  const createTaskDescriptionId = `${useId()}-create-task-unavailable`;
+  const notificationsDescriptionId = `${useId()}-notifications-unavailable`;
 
   if (!user || !organization || !workspace) {
     return null;
@@ -39,7 +43,7 @@ export function Topbar({
           type="button"
           className="grid size-11 shrink-0 place-items-center rounded-lg text-[var(--aios-text)] transition hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)] md:hidden"
           aria-label="打开主导航"
-          aria-controls="aios-main-navigation"
+          aria-controls={navigationId}
           aria-expanded={navigationOpen}
           onClick={onOpenNavigation}
         >
@@ -71,20 +75,20 @@ export function Topbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <span id="create-task-unavailable" className="sr-only">
+        <span id={createTaskDescriptionId} className="sr-only">
           Task 功能将在对应实施阶段启用
         </span>
         <Button
           className="hidden sm:inline-flex"
           disabled
-          aria-describedby="create-task-unavailable"
+          aria-describedby={createTaskDescriptionId}
           title="Task 功能将在对应实施阶段启用"
         >
           <Plus size={17} aria-hidden="true" />
           创建 Task
         </Button>
 
-        <span id="notifications-unavailable" className="sr-only">
+        <span id={notificationsDescriptionId} className="sr-only">
           通知功能将在对应实施阶段启用
         </span>
         <button
@@ -92,7 +96,7 @@ export function Topbar({
           disabled
           className="grid size-11 place-items-center rounded-lg text-[var(--aios-muted)] disabled:cursor-not-allowed disabled:opacity-60"
           aria-label="通知（将在对应实施阶段启用）"
-          aria-describedby="notifications-unavailable"
+          aria-describedby={notificationsDescriptionId}
           title="通知功能将在对应实施阶段启用"
         >
           <Bell size={19} aria-hidden="true" />
