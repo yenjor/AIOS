@@ -58,6 +58,7 @@ export interface TaskSummary {
 export interface TodoSummary {
   id: string;
   title: string;
+  artifactType: string;
   action: "去审批" | "去验收" | "查看" | "去处理";
 }
 

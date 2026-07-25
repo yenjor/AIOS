@@ -51,12 +51,12 @@ export const workspaceDashboard = {
     { id: "task-004", title: "商品搜索功能需求分析", stage: "分析需求", status: "需补充", tone: "error", updatedAt: "2 小时前", agentName: "AI 研发员工" },
   ],
   todos: [
-    { id: "todo-001", title: "订单服务性能优化方案", action: "去审批" },
-    { id: "todo-002", title: "支付模块自动化测试报告", action: "去验收" },
-    { id: "todo-003", title: "商品搜索功能需求报告", action: "去处理" },
+    { id: "todo-001", title: "订单服务性能优化方案", artifactType: "技术方案", action: "去审批" },
+    { id: "todo-002", title: "支付模块自动化测试报告", artifactType: "测试报告", action: "去验收" },
+    { id: "todo-003", title: "商品搜索功能需求分析", artifactType: "需求分析报告", action: "去处理" },
   ],
   risks: [
-    { id: "risk-001", title: "需求澄清不足", tone: "warning", detail: "3 项待确认" },
-    { id: "risk-002", title: "Task 超期", tone: "error", detail: "接口文档已逾期" },
+    { id: "risk-001", title: "需求澄清不足", tone: "warning", detail: "商品搜索功能仍有 3 条澄清项等待确认" },
+    { id: "risk-002", title: "Task 超期", tone: "error", detail: "用户中心接口文档更新已超过期望完成时间" },
   ],
 } satisfies WorkspaceDashboard;
