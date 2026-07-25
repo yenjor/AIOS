@@ -1,9 +1,4 @@
-import { expect, test, vi } from "vitest";
-
-vi.mock("next/font/google", () => ({
-  Geist: () => ({ variable: "--font-geist-sans" }),
-  Geist_Mono: () => ({ variable: "--font-geist-mono" }),
-}));
+import { expect, test } from "vitest";
 
 import RootLayout, { metadata } from "./layout";
 
@@ -13,4 +8,5 @@ test("provides Chinese document metadata and language", () => {
   expect(layout.props.lang).toBe("zh-CN");
   expect(metadata.title).toBe("AIOS");
   expect(metadata.description).toBe("企业 AI 工作操作系统");
+  expect(layout.props.children.props.className).toBe("antialiased");
 });
