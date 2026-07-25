@@ -15,7 +15,7 @@
   --aios-success-foreground: color-mix(in srgb, var(--aios-success) 75%, var(--aios-navigation));
   --aios-warning-foreground: color-mix(in srgb, var(--aios-warning) 75%, var(--aios-navigation));
   --aios-error-foreground: color-mix(in srgb, var(--aios-error) 75%, var(--aios-navigation));
-  --aios-control-border: color-mix(in srgb, var(--aios-muted) 75%, var(--aios-surface));
+  --aios-control-border: color-mix(in srgb, var(--aios-muted) 80%, var(--aios-surface));
 }
 
 *,
