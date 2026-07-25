@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, type ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SessionProvider, useSession } from "@/features/session/session-provider";
 import { organization, workspace } from "@/mock/fixtures";
@@ -11,6 +11,30 @@ import { AppShell } from "./app-shell";
 vi.mock("next/navigation", () => ({
   usePathname: () => "/workspace",
 }));
+
+const desktopMediaListeners = new Set<(event: MediaQueryListEvent) => void>();
+let desktopMediaMatches = false;
+
+beforeEach(() => {
+  desktopMediaMatches = false;
+  desktopMediaListeners.clear();
+  window.matchMedia = vi.fn((query: string) => ({
+    get matches() {
+      return desktopMediaMatches;
+    },
+    media: query,
+    onchange: null,
+    addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+      desktopMediaListeners.add(listener);
+    },
+    removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+      desktopMediaListeners.delete(listener);
+    },
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as typeof window.matchMedia;
+});
 
 function CompleteSession({ children }: { children: ReactNode }) {
   return (
@@ -109,5 +133,38 @@ describe("AppShell", () => {
     await interaction.click(screen.getByRole("button", { name: "关闭主导航" }));
     expect(openButton).toHaveAttribute("aria-expanded", "false");
     expect(openButton).toHaveFocus();
+  });
+
+  it("resets mobile-only state when the viewport crosses into the md breakpoint", async () => {
+    const interaction = userEvent.setup();
+
+    render(
+      <CompleteSession>
+        <AppShell>
+          <p>Workspace 内容</p>
+        </AppShell>
+      </CompleteSession>,
+    );
+
+    const openButton = await screen.findByRole("button", { name: "打开主导航" });
+    await interaction.click(openButton);
+    expect(openButton).toHaveAttribute("aria-expanded", "true");
+    expect(document.body.style.overflow).toBe("hidden");
+
+    act(() => {
+      desktopMediaMatches = true;
+      for (const listener of desktopMediaListeners) {
+        listener({ matches: true, media: "(min-width: 768px)" } as MediaQueryListEvent);
+      }
+    });
+
+    expect(openButton).toHaveAttribute("aria-expanded", "false");
+    expect(document.body.style.overflow).toBe("");
+    expect(openButton).not.toHaveFocus();
+    expect(screen.getByRole("main")).toHaveFocus();
+
+    const workspaceLink = screen.getByRole("link", { name: "工作台" });
+    workspaceLink.focus();
+    expect(fireEvent.keyDown(workspaceLink, { key: "Tab" })).toBe(true);
   });
 });

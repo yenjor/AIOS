@@ -20,6 +20,7 @@ export function AppShell({ children }: AppShellProps) {
   const { organization, user, workspace } = useSession();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const navigationTriggerRef = useRef<HTMLButtonElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
 
   const closeMobileNavigation = useCallback(() => {
     navigationTriggerRef.current?.focus();
@@ -46,6 +47,28 @@ export function AppShell({ children }: AppShellProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [closeMobileNavigation, mobileNavigationOpen]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const desktopMedia = window.matchMedia("(min-width: 768px)");
+
+    function closeAtDesktopBreakpoint(event: Pick<MediaQueryListEvent, "matches">) {
+      if (event.matches && mobileNavigationOpen) {
+        setMobileNavigationOpen(false);
+        mainContentRef.current?.focus();
+      }
+    }
+
+    desktopMedia.addEventListener("change", closeAtDesktopBreakpoint);
+    closeAtDesktopBreakpoint(desktopMedia);
+
+    return () => {
+      desktopMedia.removeEventListener("change", closeAtDesktopBreakpoint);
+    };
+  }, [mobileNavigationOpen]);
 
   if (!user || !organization || !workspace) {
     const nextSelection = !user
@@ -102,7 +125,13 @@ export function AppShell({ children }: AppShellProps) {
           navigationTriggerRef={navigationTriggerRef}
           onOpenNavigation={() => setMobileNavigationOpen(true)}
         />
-        <main className="p-5 sm:p-6 lg:p-7 xl:p-8">{children}</main>
+        <main
+          ref={mainContentRef}
+          tabIndex={-1}
+          className="p-5 focus:outline-none sm:p-6 lg:p-7 xl:p-8"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
