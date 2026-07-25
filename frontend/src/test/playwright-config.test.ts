@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolvePlaywrightTarget } from "../../playwright.config";
+import {
+  resolvePlaywrightTarget,
+  resolvePlaywrightWorkers,
+} from "../../playwright.config";
 
 describe("resolvePlaywrightTarget", () => {
   it("treats an explicit base URL as an external target without a managed server", () => {
@@ -34,4 +37,14 @@ describe("resolvePlaywrightTarget", () => {
       ).toThrowError(/PLAYWRIGHT_PORT must be an integer from 1 to 65535/);
     },
   );
+});
+
+describe("resolvePlaywrightWorkers", () => {
+  it("limits local cold-start runs to two workers", () => {
+    expect(resolvePlaywrightWorkers({})).toBe(2);
+  });
+
+  it("keeps CI browser execution serial", () => {
+    expect(resolvePlaywrightWorkers({ CI: "true" })).toBe(1);
+  });
 });
