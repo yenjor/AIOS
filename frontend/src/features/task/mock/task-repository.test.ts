@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { TaskActor, TaskDraft, TaskScope } from "../model";
+import type {
+  TaskActor,
+  TaskDraft,
+  TaskPermissionDecision,
+  TaskScope,
+} from "../model";
 import { TASK_STATUSES } from "../task-status";
+import * as taskRepositoryModule from "./task-repository";
 import {
   createTaskRepository,
   TASK_STORE_KEY,
@@ -32,6 +38,11 @@ const lead: TaskActor = { userId: "user-lead" };
 const developer: TaskActor = { userId: "user-dev" };
 const productManager: TaskActor = { userId: "user-pm" };
 const auditor: TaskActor = { userId: "user-auditor" };
+
+type PermissionQuery = (
+  scope: TaskScope,
+  actor: TaskActor,
+) => Promise<TaskPermissionDecision>;
 
 const technicalSolutionDraft: TaskDraft = {
   templateName: "生成技术方案",
@@ -184,6 +195,31 @@ describe("Task mock repository", () => {
     );
   });
 
+  it.each([
+    ["user-pm", true],
+    ["user-dev", true],
+    ["user-lead", true],
+    ["user-admin", true],
+    ["user-auditor", false],
+  ] as const)(
+    "exposes the readonly permission decision for %s",
+    async (userId, expectedAllowed) => {
+      const permissionModule = taskRepositoryModule as typeof taskRepositoryModule & {
+        getTaskPermission: PermissionQuery;
+      };
+      const decision = await permissionModule.getTaskPermission(scope, { userId });
+
+      expect(decision).toMatchObject({
+        allowed: expectedAllowed,
+        code: expectedAllowed ? "ALLOWED" : "FORBIDDEN",
+      });
+      decision.reason = "调用者可安全修改返回值";
+
+      const repeated = await permissionModule.getTaskPermission(scope, { userId });
+      expect(repeated.reason).not.toBe("调用者可安全修改返回值");
+    },
+  );
+
   it.each(["user-pm", "user-dev", "user-lead", "user-admin"])(
     "allows the approved creator identity %s to save and discard a draft",
     async (userId) => {
@@ -324,19 +360,117 @@ describe("Task mock repository", () => {
       riskLevel === "R1" || riskLevel === "R2",
     )).toBe(true);
 
+    const mine = await repo.listTasks(scope, lead, {
+      ownership: "mine",
+      pageSize: 20,
+    });
+    expect(mine.total).toBeGreaterThan(0);
+    expect(mine.items.every((task) =>
+      task.initiator.userId === lead.userId ||
+      (task.currentOwner?.actorType === "USER" &&
+        task.currentOwner.actorId === lead.userId),
+    )).toBe(true);
+
+    const participating = await repo.listTasks(scope, lead, {
+      ownership: "participating",
+      pageSize: 20,
+    });
+    expect(participating.total).toBeGreaterThan(0);
+    expect(participating.items.every((task) =>
+      task.participantUserIds.includes(lead.userId),
+    )).toBe(true);
+
+    const pendingApproval = await repo.listTasks(scope, lead, {
+      ownership: "pendingApproval",
+      pageSize: 20,
+    });
+    expect(pendingApproval.total).toBeGreaterThan(0);
+    expect(pendingApproval.items.every((task) =>
+      task.status === "NEED_APPROVAL" &&
+      task.approverUserIds.includes(lead.userId),
+    )).toBe(true);
+
+    const pendingReview = await repo.listTasks(scope, lead, {
+      ownership: "pendingReview",
+      pageSize: 20,
+    });
+    expect(pendingReview.total).toBeGreaterThan(0);
+    expect(pendingReview.items.every((task) =>
+      task.status === "REVIEW" &&
+      task.reviewerUserIds.includes(lead.userId),
+    )).toBe(true);
+
     for (const ownership of [
-      "all",
       "mine",
       "participating",
       "pendingApproval",
       "pendingReview",
     ] as const) {
-      const result = await repo.listTasks(scope, lead, {
+      await expect(repo.listTasks(scope, auditor, {
         ownership,
         pageSize: 20,
-      });
-      expect(result.total, ownership).toBeGreaterThan(0);
+      })).resolves.toMatchObject({ total: 0 });
     }
+  });
+
+  it("normalizes malformed public scope and actor inputs to typed errors", async () => {
+    const repo = repository();
+
+    for (const malformedScope of [
+      null,
+      {},
+      { organizationId: "org-guangwei" },
+    ]) {
+      await expect(
+        repo.listTasks(malformedScope as TaskScope, lead, {}),
+      ).rejects.toSatisfy(
+        (error: unknown) => expectRepositoryError(error, "VALIDATION"),
+      );
+    }
+
+    for (const malformedActor of [null, {}, { userId: 7 }]) {
+      await expect(
+        repo.getDraft(scope, malformedActor as unknown as TaskActor),
+      ).rejects.toSatisfy(
+        (error: unknown) => expectRepositoryError(error, "VALIDATION"),
+      );
+    }
+  });
+
+  it.each([
+    null,
+    { assignedAgent: null },
+    {
+      assignedAgent: {
+        agentId: "agent-rd-001",
+        agentName: "AI研发员工",
+        agentVersionRef: null,
+        autonomyLevel: "L1辅助",
+        humanOwner: {
+          userId: "user-lead",
+          displayName: "陈明",
+        },
+      },
+    },
+    {
+      assignedAgent: {
+        agentId: "agent-rd-001",
+        agentName: "AI研发员工",
+        agentVersionRef: technicalSolutionDraft.assignedAgent?.agentVersionRef,
+        autonomyLevel: "L1辅助",
+        humanOwner: null,
+      },
+    },
+  ])("normalizes a malformed draft boundary: %#", async (malformedDraft) => {
+    await expect(
+      repository().saveDraft(
+        scope,
+        lead,
+        malformedDraft as unknown as TaskDraft,
+      ),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "VALIDATION"),
+    );
   });
 
   it("paginates with stable updatedAt descending and ID tie-break ordering", async () => {
@@ -484,11 +618,60 @@ describe("Task mock repository", () => {
       (task.executionPlan as Record<string, unknown>).scopeDigest =
         "sha256:tampered-scope";
     }],
+    ["changed plan goal interpretation", (envelope: Record<string, unknown>) => {
+      const task = getFirstStoredTask(envelope);
+      (task.executionPlan as Record<string, unknown>).goalInterpretation =
+        "被篡改的目标解释";
+    }],
+    ["changed plan assumptions", (envelope: Record<string, unknown>) => {
+      const task = getFirstStoredTask(envelope);
+      (task.executionPlan as Record<string, unknown>).assumptions = [
+        "被篡改的假设",
+      ];
+    }],
+    ["changed plan missing information", (envelope: Record<string, unknown>) => {
+      const task = getFirstStoredTask(envelope);
+      (task.executionPlan as Record<string, unknown>).missingInformation = [
+        "被篡改的缺失项",
+      ];
+    }],
+    ["changed plan step description", (envelope: Record<string, unknown>) => {
+      getStoredPlanSteps(envelope)[4].description = "被篡改的步骤说明";
+    }],
+    ["approved plan point", (envelope: Record<string, unknown>) => {
+      getStoredApprovalPoints(envelope)[0].status = "APPROVED";
+    }],
+    ["duplicate approval point ID", (envelope: Record<string, unknown>) => {
+      const points = getStoredApprovalPoints(envelope);
+      points[1].id = points[0].id;
+    }],
+    ["mismatched approval point pair", (envelope: Record<string, unknown>) => {
+      getStoredApprovalPoints(envelope)[0].requiredFor =
+        "ARTIFACT_ACCEPTANCE";
+    }],
+    ["changed approval risk", (envelope: Record<string, unknown>) => {
+      getStoredApprovalPoints(envelope)[1].riskLevel = "R0";
+    }],
+    ["changed approval reviewer", (envelope: Record<string, unknown>) => {
+      getStoredApprovalPoints(envelope)[1].reviewerUserIds = ["user-dev"];
+    }],
     ["broken history from/to boundary", (envelope: Record<string, unknown>) => {
       getStoredHistory(envelope)[1].fromStatus = "PLANNING";
     }],
     ["non-monotonic history version", (envelope: Record<string, unknown>) => {
       getStoredHistory(envelope)[2].aggregateVersion = 9;
+    }],
+    ["invalid createdAt", (envelope: Record<string, unknown>) => {
+      getFirstStoredTask(envelope).createdAt = "not-a-date";
+    }],
+    ["updatedAt before createdAt", (envelope: Record<string, unknown>) => {
+      getFirstStoredTask(envelope).updatedAt = "2026-07-25T00:00:00.000Z";
+    }],
+    ["history before Task creation", (envelope: Record<string, unknown>) => {
+      getStoredHistory(envelope)[0].occurredAt = "2026-07-25T00:00:00.000Z";
+    }],
+    ["unsafe next sequence", (envelope: Record<string, unknown>) => {
+      envelope.nextTaskSequence = Number.MAX_SAFE_INTEGER + 1;
     }],
   ])("clears a structurally invalid store: %s", async (_label, mutate) => {
     const repo = repository();
@@ -533,4 +716,12 @@ function getStoredHistory(
   envelope: Record<string, unknown>,
 ): Array<Record<string, unknown>> {
   return getFirstStoredTask(envelope).history as Array<Record<string, unknown>>;
+}
+
+function getStoredApprovalPoints(
+  envelope: Record<string, unknown>,
+): Array<Record<string, unknown>> {
+  return getFirstStoredTask(envelope).approvalPoints as Array<
+    Record<string, unknown>
+  >;
 }

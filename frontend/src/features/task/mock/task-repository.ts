@@ -66,6 +66,10 @@ export interface TaskStorage {
 }
 
 export interface TaskRepository {
+  getTaskPermission(
+    scope: TaskScope,
+    actor: TaskActor,
+  ): Promise<TaskPermissionDecision>;
   listTasks(
     scope: TaskScope,
     actor: TaskActor,
@@ -255,6 +259,22 @@ function isPositiveInteger(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) > 0;
 }
 
+function isPositiveSafeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) > 0;
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+  ) {
+    return false;
+  }
+
+  const parsed = new Date(value);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString() === value;
+}
+
 function isTaskScope(value: unknown): value is TaskScope {
   return (
     isRecord(value) &&
@@ -306,7 +326,7 @@ function isVersionRef(value: unknown, expectedKind: string): value is VersionRef
     value.kind !== expectedKind ||
     !isNonEmptyString(value.objectId) ||
     !isNonEmptyString(value.versionId) ||
-    !isPositiveInteger(value.versionNumber) ||
+    !isPositiveSafeInteger(value.versionNumber) ||
     !isNonEmptyString(value.digest)
   ) {
     return false;
@@ -396,6 +416,29 @@ function isStoredAgentAssignment(
   );
 }
 
+function isAgentAssignment(value: unknown): value is AgentAssignment {
+  const canonicalAssignment = goldenTechnicalSolutionTask.assignedAgent;
+  return (
+    canonicalAssignment !== undefined &&
+    isRecord(value) &&
+    hasExactKeys(value, [
+      "agentId",
+      "agentName",
+      "agentVersionRef",
+      "autonomyLevel",
+      "humanOwner",
+    ]) &&
+    value.agentId === canonicalAssignment.agentId &&
+    value.agentName === canonicalAssignment.agentName &&
+    isKnownAgentRef(value.agentVersionRef) &&
+    value.autonomyLevel === canonicalAssignment.autonomyLevel &&
+    isRecord(value.humanOwner) &&
+    hasExactKeys(value.humanOwner, ["userId", "displayName"]) &&
+    value.humanOwner.userId === canonicalAssignment.humanOwner.userId &&
+    value.humanOwner.displayName === canonicalAssignment.humanOwner.displayName
+  );
+}
+
 function isExpectedArtifact(value: unknown): value is ExpectedArtifact {
   return (
     isRecord(value) &&
@@ -448,37 +491,51 @@ function isPlanStep(value: unknown): value is PlanStep {
 const technicalSolutionPlanStepContract = [
   {
     name: "需求理解与约束确认",
+    description: "明确目标、范围、不做事项和验收标准。",
     stepType: "AGENT",
     responsibility: "AI研发员工",
     riskLevel: "R0",
   },
   {
     name: "代码与模块影响分析",
+    description: "只读检索代码结构并识别可能受影响的模块与文件。",
     stepType: "KNOWLEDGE_RETRIEVAL",
     responsibility: "AI研发员工",
     riskLevel: "R0",
   },
   {
     name: "形成技术方案草稿",
+    description: "依据固定 Capability 与 Knowledge Version 形成结构化草稿。",
     stepType: "AGENT",
     responsibility: "AI研发员工",
     riskLevel: "R1",
   },
   {
     name: "方案结构和引用检查",
+    description: "检查 Artifact 结构、关键结论和 Knowledge Citation。",
     stepType: "VALIDATION",
     responsibility: "Validation",
     riskLevel: "R1",
   },
   {
     name: "Artifact人工验收",
+    description: "由授权 Reviewer 验收技术方案 Artifact。",
     stepType: "HUMAN_REVIEW",
     responsibility: "Reviewer",
     riskLevel: "R1",
   },
 ] as const satisfies ReadonlyArray<
-  Pick<PlanStep, "name" | "stepType" | "responsibility" | "riskLevel">
+  Pick<
+    PlanStep,
+    "name" | "description" | "stepType" | "responsibility" | "riskLevel"
+  >
 >;
+
+const technicalSolutionGoalInterpretation =
+  "在现有 AIOS 架构边界内形成可评审、可实施的技术方案。";
+const technicalSolutionAssumptions = [
+  "现有文档为 Single Source of Truth",
+] as const;
 
 function isExecutionPlan(value: unknown, taskId: string): value is ExecutionPlan {
   if (
@@ -509,6 +566,13 @@ function isExecutionPlan(value: unknown, taskId: string): value is ExecutionPlan
     value.versionRef.versionId === `${objectId}-v1` &&
     value.versionRef.versionNumber === 1 &&
     value.versionRef.digest === `sha256:${objectId}-v1` &&
+    value.goalInterpretation === technicalSolutionGoalInterpretation &&
+    value.assumptions.length === technicalSolutionAssumptions.length &&
+    value.assumptions.every(
+      (assumption, index) =>
+        assumption === technicalSolutionAssumptions[index],
+    ) &&
+    value.missingInformation.length === 0 &&
     value.scopeDigest === `sha256:scope-${taskId}` &&
     value.steps.every((step, index) => {
       const expected = technicalSolutionPlanStepContract[index];
@@ -517,6 +581,7 @@ function isExecutionPlan(value: unknown, taskId: string): value is ExecutionPlan
           `${taskId}-step-${String(index + 1).padStart(2, "0")}` &&
         step.sequence === index + 1 &&
         step.name === expected.name &&
+        step.description === expected.description &&
         step.stepType === expected.stepType &&
         step.responsibility === expected.responsibility &&
         step.riskLevel === expected.riskLevel
@@ -554,6 +619,45 @@ function isApprovalPoint(value: unknown, taskId: string): value is ApprovalPoint
   );
 }
 
+const approvalPointContract = [
+  {
+    idSuffix: "approval-plan",
+    name: "计划确认",
+    requiredFor: "PLAN_EXECUTION",
+  },
+  {
+    idSuffix: "approval-artifact",
+    name: "Artifact验收",
+    requiredFor: "ARTIFACT_ACCEPTANCE",
+  },
+] as const;
+
+function isCanonicalApprovalPoints(
+  value: unknown,
+  taskId: string,
+): value is ApprovalPoint[] {
+  return (
+    Array.isArray(value) &&
+    value.length === approvalPointContract.length &&
+    value.every((point, index) => {
+      if (!isApprovalPoint(point, taskId)) {
+        return false;
+      }
+      const expected = approvalPointContract[index];
+      return (
+        point.id === `${taskId}-${expected.idSuffix}` &&
+        point.name === expected.name &&
+        point.requiredFor === expected.requiredFor &&
+        point.riskLevel === "R1" &&
+        point.status === "PENDING" &&
+        point.reviewerUserIds.length === 1 &&
+        point.reviewerUserIds[0] === "user-lead"
+      );
+    }) &&
+    new Set(value.map((point) => point.id)).size === value.length
+  );
+}
+
 function isTaskHistoryItem(value: unknown, taskId: string): value is TaskHistoryItem {
   return (
     isRecord(value) &&
@@ -572,8 +676,8 @@ function isTaskHistoryItem(value: unknown, taskId: string): value is TaskHistory
     isOneOf(value.toStatus, TASK_STATUSES) &&
     isNonEmptyString(value.reasonCode) &&
     isKnownTaskActor(value.actor) &&
-    isNonEmptyString(value.occurredAt) &&
-    isPositiveInteger(value.aggregateVersion)
+    isIsoTimestamp(value.occurredAt) &&
+    isPositiveSafeInteger(value.aggregateVersion)
   );
 }
 
@@ -608,6 +712,7 @@ function isCanonicalSubmittedHistory(
   value: unknown,
   taskId: string,
   initiatorUserId: string,
+  createdAt: string,
 ): value is TaskHistoryItem[] {
   return (
     Array.isArray(value) &&
@@ -624,7 +729,11 @@ function isCanonicalSubmittedHistory(
         item.toStatus === expected.toStatus &&
         item.reasonCode === expected.reasonCode &&
         item.actor.userId === initiatorUserId &&
-        item.aggregateVersion === index + 1
+        item.aggregateVersion === index + 1 &&
+        item.occurredAt >= createdAt &&
+        (index === 0 ||
+          item.occurredAt >=
+            (value[index - 1] as TaskHistoryItem).occurredAt)
       );
     })
   );
@@ -677,7 +786,7 @@ function isStoredTaskDraft(value: unknown): value is StoredTaskDraft {
       isExpectedArtifact(value.expectedArtifact)) &&
     (value.completionCriteria === undefined ||
       isStringArray(value.completionCriteria)) &&
-    (value.updatedAt === undefined || isNonEmptyString(value.updatedAt))
+    (value.updatedAt === undefined || isIsoTimestamp(value.updatedAt))
   );
 }
 
@@ -733,11 +842,19 @@ const storedTaskRequiredKeys = [
 function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
   const taskId =
     isRecord(value) && typeof value.id === "string" ? value.id : "";
+  const createdAt =
+    isRecord(value) && typeof value.createdAt === "string"
+      ? value.createdAt
+      : "";
+  const updatedAt =
+    isRecord(value) && typeof value.updatedAt === "string"
+      ? value.updatedAt
+      : "";
   if (
     !isRecord(value) ||
     !hasExactKeys(value, storedTaskRequiredKeys, ["currentOwner"]) ||
     !isNonEmptyString(value.id) ||
-    !/^task-mock-\d{4,}$/.test(value.id) ||
+    taskSequenceFromId(value.id) === undefined ||
     !isTaskScope(value.scope) ||
     !isNonEmptyString(value.title) ||
     !isNonEmptyString(value.goalSummary) ||
@@ -752,8 +869,9 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
     !isKnownUserIdArray(value.participantUserIds) ||
     !isKnownUserIdArray(value.approverUserIds) ||
     !isKnownUserIdArray(value.reviewerUserIds) ||
-    !isNonEmptyString(value.createdAt) ||
-    !isNonEmptyString(value.updatedAt) ||
+    !isIsoTimestamp(value.createdAt) ||
+    !isIsoTimestamp(value.updatedAt) ||
+    updatedAt < createdAt ||
     !isNonEmptyString(value.goal) ||
     !isNonEmptyStringArray(value.constraints) ||
     !isNonEmptyStringArray(value.outOfScope) ||
@@ -770,9 +888,7 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
     !value.toolVersionRefs.every(isKnownToolRef) ||
     !isKnownWorkflowRef(value.workflowVersionRef) ||
     !isExecutionPlan(value.executionPlan, taskId) ||
-    !Array.isArray(value.approvalPoints) ||
-    value.approvalPoints.length !== 2 ||
-    !value.approvalPoints.every((point) => isApprovalPoint(point, taskId)) ||
+    !isCanonicalApprovalPoints(value.approvalPoints, taskId) ||
     !isExpectedArtifact(value.expectedArtifact) ||
     value.expectedArtifact.artifactType !== "技术方案" ||
     !Array.isArray(value.artifactVersionRefs) ||
@@ -783,6 +899,7 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
       value.history,
       taskId,
       value.initiator.userId,
+      createdAt,
     ) ||
     value.aggregateVersion !== 4
   ) {
@@ -834,7 +951,7 @@ function isTaskStoreEnvelope(value: unknown): value is TaskStoreEnvelope {
       "workspaces",
     ]) ||
     value.schemaVersion !== TASK_STORE_SCHEMA_VERSION ||
-    !isPositiveInteger(value.nextTaskSequence) ||
+    !isPositiveSafeInteger(value.nextTaskSequence) ||
     !isRecord(value.workspaces)
   ) {
     return false;
@@ -851,8 +968,8 @@ function isTaskStoreEnvelope(value: unknown): value is TaskStoreEnvelope {
   }
 
   const storedTaskSequences = entries.flatMap(([, storedWorkspace]) =>
-    (storedWorkspace as StoredWorkspace).createdTasks.map((task) =>
-      Number(task.id.slice("task-mock-".length)),
+    (storedWorkspace as StoredWorkspace).createdTasks.map(
+      (task) => taskSequenceFromId(task.id)!,
     ),
   );
   return (
@@ -861,6 +978,17 @@ function isTaskStoreEnvelope(value: unknown): value is TaskStoreEnvelope {
       (sequence) => sequence < Number(value.nextTaskSequence),
     )
   );
+}
+
+function taskSequenceFromId(taskId: string): number | undefined {
+  const match = /^task-mock-(\d{4,})$/.exec(taskId);
+  if (!match) {
+    return undefined;
+  }
+  const sequence = Number(match[1]);
+  return Number.isSafeInteger(sequence) && sequence > 0
+    ? sequence
+    : undefined;
 }
 
 function scopeKey(scope: TaskScope): string {
@@ -1054,7 +1182,19 @@ function toListItem(task: TaskDetail): TaskListItem {
   };
 }
 
-function validateScope(scope: TaskScope): void {
+function validateScope(scope: unknown): asserts scope is TaskScope {
+  if (
+    !isRecord(scope) ||
+    !hasExactKeys(scope, ["organizationId", "workspaceId"]) ||
+    !isNonEmptyString(scope.organizationId) ||
+    !isNonEmptyString(scope.workspaceId)
+  ) {
+    throw new TaskRepositoryError(
+      "VALIDATION",
+      "Task scope is invalid.",
+    );
+  }
+
   if (
     scope.organizationId !== canonicalScope.organizationId ||
     scope.workspaceId !== canonicalScope.workspaceId ||
@@ -1064,7 +1204,18 @@ function validateScope(scope: TaskScope): void {
   }
 }
 
-function validateActor(actor: TaskActor): void {
+function validateActor(actor: unknown): asserts actor is TaskActor {
+  if (
+    !isRecord(actor) ||
+    !hasExactKeys(actor, ["userId"]) ||
+    !isNonEmptyString(actor.userId)
+  ) {
+    throw new TaskRepositoryError(
+      "VALIDATION",
+      "Task actor is invalid.",
+    );
+  }
+
   if (!validActorIds.has(actor.userId)) {
     throw new TaskRepositoryError(
       "FORBIDDEN",
@@ -1091,9 +1242,41 @@ function requireWritePermission(actor: TaskActor): void {
   }
 }
 
-function validateDraftInput(draft: TaskDraft): void {
-  const templateName = draft.templateName;
-  const expectedArtifact = draft.expectedArtifact;
+function isTaskDraftInput(value: unknown): value is TaskDraft {
+  if (!isRecord(value) || !hasExactKeys(value, [], draftKeys)) {
+    return false;
+  }
+
+  return (
+    (value.templateName === undefined ||
+      isOneOf(value.templateName, TASK_TEMPLATE_NAMES)) &&
+    (value.title === undefined || isNonEmptyString(value.title)) &&
+    (value.goal === undefined || isNonEmptyString(value.goal)) &&
+    (value.constraints === undefined || isStringArray(value.constraints)) &&
+    (value.outOfScope === undefined || isStringArray(value.outOfScope)) &&
+    (value.priority === undefined || isValidPriority(value.priority)) &&
+    (value.riskLevel === undefined ||
+      isOneOf(value.riskLevel, RISK_LEVELS)) &&
+    (value.capabilityVersionRefs === undefined ||
+      (Array.isArray(value.capabilityVersionRefs) &&
+        value.capabilityVersionRefs.every(isKnownCapabilityRef))) &&
+    (value.knowledgeVersionRefs === undefined ||
+      (Array.isArray(value.knowledgeVersionRefs) &&
+        value.knowledgeVersionRefs.every(isKnownKnowledgeRef))) &&
+    (value.toolVersionRefs === undefined ||
+      (Array.isArray(value.toolVersionRefs) &&
+        value.toolVersionRefs.every(isKnownToolRef))) &&
+    (value.assignedAgent === undefined ||
+      isAgentAssignment(value.assignedAgent)) &&
+    (value.expectedArtifact === undefined ||
+      isExpectedArtifact(value.expectedArtifact)) &&
+    (value.completionCriteria === undefined ||
+      isStringArray(value.completionCriteria)) &&
+    (value.updatedAt === undefined || isIsoTimestamp(value.updatedAt))
+  );
+}
+
+function validateDraftInput(draft: unknown): asserts draft is TaskDraft {
   if (!isRecord(draft) || !hasExactKeys(draft, [], draftKeys)) {
     throw new TaskRepositoryError(
       "VALIDATION",
@@ -1101,18 +1284,19 @@ function validateDraftInput(draft: TaskDraft): void {
     );
   }
 
-  const stored = storeDraft(draft);
-  if (!isStoredTaskDraft(stored)) {
+  if (!isTaskDraftInput(draft)) {
     throw new TaskRepositoryError(
       "VALIDATION",
       "Task draft fields are invalid.",
     );
   }
 
+  const validDraft = draft as TaskDraft;
   if (
-    expectedArtifact &&
-    templateName &&
-    TASK_TEMPLATE_ARTIFACTS[templateName] !== expectedArtifact.artifactType
+    validDraft.expectedArtifact &&
+    validDraft.templateName &&
+    TASK_TEMPLATE_ARTIFACTS[validDraft.templateName] !==
+      validDraft.expectedArtifact.artifactType
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
@@ -1196,8 +1380,8 @@ function validateQuery(query: TaskQuery): {
   const page = query.page ?? 1;
   const pageSize = query.pageSize ?? 20;
   if (
-    !isPositiveInteger(page) ||
-    !isPositiveInteger(pageSize) ||
+    !isPositiveSafeInteger(page) ||
+    !isPositiveSafeInteger(pageSize) ||
     pageSize > 100 ||
     (query.keyword !== undefined && typeof query.keyword !== "string") ||
     !isFilterValue(query.status, TASK_STATUSES) ||
@@ -1355,6 +1539,17 @@ export function createTaskRepository(
   const delay = options.delay ?? defaultDelay;
   const now = options.now ?? (() => new Date().toISOString());
 
+  function currentTimestamp(): string {
+    const timestamp = now();
+    if (!isIsoTimestamp(timestamp)) {
+      throw new TaskRepositoryError(
+        "VALIDATION",
+        "Task clock must return an ISO 8601 UTC timestamp.",
+      );
+    }
+    return timestamp;
+  }
+
   async function prepare(scope: TaskScope, actor: TaskActor): Promise<void> {
     await delay();
     validateScope(scope);
@@ -1433,6 +1628,14 @@ export function createTaskRepository(
   }
 
   return {
+    async getTaskPermission(
+      taskScope,
+      actor,
+    ): Promise<TaskPermissionDecision> {
+      await prepare(taskScope, actor);
+      return cloneMutable(createPermissionDecision(actor));
+    },
+
     async listTasks(
       taskScope,
       actor,
@@ -1479,6 +1682,12 @@ export function createTaskRepository(
 
     async getTask(taskScope, actor, taskId): Promise<TaskDetail> {
       await prepare(taskScope, actor);
+      if (!isNonEmptyString(taskId)) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Task ID is invalid.",
+        );
+      }
       const task = allTasks(readEnvelope()).find(
         (candidate) =>
           candidate.id === taskId &&
@@ -1509,7 +1718,7 @@ export function createTaskRepository(
       const merged = removeUndefinedValues({
         ...(existing ? materializeDraft(existing) : {}),
         ...cloneMutable(draft),
-        updatedAt: now(),
+        updatedAt: currentTimestamp(),
       });
       validateDraftInput(merged);
       workspaceStore.draftsByActor[actor.userId] = storeDraft(merged);
@@ -1540,9 +1749,20 @@ export function createTaskRepository(
       const storedDraft = workspaceStore?.draftsByActor[actor.userId];
       const draft = storedDraft ? materializeDraft(storedDraft) : undefined;
       requireCompleteTechnicalSolutionDraft(draft);
+      if (envelope.nextTaskSequence === Number.MAX_SAFE_INTEGER) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Task sequence capacity has been exhausted.",
+        );
+      }
 
       const taskId = `task-mock-${String(envelope.nextTaskSequence).padStart(4, "0")}`;
-      const task = createTechnicalSolutionTask(taskId, actor, draft, now());
+      const task = createTechnicalSolutionTask(
+        taskId,
+        actor,
+        draft,
+        currentTimestamp(),
+      );
       const nextEnvelope = cloneMutable(envelope);
       const nextWorkspace = storedWorkspace(nextEnvelope, true)!;
       nextWorkspace.createdTasks.push(storeTask(task));
@@ -1556,6 +1776,13 @@ export function createTaskRepository(
 
 function defaultRepository(): TaskRepository {
   return createTaskRepository();
+}
+
+export async function getTaskPermission(
+  scope: TaskScope,
+  actor: TaskActor,
+): Promise<TaskPermissionDecision> {
+  return defaultRepository().getTaskPermission(scope, actor);
 }
 
 export async function listTasks(
