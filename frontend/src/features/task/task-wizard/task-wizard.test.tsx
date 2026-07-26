@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TaskRepository } from "../mock/task-repository";
@@ -44,6 +45,22 @@ function renderWizard(initialDraft?: TaskDraft) {
         workspaceName: "AI 智能业务线",
       }}
     />,
+  );
+}
+
+function renderStrictWizard(initialDraft?: TaskDraft) {
+  return render(
+    <StrictMode>
+      <TaskWizard
+        actor={actor}
+        initialDraft={initialDraft}
+        scope={scope}
+        scopeLabels={{
+          organizationName: "光位科技",
+          workspaceName: "AI 智能业务线",
+        }}
+      />
+    </StrictMode>,
   );
 }
 
@@ -238,6 +255,39 @@ describe("TaskWizard", () => {
     expect(savedSnapshot.title).toBe("保存前标题");
   });
 
+  it("recovers from StrictMode effect replay after a deferred save", async () => {
+    const interaction = userEvent.setup();
+    const pendingSave = deferred<TaskDraft>();
+    repository.saveDraft.mockReturnValueOnce(pendingSave.promise);
+    renderStrictWizard({
+      wizardStep: 2,
+      templateName: "生成技术方案",
+      title: "严格模式标题",
+      goal: "形成方案",
+      currentProblem: "缺少方案",
+      workScope: "Task Center",
+      expectedCompletionAt: "2026-08-01T10:00:00.000Z",
+      constraints: ["遵循架构"],
+      outOfScope: ["不改后端"],
+      priority: 50,
+      riskLevel: "R1",
+    });
+
+    await interaction.click(screen.getByRole("button", { name: "保存草稿" }));
+    await waitFor(() => expect(repository.saveDraft).toHaveBeenCalledTimes(1));
+    const savedSnapshot = repository.saveDraft.mock.calls[0][2];
+    pendingSave.resolve(savedSnapshot);
+
+    expect(await screen.findByRole("status")).toHaveTextContent("草稿已保存");
+    expect(screen.getByLabelText("Task 标题")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "下一步" })).toBeEnabled();
+
+    await interaction.click(screen.getByRole("button", { name: "下一步" }));
+    expect(
+      await screen.findByRole("heading", { name: "提供上下文" }),
+    ).toBeVisible();
+  });
+
   it("freezes navigation during submit and routes only after the captured task resolves", async () => {
     const interaction = userEvent.setup();
     const pendingSubmit = deferred<
@@ -293,6 +343,56 @@ describe("TaskWizard", () => {
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith("/tasks/task-mock-0099"),
     );
+  });
+
+  it("ignores a late submit result after a real unmount", async () => {
+    const interaction = userEvent.setup();
+    const pendingSubmit = deferred<
+      Awaited<ReturnType<TaskRepository["submitTechnicalSolutionTask"]>>
+    >();
+    repository.submitTechnicalSolutionTask.mockReturnValue(
+      pendingSubmit.promise,
+    );
+    const view = renderStrictWizard({
+      wizardStep: 5,
+      templateName: "生成技术方案",
+      title: "卸载前提交",
+      goal: "形成方案",
+      currentProblem: "缺少方案",
+      workScope: "Task Center",
+      expectedCompletionAt: "2026-08-01T10:00:00.000Z",
+      constraints: ["遵循架构"],
+      outOfScope: ["不改后端"],
+      priority: 50,
+      riskLevel: "R1",
+      knowledgeVersionRefs: [
+        {
+          kind: "KNOWLEDGE",
+          objectId: "knowledge-aios-docs",
+          versionId: "knowledge-aios-docs-v1",
+          versionNumber: 1,
+          digest: "sha256:knowledge-aios-docs-v1",
+        },
+      ],
+      completionCriteria: ["结构完整"],
+    });
+
+    await interaction.click(screen.getByRole("button", { name: "提交 Task" }));
+    await waitFor(() =>
+      expect(repository.submitTechnicalSolutionTask).toHaveBeenCalledTimes(1),
+    );
+    view.unmount();
+
+    await act(async () => {
+      pendingSubmit.resolve({
+        id: "task-mock-late",
+      } as Awaited<
+        ReturnType<TaskRepository["submitTechnicalSolutionTask"]>
+      >);
+      await pendingSubmit.promise;
+    });
+
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("replaces a cleared field and restores it as empty after refresh", async () => {

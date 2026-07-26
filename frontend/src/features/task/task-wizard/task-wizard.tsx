@@ -246,14 +246,14 @@ export function TaskWizard({
   const isGolden = values.templateName === GOLDEN_TEMPLATE;
   const isBusy = operation.status === "saving";
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
       mountedRef.current = false;
       requestRevisionRef.current += 1;
       operationLockRef.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
 
   function updateValue<K extends keyof TaskWizardValues>(
     field: K,
