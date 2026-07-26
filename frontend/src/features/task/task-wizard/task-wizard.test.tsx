@@ -85,7 +85,7 @@ describe("TaskWizard", () => {
     });
 
     expect(
-      screen.getByText("定义工作", { selector: "span" }).closest("li"),
+      screen.getByRole("button", { name: "第 2 步：定义工作" }),
     ).toHaveAttribute("aria-current", "step");
     expect(screen.getByLabelText("Task 标题")).toHaveValue("恢复中的方案");
     expect(screen.getByLabelText("当前问题")).toHaveValue("恢复当前问题");
@@ -106,6 +106,41 @@ describe("TaskWizard", () => {
     expect(screen.getByLabelText("Task 标题")).toHaveAttribute(
       "aria-describedby",
       expect.stringContaining("error"),
+    );
+  });
+
+  it("uses keyboard-operable step controls without unlocking unreached steps", async () => {
+    const interaction = userEvent.setup();
+    renderWizard();
+    const stepOne = screen.getByRole("button", {
+      name: "第 1 步：选择模板",
+    });
+    const stepTwo = screen.getByRole("button", {
+      name: "第 2 步：定义工作",
+    });
+    const stepThree = screen.getByRole("button", {
+      name: "第 3 步：提供上下文",
+    });
+
+    expect(stepTwo).toBeDisabled();
+    expect(stepThree).toBeDisabled();
+    await interaction.click(
+      screen.getByRole("radio", { name: /生成技术方案/ }),
+    );
+    expect(stepTwo).toBeDisabled();
+    await interaction.click(screen.getByRole("button", { name: "下一步" }));
+
+    expect(stepTwo).toBeEnabled();
+    expect(stepThree).toBeDisabled();
+    stepOne.focus();
+    await interaction.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(stepOne).toHaveAttribute("aria-current", "step"),
+    );
+    stepTwo.focus();
+    await interaction.keyboard(" ");
+    await waitFor(() =>
+      expect(stepTwo).toHaveAttribute("aria-current", "step"),
     );
   });
 
@@ -178,6 +213,64 @@ describe("TaskWizard", () => {
 
     expect(screen.getByRole("button", { name: "提交 Task" })).toBeDisabled();
     expect(screen.getByText(/当前版本仅支持保存草稿/)).toBeVisible();
+  });
+
+  it.each(["R2", "R3"] as const)(
+    "blocks a restored %s draft and focuses the R0/R1 risk control",
+    async (riskLevel) => {
+      const interaction = userEvent.setup();
+      renderWizard({
+        wizardStep: 5,
+        templateName: "生成技术方案",
+        title: "高风险旧草稿",
+        goal: "形成方案",
+        currentProblem: "缺少方案",
+        workScope: "Task Center",
+        expectedCompletionAt: "2026-08-01T10:00:00.000Z",
+        constraints: ["遵循架构"],
+        outOfScope: ["不改后端"],
+        priority: 50,
+        riskLevel,
+        knowledgeVersionRefs: [
+          {
+            kind: "KNOWLEDGE",
+            objectId: "knowledge-aios-docs",
+            versionId: "knowledge-aios-docs-v1",
+            versionNumber: 1,
+            digest: "sha256:knowledge-aios-docs-v1",
+          },
+        ],
+        completionCriteria: ["结构完整"],
+      });
+
+      await interaction.click(
+        screen.getByRole("button", { name: "提交 Task" }),
+      );
+
+      expect(screen.getByRole("alert")).toHaveTextContent("R0 或 R1");
+      expect(screen.getByLabelText("Risk")).toHaveFocus();
+      expect(screen.getByRole("option", { name: "R0" })).toBeVisible();
+      expect(screen.getByRole("option", { name: "R1" })).toBeVisible();
+      expect(screen.queryByRole("option", { name: riskLevel })).not.toBeInTheDocument();
+      expect(repository.saveDraft).not.toHaveBeenCalled();
+      expect(repository.submitTechnicalSolutionTask).not.toHaveBeenCalled();
+    },
+  );
+
+  it("shows the required read-only checks on the Artifact step", () => {
+    renderWizard({
+      wizardStep: 4,
+      templateName: "生成技术方案",
+      riskLevel: "R1",
+      priority: 50,
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "必须通过的检查" }),
+    ).toBeVisible();
+    expect(screen.getByText("Artifact 结构完整性")).toBeVisible();
+    expect(screen.getByText("Knowledge Citation 可追溯")).toBeVisible();
+    expect(screen.getByText("Reviewer 人工验收")).toBeVisible();
   });
 
   it("submits a complete golden draft once and routes to its detail", async () => {

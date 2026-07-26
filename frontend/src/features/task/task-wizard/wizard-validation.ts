@@ -13,6 +13,7 @@ export type WizardField =
   | "currentProblem"
   | "workScope"
   | "priority"
+  | "riskLevel"
   | "expectedCompletionLocal"
   | "constraintsText"
   | "outOfScopeText"
@@ -54,6 +55,9 @@ export function validateStep(
       values.priority > 100
     ) {
       errors.priority = "Priority 必须是 0 到 100 之间的整数。";
+    }
+    if (values.riskLevel !== "R0" && values.riskLevel !== "R1") {
+      errors.riskLevel = "当前试点只允许 R0 或 R1 风险等级。";
     }
     if (
       !values.expectedCompletionLocal ||

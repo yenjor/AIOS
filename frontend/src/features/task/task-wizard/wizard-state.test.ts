@@ -99,6 +99,32 @@ describe("Task wizard validation", () => {
     expect(validateAllSteps(values)).toHaveProperty("completionCriteriaText");
   });
 
+  it.each(["R2", "R3"] as const)(
+    "rejects legacy %s risk drafts in step and final validation",
+    (riskLevel) => {
+      const values = createInitialWizardValues();
+      Object.assign(values, {
+        templateName: "生成技术方案",
+        title: "高风险旧草稿",
+        goal: "形成方案",
+        currentProblem: "缺少方案",
+        workScope: "Task Center",
+        expectedCompletionLocal: "2026-08-01T18:00",
+        constraintsText: "遵循架构",
+        outOfScopeText: "不改后端",
+        completionCriteriaText: "结构完整",
+        includeKnowledge: true,
+        riskLevel,
+      });
+
+      expect(validateStep(2, values)).toHaveProperty("riskLevel");
+      expect(validateAllSteps(values)).toHaveProperty("riskLevel");
+      expect(() => buildTechnicalSolutionDraft(values)).toThrow(
+        "incomplete",
+      );
+    },
+  );
+
   it("builds the only submittable technical-solution draft with fixed refs", () => {
     const values = createInitialWizardValues();
     Object.assign(values, {

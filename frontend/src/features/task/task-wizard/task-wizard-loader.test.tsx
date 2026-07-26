@@ -174,18 +174,20 @@ describe("TaskWizardLoader", () => {
       expect(screen.getByRole("radio", { name: new RegExp(template) })).toBeVisible();
     }
     expect(screen.getAllByRole("listitem")).toHaveLength(5);
-    expect(screen.getByText("选择模板", { selector: "span" }).closest("li")).toHaveAttribute(
-      "aria-current",
-      "step",
-    );
+    const firstStep = screen.getByRole("button", {
+      name: "第 1 步：选择模板",
+    });
+    const secondStep = screen.getByRole("button", {
+      name: "第 2 步：定义工作",
+    });
+    expect(firstStep).toHaveAttribute("aria-current", "step");
+    expect(secondStep).toBeDisabled();
 
     await interaction.click(
       screen.getByRole("radio", { name: /生成技术方案/ }),
     );
     await interaction.click(screen.getByRole("button", { name: "下一步" }));
-    expect(screen.getByText("定义工作", { selector: "span" }).closest("li")).toHaveAttribute(
-      "aria-current",
-      "step",
-    );
+    expect(secondStep).toHaveAttribute("aria-current", "step");
+    expect(firstStep).toBeEnabled();
   });
 });

@@ -69,6 +69,7 @@ const FIELD_STEPS: Record<WizardField, TaskWizardStep> = {
   currentProblem: 2,
   workScope: 2,
   priority: 2,
+  riskLevel: 2,
   expectedCompletionLocal: 2,
   constraintsText: 2,
   outOfScopeText: 2,
@@ -83,6 +84,7 @@ const FIELD_LABELS: Record<WizardField, string> = {
   currentProblem: "当前问题",
   workScope: "任务范围",
   priority: "Priority",
+  riskLevel: "Risk",
   expectedCompletionLocal: "期望完成时间",
   constraintsText: "约束",
   outOfScopeText: "不做事项",
@@ -218,6 +220,8 @@ export function TaskWizard({
   const [currentStep, setCurrentStep] = useState<TaskWizardStep>(
     restored.currentStep,
   );
+  const [maxReachableStep, setMaxReachableStep] =
+    useState<TaskWizardStep>(restored.currentStep);
   const [values, setValues] = useState<TaskWizardValues>(restored.values);
   const [errors, setErrors] = useState<WizardErrors>({});
   const [operation, setOperation] = useState<OperationState>({
@@ -296,6 +300,9 @@ export function TaskWizard({
     if (await persistDraft(nextStep)) {
       setErrors({});
       setCurrentStep(nextStep);
+      setMaxReachableStep((current) =>
+        Math.max(current, nextStep) as TaskWizardStep,
+      );
     }
   }
 
@@ -307,6 +314,20 @@ export function TaskWizard({
     if (await persistDraft(previousStep)) {
       setErrors({});
       setCurrentStep(previousStep);
+    }
+  }
+
+  async function handleStepSelect(step: TaskWizardStep) {
+    if (
+      step > maxReachableStep ||
+      step === currentStep ||
+      operationLockRef.current
+    ) {
+      return;
+    }
+    if (await persistDraft(step)) {
+      setErrors({});
+      setCurrentStep(step);
     }
   }
 
@@ -323,6 +344,7 @@ export function TaskWizard({
       await discardDraft(scope, actor);
       setValues(createInitialWizardValues());
       setCurrentStep(1);
+      setMaxReachableStep(1);
       setErrors({});
       setHasDraft(false);
       setOperation({ status: "idle" });
@@ -532,7 +554,7 @@ export function TaskWizard({
             </p>
             <FieldError field="constraintsText" errors={errors} />
           </div>
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-3">
             <div>
               <label className={labelClass} htmlFor="priority">
                 Priority
@@ -555,6 +577,43 @@ export function TaskWizard({
                 0 最高、100 最低；默认 50。
               </p>
               <FieldError field="priority" errors={errors} />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="riskLevel">
+                Risk
+              </label>
+              <select
+                aria-describedby={describedBy("riskLevel", errors)}
+                aria-invalid={Boolean(errors.riskLevel)}
+                className={inputClass}
+                id="riskLevel"
+                value={
+                  values.riskLevel === "R0" ||
+                  values.riskLevel === "R1"
+                    ? values.riskLevel
+                    : ""
+                }
+                onChange={(event) =>
+                  updateValue(
+                    "riskLevel",
+                    event.target.value as "R0" | "R1",
+                  )
+                }
+              >
+                <option disabled value="">
+                  请选择 R0 / R1
+                </option>
+                <option value="R0">R0</option>
+                <option value="R1">R1</option>
+              </select>
+              <p className={supportingClass} id="riskLevel-help">
+                试点仅允许 R0 / R1；R2 / R3 不可提交。
+                {values.riskLevel === "R2" ||
+                values.riskLevel === "R3"
+                  ? ` 当前旧草稿为 ${values.riskLevel}，请选择 R0 或 R1。`
+                  : ""}
+              </p>
+              <FieldError field="riskLevel" errors={errors} />
             </div>
             <div>
               <label
@@ -709,6 +768,46 @@ export function TaskWizard({
               ))}
             </div>
           </fieldset>
+          <section
+            aria-labelledby="artifact-required-checks"
+            className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-5 lg:col-span-2"
+          >
+            <h3
+              className="text-sm font-semibold"
+              id="artifact-required-checks"
+            >
+              必须通过的检查
+            </h3>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              {[
+                {
+                  name: "Artifact 结构完整性",
+                  detail: "必须包含所列 Sections，且关键结论完整。",
+                },
+                {
+                  name: "Knowledge Citation 可追溯",
+                  detail: "关键结论必须引用已授权 KnowledgeVersion。",
+                },
+                {
+                  name: "Reviewer 人工验收",
+                  detail: "陈明（user-lead）验收后方可完成 Task。",
+                },
+              ].map((check) => (
+                <div
+                  className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] p-4"
+                  key={check.name}
+                >
+                  <p className="font-semibold">{check.name}</p>
+                  <p className="mt-2 text-xs leading-5 text-[var(--aios-muted)]">
+                    {check.detail}
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-[var(--aios-warning-foreground)]">
+                    提交后验证
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
           <div className="lg:col-span-2">
             <label
               className={labelClass}
@@ -938,24 +1037,41 @@ export function TaskWizard({
         <ol className="grid gap-2 sm:grid-cols-5">
           {TASK_WIZARD_STEPS.map(({ step, label }) => (
             <li
-              aria-current={step === currentStep ? "step" : undefined}
-              className={cn(
-                "flex min-w-0 items-center gap-2 rounded-lg border px-3 py-3 text-sm",
-                step === currentStep
-                  ? "border-[var(--aios-primary)] bg-[color-mix(in_srgb,var(--aios-primary)_7%,var(--aios-surface))] font-semibold text-[var(--aios-primary)]"
-                  : step < currentStep
-                    ? "border-[color-mix(in_srgb,var(--aios-success)_35%,var(--aios-surface))] bg-[var(--aios-surface)]"
-                    : "border-[var(--aios-control-border)] bg-[var(--aios-surface)] text-[var(--aios-muted)]",
-              )}
+              className="min-w-0"
               key={step}
             >
-              <span
-                aria-hidden="true"
-                className="flex size-6 shrink-0 items-center justify-center rounded-full border border-current text-xs"
+              <button
+                aria-current={
+                  step === currentStep ? "step" : undefined
+                }
+                aria-label={`第 ${step} 步：${label}`}
+                className={cn(
+                  "flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg border px-3 py-3 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--aios-primary)] disabled:cursor-not-allowed disabled:opacity-55",
+                  step === currentStep
+                    ? "border-[var(--aios-primary)] bg-[color-mix(in_srgb,var(--aios-primary)_7%,var(--aios-surface))] font-semibold text-[var(--aios-primary)]"
+                    : step < maxReachableStep
+                      ? "border-[color-mix(in_srgb,var(--aios-success)_35%,var(--aios-surface))] bg-[var(--aios-surface)]"
+                      : "border-[var(--aios-control-border)] bg-[var(--aios-surface)] text-[var(--aios-muted)]",
+                )}
+                disabled={
+                  step > maxReachableStep ||
+                  operation.status === "saving"
+                }
+                type="button"
+                onClick={() => void handleStepSelect(step)}
               >
-                {step < currentStep ? <Check size={14} /> : step}
-              </span>
-              <span className="break-words">{label}</span>
+                <span
+                  aria-hidden="true"
+                  className="flex size-6 shrink-0 items-center justify-center rounded-full border border-current text-xs"
+                >
+                  {step < maxReachableStep ? (
+                    <Check size={14} />
+                  ) : (
+                    step
+                  )}
+                </span>
+                <span className="break-words">{label}</span>
+              </button>
             </li>
           ))}
         </ol>
