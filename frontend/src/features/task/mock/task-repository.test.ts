@@ -670,6 +670,24 @@ describe("Task mock repository", () => {
     ["history before Task creation", (envelope: Record<string, unknown>) => {
       getStoredHistory(envelope)[0].occurredAt = "2026-07-25T00:00:00.000Z";
     }],
+    ["history after Task update", (envelope: Record<string, unknown>) => {
+      getStoredHistory(envelope)[3].occurredAt = "2099-01-01T00:00:00.000Z";
+    }],
+    [
+      "duplicate numeric sequence via noncanonical Task ID",
+      (envelope: Record<string, unknown>) => {
+        const workspaceStore = getStoredWorkspace(envelope);
+        const tasks = workspaceStore.createdTasks as Array<
+          Record<string, unknown>
+        >;
+        const canonicalId = String(tasks[0].id);
+        const noncanonicalId = "task-mock-00001";
+        const duplicate = JSON.parse(
+          JSON.stringify(tasks[0]).replaceAll(canonicalId, noncanonicalId),
+        ) as Record<string, unknown>;
+        tasks.push(duplicate);
+      },
+    ],
     ["unsafe next sequence", (envelope: Record<string, unknown>) => {
       envelope.nextTaskSequence = Number.MAX_SAFE_INTEGER + 1;
     }],

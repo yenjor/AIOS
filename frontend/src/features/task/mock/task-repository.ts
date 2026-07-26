@@ -713,6 +713,7 @@ function isCanonicalSubmittedHistory(
   taskId: string,
   initiatorUserId: string,
   createdAt: string,
+  updatedAt: string,
 ): value is TaskHistoryItem[] {
   return (
     Array.isArray(value) &&
@@ -731,6 +732,7 @@ function isCanonicalSubmittedHistory(
         item.actor.userId === initiatorUserId &&
         item.aggregateVersion === index + 1 &&
         item.occurredAt >= createdAt &&
+        item.occurredAt <= updatedAt &&
         (index === 0 ||
           item.occurredAt >=
             (value[index - 1] as TaskHistoryItem).occurredAt)
@@ -900,6 +902,7 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
       taskId,
       value.initiator.userId,
       createdAt,
+      updatedAt,
     ) ||
     value.aggregateVersion !== 4
   ) {
@@ -930,15 +933,23 @@ function isStoredWorkspace(value: unknown): value is StoredWorkspace {
     return false;
   }
 
-  return (
-    Object.entries(value.draftsByActor).every(
+  if (
+    !Object.entries(value.draftsByActor).every(
       ([actorId, draft]) =>
         writableActorIds.has(actorId) && isStoredTaskDraft(draft),
-    ) &&
-    value.createdTasks.every(isStoredTaskRecord) &&
-    new Set(
-      value.createdTasks.map((task) => task.id),
-    ).size === value.createdTasks.length
+    ) ||
+    !value.createdTasks.every(isStoredTaskRecord)
+  ) {
+    return false;
+  }
+
+  const storedTasks = value.createdTasks as StoredTaskRecord[];
+  const taskIds = storedTasks.map((task) => task.id);
+  const taskSequences = taskIds.map(taskSequenceFromId);
+  return (
+    new Set(taskIds).size === taskIds.length &&
+    taskSequences.every((sequence) => sequence !== undefined) &&
+    new Set(taskSequences).size === taskSequences.length
   );
 }
 
@@ -986,9 +997,15 @@ function taskSequenceFromId(taskId: string): number | undefined {
     return undefined;
   }
   const sequence = Number(match[1]);
-  return Number.isSafeInteger(sequence) && sequence > 0
+  return Number.isSafeInteger(sequence) &&
+    sequence > 0 &&
+    taskId === taskIdFromSequence(sequence)
     ? sequence
     : undefined;
+}
+
+function taskIdFromSequence(sequence: number): string {
+  return `task-mock-${String(sequence).padStart(4, "0")}`;
 }
 
 function scopeKey(scope: TaskScope): string {
@@ -1756,7 +1773,7 @@ export function createTaskRepository(
         );
       }
 
-      const taskId = `task-mock-${String(envelope.nextTaskSequence).padStart(4, "0")}`;
+      const taskId = taskIdFromSequence(envelope.nextTaskSequence);
       const task = createTechnicalSolutionTask(
         taskId,
         actor,
