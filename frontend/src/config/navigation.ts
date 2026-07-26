@@ -34,7 +34,7 @@ export const navigation: NavigationGroup[] = [
     label: "工作",
     items: [
       { label: "工作台", href: "/workspace", enabled: true, icon: Gauge },
-      { label: "Task", href: "/tasks", enabled: false, icon: ListTodo },
+      { label: "Task", href: "/tasks", enabled: true, icon: ListTodo },
       {
         label: "审批待办",
         href: "/approvals",

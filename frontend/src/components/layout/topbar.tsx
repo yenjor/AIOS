@@ -11,8 +11,8 @@ import {
 import Link from "next/link";
 import { useId, type Ref } from "react";
 
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/features/session/session-provider";
+import { TaskCreateLink } from "@/features/task/task-create-permission";
 
 export interface TopbarProps {
   navigationId: string;
@@ -28,7 +28,6 @@ export function Topbar({
   navigationTriggerRef,
 }: TopbarProps) {
   const { organization, user, workspace } = useSession();
-  const createTaskDescriptionId = `${useId()}-create-task-unavailable`;
   const notificationsDescriptionId = `${useId()}-notifications-unavailable`;
 
   if (!user || !organization || !workspace) {
@@ -76,20 +75,12 @@ export function Topbar({
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <span className="hidden text-xs font-medium text-[var(--aios-muted)] lg:inline">
-          只读演示 · 功能未启用
+          Mock Repository · Workspace 隔离
         </span>
-        <span id={createTaskDescriptionId} className="sr-only">
-          Task 功能将在对应实施阶段启用
-        </span>
-        <Button
-          className="hidden xl:inline-flex"
-          disabled
-          aria-describedby={createTaskDescriptionId}
-          title="Task 功能将在对应实施阶段启用"
-        >
+        <TaskCreateLink className="hidden xl:inline-flex">
           <Plus size={17} aria-hidden="true" />
           创建 Task
-        </Button>
+        </TaskCreateLink>
 
         <span id={notificationsDescriptionId} className="sr-only">
           通知功能将在对应实施阶段启用

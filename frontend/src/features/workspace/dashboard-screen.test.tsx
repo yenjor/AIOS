@@ -6,16 +6,22 @@ import {
   SessionProvider,
   useSession,
 } from "@/features/session/session-provider";
-import { workspaceDashboard } from "@/mock/fixtures";
+import { organization, workspace, workspaceDashboard } from "@/mock/fixtures";
+import {
+  TASK_STATUS_LABELS,
+  TASK_TEMPLATE_NAMES,
+} from "@/features/task/task-status";
 
 import { DashboardScreen } from "./dashboard-screen";
 
 function DashboardHarness({ userId = "user-lead" }: { userId?: string }) {
-  const { selectUser } = useSession();
+  const { selectOrganization, selectUser, selectWorkspace } = useSession();
 
   useEffect(() => {
     selectUser(userId);
-  }, [selectUser, userId]);
+    selectOrganization(organization.id);
+    selectWorkspace(workspace.id);
+  }, [selectOrganization, selectUser, selectWorkspace, userId]);
 
   return <DashboardScreen snapshot={workspaceDashboard} />;
 }
@@ -87,45 +93,56 @@ describe("DashboardScreen", () => {
     }
   });
 
-  it("renders six disabled Task shortcuts with an accessible rollout explanation", () => {
+  it("renders six canonical Task template links when creation is allowed", async () => {
     renderDashboard();
 
-    const quickActions = screen.getByRole("region", { name: "快速创建" });
-    const buttons = within(quickActions).getAllByRole("button");
+    const quickActions = await screen.findByRole("region", { name: "快速创建" });
+    const links = await within(quickActions).findAllByRole("link");
 
-    expect(buttons).toHaveLength(6);
-    for (const [button, label] of buttons.map(
-      (button, index) =>
-        [button, workspaceDashboard.quickActions[index].label] as const,
+    expect(links).toHaveLength(6);
+    expect(workspaceDashboard.quickActions.map(({ label }) => label)).toEqual(
+      TASK_TEMPLATE_NAMES,
+    );
+    for (const [link, label] of links.map(
+      (link, index) =>
+        [link, workspaceDashboard.quickActions[index].label] as const,
     )) {
-      expect(button).toHaveTextContent(label);
-      expect(button).toBeDisabled();
-      expect(button).toHaveAccessibleName(
-        `${label}：将在 Task 创建流程实施阶段启用`,
-      );
+      expect(link).toHaveTextContent(label);
+      expect(link).toHaveAttribute("href", "/tasks/new");
     }
   });
 
-  it("renders the recent Task table, Artifact todos, and risk list", () => {
+  it("renders canonical recent Task links, Artifact todos, and risk list", () => {
     renderDashboard();
 
     const taskTable = screen.getByRole("table", { name: "最近 Task 列表" });
     expect(within(taskTable).getAllByRole("row")).toHaveLength(5);
 
-    for (const heading of ["Task", "类型", "AI 员工", "状态", "更新时间"]) {
+    for (const heading of ["Task", "模板", "AI 员工", "状态", "更新时间"]) {
       expect(
         within(taskTable).getByRole("columnheader", { name: heading }),
       ).toBeVisible();
     }
 
     for (const task of workspaceDashboard.tasks) {
-      const row = within(taskTable).getByRole("row", { name: new RegExp(task.title) });
-      expect(within(row).getByText(task.type)).toBeVisible();
-      expect(within(row).getByText(task.status)).toBeVisible();
+      const row = within(taskTable).getByRole("row", {
+        name: new RegExp(task.id),
+      });
+      expect(within(row).getByText(task.templateName)).toBeVisible();
+      expect(within(row).getByText(TASK_STATUS_LABELS[task.status])).toBeVisible();
       expect(
-        within(row).getByText(task.status).querySelector("svg[aria-hidden='true']"),
+        within(row)
+          .getByText(TASK_STATUS_LABELS[task.status])
+          .closest("[data-task-status]"),
       ).toBeInTheDocument();
+      expect(
+        within(row).getByRole("link", { name: `查看 Task ${task.id}` }),
+      ).toHaveAttribute("href", `/tasks/${task.id}`);
     }
+    expect(screen.getByRole("link", { name: "查看全部 Task" })).toHaveAttribute(
+      "href",
+      "/tasks",
+    );
 
     const todos = screen.getByRole("region", { name: "我的待办" });
     expect(within(todos).getAllByRole("listitem")).toHaveLength(3);
@@ -163,29 +180,30 @@ describe("DashboardScreen", () => {
     expect(screen.getByText("暂无风险提示")).toBeVisible();
   });
 
-  it("shows a visible read-only rollout explanation", () => {
+  it("shows the truthful Mock Repository experience explanation", () => {
     renderDashboard();
 
     expect(
-      screen.getByText("当前为只读演示，Task 创建与处理尚未启用。"),
+      screen.getByText("Task 列表、创建向导与只读详情已接入 Mock Repository。"),
     ).toBeVisible();
   });
 
-  it("keeps every future action inert and does not expose a chat input", () => {
+  it("keeps only future Artifact actions inert and does not expose a chat input", async () => {
     renderDashboard();
 
+    await screen.findByRole("link", { name: "创建 Task" });
     const futureActions = screen.getAllByRole("button");
-    expect(futureActions).toHaveLength(11);
+    expect(futureActions).toHaveLength(3);
     for (const action of futureActions) {
       expect(action).toBeDisabled();
-      expect(action).toHaveAccessibleName(/将在 .+实施阶段启用/);
+      expect(action).toHaveAccessibleName(/将在 Artifact .+实施阶段启用/);
     }
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/聊天|消息|提问/)).not.toBeInTheDocument();
   });
 
-  it("keeps multiple dashboard instances free of duplicate IDs and explains every future action", () => {
+  it("keeps multiple dashboard instances free of duplicate IDs", async () => {
     const view = render(
       <SessionProvider>
         <div data-testid="dashboard-one">
@@ -204,13 +222,29 @@ describe("DashboardScreen", () => {
 
     for (const testId of ["dashboard-one", "dashboard-two"]) {
       const dashboard = within(screen.getByTestId(testId));
-      const futureActions = dashboard.getAllByRole("button");
+      await dashboard.findByRole("link", { name: "创建 Task" });
+      expect(dashboard.getAllByRole("button")).toHaveLength(3);
+    }
+  });
 
-      expect(futureActions).toHaveLength(11);
-      for (const action of futureActions) {
-        expect(action).toBeDisabled();
-        expect(action).toHaveAccessibleName(/将在 .+实施阶段启用/);
-      }
+  it("keeps Auditor read access while removing every Task creation entry", async () => {
+    renderDashboard("user-auditor");
+
+    expect(
+      await screen.findByText("当前身份可查看 Task，但不能创建。"),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: "创建 Task" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "快速创建" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "查看全部 Task" })).toHaveAttribute(
+      "href",
+      "/tasks",
+    );
+    for (const task of workspaceDashboard.tasks) {
+      expect(
+        screen.getByRole("link", { name: `查看 Task ${task.id}` }),
+      ).toHaveAttribute("href", `/tasks/${task.id}`);
     }
   });
 

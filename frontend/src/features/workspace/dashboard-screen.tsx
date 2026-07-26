@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowRight,
   AlertCircle,
@@ -10,10 +12,13 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTaskCreatePermission } from "@/features/task/task-create-permission";
+import { TaskStatusBadge } from "@/features/task/task-status-badge";
 import type {
   BadgeTone,
   DeepReadonly,
@@ -27,10 +32,6 @@ export interface DashboardScreenProps {
   snapshot: DeepReadonly<WorkspaceDashboard>;
 }
 
-const TASK_CREATION_DESCRIPTION =
-  "将在 Task 创建流程实施阶段启用";
-const TASK_CENTER_DESCRIPTION =
-  "将在 Task Center 实施阶段启用";
 const ARTIFACT_ACTION_DESCRIPTION =
   "将在 Artifact 审批与验收流程实施阶段启用";
 
@@ -60,6 +61,8 @@ function StatusBadge({
 
 export function DashboardScreen({ snapshot }: DashboardScreenProps) {
   const { metrics, agent, quickActions, tasks, todos, risks } = snapshot;
+  const { canCreate, status: createPermissionStatus } =
+    useTaskCreatePermission();
 
   return (
     <div className="mx-auto max-w-[1600px]">
@@ -73,13 +76,21 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
           </h1>
           <CurrentResponsibility />
           <p className="mt-2 text-sm text-[var(--aios-muted)]">
-            当前为只读演示，Task 创建与处理尚未启用。
+            Task 列表、创建向导与只读详情已接入 Mock Repository。
           </p>
         </div>
-        <Button disabled>
-          创建 Task
-          <span className="sr-only">：{TASK_CREATION_DESCRIPTION}</span>
-        </Button>
+        {canCreate ? (
+          <Link
+            href="/tasks/new"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--aios-primary)] px-4 text-sm font-semibold text-[var(--aios-surface)] transition hover:bg-[color-mix(in_srgb,var(--aios-primary)_85%,var(--aios-navigation))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--aios-primary)]"
+          >
+            创建 Task
+          </Link>
+        ) : createPermissionStatus === "denied" ? (
+          <p className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-4 py-3 text-sm text-[var(--aios-muted)]">
+            当前身份可查看 Task，但不能创建。
+          </p>
+        ) : null}
       </header>
 
       <section
@@ -174,48 +185,45 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
             </div>
           </Card>
 
-          <Card
-            role="region"
-            aria-label="快速创建"
-            className="p-5"
-          >
-            <div className="flex items-center gap-2">
-              <ClipboardCheck
-                className="text-[var(--aios-primary)]"
-                size={19}
-                aria-hidden="true"
-              />
-              <h2 className="font-semibold">快速创建</h2>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-              {quickActions.map((action) => (
-                <Button
-                  key={action.id}
-                  variant="secondary"
-                  className="min-h-20 whitespace-normal px-3"
-                  disabled
-                >
-                  {action.label}
-                  <span className="sr-only">
-                    ：{TASK_CREATION_DESCRIPTION}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </Card>
+          {canCreate ? (
+            <Card
+              role="region"
+              aria-label="快速创建"
+              className="p-5"
+            >
+              <div className="flex items-center gap-2">
+                <ClipboardCheck
+                  className="text-[var(--aios-primary)]"
+                  size={19}
+                  aria-hidden="true"
+                />
+                <h2 className="font-semibold">快速创建</h2>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.id}
+                    href="/tasks/new"
+                    className="inline-flex min-h-20 items-center justify-center rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3 text-center text-sm font-semibold transition hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--aios-primary)]"
+                  >
+                    {action.label}
+                  </Link>
+                ))}
+              </div>
+            </Card>
+          ) : null}
 
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-5 py-4">
               <h2 className="font-semibold">最近 Task</h2>
-              <Button
-                variant="ghost"
-                className="min-h-9 px-2"
-                disabled
+              <Link
+                href="/tasks"
+                aria-label="查看全部 Task"
+                className="inline-flex min-h-9 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-[var(--aios-text)] transition hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
               >
                 查看全部
                 <ArrowRight aria-hidden="true" size={16} />
-                <span className="sr-only">：{TASK_CENTER_DESCRIPTION}</span>
-              </Button>
+              </Link>
             </div>
             <div
               role="region"
@@ -231,7 +239,7 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                       Task
                     </th>
                     <th scope="col" className="px-5 py-3 font-medium">
-                      类型
+                      模板
                     </th>
                     <th scope="col" className="px-5 py-3 font-medium">
                       AI 员工
@@ -251,14 +259,20 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                       className="border-t border-[color-mix(in_srgb,var(--aios-muted)_18%,var(--aios-surface))]"
                     >
                       <th scope="row" className="px-5 py-3 font-medium">
-                        {task.title}
+                        <Link
+                          href={`/tasks/${task.id}`}
+                          aria-label={`查看 Task ${task.id}`}
+                          className="underline-offset-4 hover:text-[var(--aios-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
+                        >
+                          {task.title}
+                        </Link>
                       </th>
                       <td className="px-5 py-3 text-[var(--aios-muted)]">
-                        {task.type}
+                        {task.templateName}
                       </td>
                       <td className="px-5 py-3">{task.agentName}</td>
                       <td className="px-5 py-3">
-                        <StatusBadge label={task.status} tone={task.tone} />
+                        <TaskStatusBadge status={task.status} />
                       </td>
                       <td className="px-5 py-3 text-[var(--aios-muted)]">
                         {task.updatedAt}

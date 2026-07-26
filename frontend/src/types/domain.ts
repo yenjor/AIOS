@@ -1,3 +1,8 @@
+import type {
+  TaskStatus,
+  TaskTemplateName,
+} from "@/features/task/task-status";
+
 export type WorkspaceRole =
   | "产品经理"
   | "开发工程师"
@@ -5,11 +10,7 @@ export type WorkspaceRole =
   | "Workspace Admin"
   | "Auditor";
 
-export type TaskStatus = "执行中" | "待审批" | "已完成" | "需补充";
-
 export type BadgeTone = "info" | "warning" | "success" | "error";
-
-export type TaskType = "研发实现" | "技术方案" | "自动测试" | "分析需求";
 
 export type ArtifactType = "技术方案" | "测试报告" | "需求分析报告";
 
@@ -70,9 +71,8 @@ export interface AgentSummary {
 export interface TaskSummary {
   id: string;
   title: string;
-  type: TaskType;
+  templateName: TaskTemplateName;
   status: TaskStatus;
-  tone: BadgeTone;
   updatedAt: string;
   agentName: "AI 研发员工";
 }

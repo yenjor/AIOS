@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 
 import { organization, users, workspace, workspaces, workspaceDashboard } from "./fixtures";
 import { getWorkspaceDashboard } from "./repository";
+import { getTask } from "@/features/task/mock/task-repository";
 import type {
   DeepReadonly,
   OrganizationSummary,
@@ -98,18 +99,40 @@ describe("getWorkspaceDashboard", () => {
     ]);
   });
 
-  it("uses consumer-compatible owner and task type fields", async () => {
+  it("uses canonical Task templates and statuses", async () => {
     const dashboard = await getWorkspaceDashboard("ws-ai");
 
     expect(workspaceDashboard.currentUser).toBe(users[2]);
     expect(dashboard.agent.owner).toBe("陈明");
-    expect(dashboard.tasks.map(({ id, type }) => ({ id, type }))).toEqual([
-      { id: "task-001", type: "研发实现" },
-      { id: "task-002", type: "技术方案" },
-      { id: "task-003", type: "自动测试" },
-      { id: "task-004", type: "分析需求" },
+    expect(dashboard.tasks.map(({ id, templateName, status }) => ({
+      id,
+      templateName,
+      status,
+    }))).toEqual([
+      { id: "task-seed-executing", templateName: "辅助编码", status: "EXECUTING" },
+      { id: "task-golden-technical-solution", templateName: "生成技术方案", status: "NEED_APPROVAL" },
+      { id: "task-seed-review", templateName: "自动测试", status: "REVIEW" },
+      { id: "task-seed-need-input", templateName: "分析需求", status: "NEED_INPUT" },
     ]);
     expect(dashboard.tasks[0]).not.toHaveProperty("stage");
+    expect(dashboard.tasks[0]).not.toHaveProperty("tone");
+  });
+
+  it("keeps every dashboard Task ID resolvable by the public Task Repository", async () => {
+    for (const task of workspaceDashboard.tasks) {
+      await expect(
+        getTask(
+          { organizationId: organization.id, workspaceId: workspace.id },
+          { userId: "user-auditor" },
+          task.id,
+        ),
+      ).resolves.toMatchObject({
+        id: task.id,
+        title: task.title,
+        templateName: task.templateName,
+        status: task.status,
+      });
+    }
   });
 
   it("keeps canonical fixtures frozen while returning isolated mutable results", async () => {
@@ -121,7 +144,7 @@ describe("getWorkspaceDashboard", () => {
 
     const subsequentDashboard = await getWorkspaceDashboard("ws-ai");
     expect(subsequentDashboard.metrics.todo).toBe(5);
-    expect(subsequentDashboard.tasks[0].title).toBe("用户中心登录流程重构");
+    expect(subsequentDashboard.tasks[0].title).toBe("执行支付模块辅助编码");
   });
 
   it("keeps all public fixture roots free of credential-like keys and secret values", () => {

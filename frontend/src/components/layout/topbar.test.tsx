@@ -8,23 +8,29 @@ import { organization, workspace } from "@/mock/fixtures";
 
 import { Topbar } from "./topbar";
 
-function CompleteSession({ children }: { children: ReactNode }) {
+function CompleteSession({
+  children,
+  userId = "user-lead",
+}: {
+  children: ReactNode;
+  userId?: string;
+}) {
   return (
     <SessionProvider>
-      <SessionBootstrap />
+      <SessionBootstrap userId={userId} />
       {children}
     </SessionProvider>
   );
 }
 
-function SessionBootstrap() {
+function SessionBootstrap({ userId }: { userId: string }) {
   const { selectOrganization, selectUser, selectWorkspace } = useSession();
 
   useEffect(() => {
-    selectUser("user-lead");
+    selectUser(userId);
     selectOrganization(organization.id);
     selectWorkspace(workspace.id);
-  }, [selectOrganization, selectUser, selectWorkspace]);
+  }, [selectOrganization, selectUser, selectWorkspace, userId]);
 
   return null;
 }
@@ -56,7 +62,7 @@ describe("Topbar", () => {
     ).toHaveAttribute("href", "/login");
   });
 
-  it("keeps future actions disabled with accessible explanations", async () => {
+  it("enables Task creation from repository permission while keeping notifications disabled", async () => {
     render(
       <CompleteSession>
         <Topbar
@@ -67,18 +73,39 @@ describe("Topbar", () => {
       </CompleteSession>,
     );
 
-    const createTask = await screen.findByRole("button", { name: "创建 Task" });
+    const createTask = await screen.findByRole("link", { name: "创建 Task" });
     const notifications = screen.getByRole("button", {
       name: "通知（将在对应实施阶段启用）",
     });
 
-    expect(createTask).toBeDisabled();
-    expect(createTask).toHaveAccessibleDescription("Task 功能将在对应实施阶段启用");
+    expect(createTask).toHaveAttribute("href", "/tasks/new");
     expect(notifications).toBeDisabled();
     expect(notifications).toHaveAccessibleDescription(
       "通知功能将在对应实施阶段启用",
     );
-    expect(screen.getByText("只读演示 · 功能未启用")).toBeVisible();
+    expect(screen.getByText("Mock Repository · Workspace 隔离")).toBeVisible();
+    expect(screen.queryByText("只读演示 · 功能未启用")).not.toBeInTheDocument();
+  });
+
+  it("does not render Task creation for Auditor", async () => {
+    render(
+      <CompleteSession userId="user-auditor">
+        <Topbar
+          navigationId="test-navigation"
+          onOpenNavigation={vi.fn()}
+          navigationOpen={false}
+        />
+      </CompleteSession>,
+    );
+
+    expect(
+      await screen.findByRole("link", {
+        name: "切换身份：赵岚，Auditor",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: "创建 Task" }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens the mobile navigation from an explicitly labelled control", async () => {

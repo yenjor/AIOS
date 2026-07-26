@@ -113,7 +113,7 @@ describe("AppShell", () => {
     expect(document.body.style.overflow).toBe("hidden");
 
     await interaction.tab({ shift: true });
-    expect(screen.getByRole("link", { name: "工作台" })).toHaveFocus();
+    expect(screen.getByRole("link", { name: "Task" })).toHaveFocus();
     await interaction.tab();
     expect(screen.getByRole("button", { name: "关闭主导航" })).toHaveFocus();
 
@@ -228,19 +228,22 @@ describe("AppShell", () => {
       expect(document.getElementById(id!)).toBeInTheDocument();
     }
 
-    const createTaskButtons = screen.getAllByRole("button", { name: "创建 Task" });
-    const createDescriptionIds = createTaskButtons.map((button) =>
+    const notificationButtons = screen.getAllByRole("button", {
+      name: "通知（将在对应实施阶段启用）",
+    });
+    const notificationDescriptionIds = notificationButtons.map((button) =>
       button.getAttribute("aria-describedby"),
     );
-    expect(new Set(createDescriptionIds).size).toBe(2);
+    expect(new Set(notificationDescriptionIds).size).toBe(2);
 
-    const disabledTaskItems = screen.getAllByRole("link", { name: "Task" });
-    const disabledDescriptionIds = disabledTaskItems.map((item) =>
-      item.getAttribute("aria-describedby"),
-    );
-    expect(new Set(disabledDescriptionIds).size).toBe(2);
+    const taskLinks = screen.getAllByRole("link", { name: "Task" });
+    expect(taskLinks).toHaveLength(2);
+    for (const taskLink of taskLinks) {
+      expect(taskLink).toHaveAttribute("href", "/tasks");
+      expect(taskLink).not.toHaveAttribute("aria-describedby");
+    }
 
-    for (const id of [...createDescriptionIds, ...disabledDescriptionIds]) {
+    for (const id of notificationDescriptionIds) {
       expect(id).toBeTruthy();
       expect(document.getElementById(id!)).toBeInTheDocument();
     }

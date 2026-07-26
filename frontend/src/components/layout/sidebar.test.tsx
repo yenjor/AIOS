@@ -41,19 +41,20 @@ describe("Sidebar", () => {
     expect(within(navigation).getByText("3")).toBeVisible();
   });
 
-  it("only enables the active Workspace link and explains every disabled item", () => {
+  it("enables only Workspace and Task while explaining every future item", () => {
     render(<Sidebar open onClose={vi.fn()} />);
 
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
     const enabledLinks = navigation.querySelectorAll("a[href]");
 
-    expect(enabledLinks).toHaveLength(1);
+    expect(enabledLinks).toHaveLength(2);
     expect(enabledLinks[0]).toHaveAccessibleName("工作台");
     expect(enabledLinks[0]).toHaveAttribute("href", "/workspace");
     expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
+    expect(enabledLinks[1]).toHaveAccessibleName("Task");
+    expect(enabledLinks[1]).toHaveAttribute("href", "/tasks");
 
     const disabledLabels = [
-      "Task",
       "审批待办，3 项待处理",
       "Artifact",
       "AI 员工",
