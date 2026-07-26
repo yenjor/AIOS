@@ -1772,16 +1772,14 @@ export function createTaskRepository(
       validateDraftInput(draft);
       const envelope = readEnvelope();
       const workspaceStore = storedWorkspace(envelope, true)!;
-      const existing = workspaceStore.draftsByActor[actor.userId];
-      const merged = removeUndefinedValues({
-        ...(existing ? materializeDraft(existing) : {}),
+      const snapshot = removeUndefinedValues({
         ...cloneMutable(draft),
         updatedAt: currentTimestamp(),
       });
-      validateDraftInput(merged);
-      workspaceStore.draftsByActor[actor.userId] = storeDraft(merged);
+      validateDraftInput(snapshot);
+      workspaceStore.draftsByActor[actor.userId] = storeDraft(snapshot);
       writeEnvelope(envelope);
-      return cloneMutable(merged);
+      return cloneMutable(snapshot);
     },
 
     async discardDraft(taskScope, actor): Promise<void> {

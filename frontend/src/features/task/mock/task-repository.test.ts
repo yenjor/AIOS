@@ -278,6 +278,10 @@ describe("Task mock repository", () => {
     })).rejects.toSatisfy(
       (error: unknown) => expectRepositoryError(error, "VALIDATION"),
     );
+    await expect(repo.getDraft(scope, developer)).resolves.toMatchObject({
+      templateName: "生成技术方案",
+      title: "可逐步保存",
+    });
   });
 
   it("round-trips Task wizard metadata losslessly, overwrites later saves, and preserves actor isolation", async () => {
@@ -319,6 +323,72 @@ describe("Task mock repository", () => {
     });
     await expect(repo.getDraft(scope, lead)).resolves.toEqual(overwritten);
     await expect(repo.getDraft(scope, developer)).resolves.toBeUndefined();
+  });
+
+  it("replaces a rich Task draft with the caller's minimal snapshot and clears every omitted field", async () => {
+    const repo = repository();
+    await repo.saveDraft(scope, lead, {
+      title: "旧标题",
+      goal: "旧目标",
+      capabilityVersionRefs: technicalSolutionDraft.capabilityVersionRefs,
+      knowledgeVersionRefs: technicalSolutionDraft.knowledgeVersionRefs,
+      toolVersionRefs: technicalSolutionDraft.toolVersionRefs,
+      assignedAgent: technicalSolutionDraft.assignedAgent,
+    });
+
+    const minimalSnapshot: TaskDraft = {
+      currentProblem: "只保留当前问题",
+    };
+    const replaced = await repo.saveDraft(
+      scope,
+      lead,
+      minimalSnapshot,
+    );
+
+    expect(replaced).toEqual({
+      currentProblem: "只保留当前问题",
+      updatedAt: "2026-07-26T08:00:00.000Z",
+    });
+    await expect(repo.getDraft(scope, lead)).resolves.toEqual(replaced);
+    expect(replaced).not.toHaveProperty("title");
+    expect(replaced).not.toHaveProperty("goal");
+    expect(replaced).not.toHaveProperty("capabilityVersionRefs");
+    expect(replaced).not.toHaveProperty("knowledgeVersionRefs");
+    expect(replaced).not.toHaveProperty("toolVersionRefs");
+    expect(replaced).not.toHaveProperty("assignedAgent");
+  });
+
+  it("clears golden-template bindings when a non-golden Task draft snapshot replaces them", async () => {
+    const repo = repository();
+    await repo.saveDraft(scope, lead, technicalSolutionDraft);
+
+    const nonGoldenSnapshot: TaskDraft = {
+      wizardStep: 1,
+      currentProblem: "分析新的业务需求",
+      workScope: "需求分析范围",
+      expectedCompletionAt: "2026-08-20T10:00:00.000Z",
+      templateName: "分析需求",
+      title: "新的需求分析 Task",
+    };
+    const replaced = await repo.saveDraft(
+      scope,
+      lead,
+      nonGoldenSnapshot,
+    );
+
+    expect(replaced).toEqual({
+      ...nonGoldenSnapshot,
+      updatedAt: "2026-07-26T08:00:00.000Z",
+    });
+    expect(replaced).not.toHaveProperty("capabilityVersionRefs");
+    expect(replaced).not.toHaveProperty("knowledgeVersionRefs");
+    expect(replaced).not.toHaveProperty("toolVersionRefs");
+    expect(replaced).not.toHaveProperty("assignedAgent");
+    expect(replaced).not.toHaveProperty("expectedArtifact");
+    expect(replaced).not.toHaveProperty("completionCriteria");
+    await expect(repository().getDraft(scope, lead)).resolves.toEqual(
+      replaced,
+    );
   });
 
   it.each([
