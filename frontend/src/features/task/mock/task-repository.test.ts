@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type {
+  RuntimeStepResult,
   TaskActor,
   TaskDraft,
   TaskPermissionDecision,
@@ -128,6 +129,56 @@ const technicalSolutionDraft: TaskDraft & {
   ],
 };
 
+function runtimeStepResult(
+  taskId: string,
+  sequence: 1 | 2 | 3 | 4,
+): RuntimeStepResult {
+  const stepId = `${taskId}-step-${String(sequence).padStart(2, "0")}`;
+  const baseResult = {
+    stepId,
+    summary: `确定性 Runtime 已完成第 ${sequence} 步。`,
+    outputReference: `run-${taskId}-step-${String(sequence).padStart(2, "0")}-output`,
+    outputDigest: `sha256:execution-package-${taskId}-v1:step-${sequence}`,
+  };
+
+  if (sequence !== 4) {
+    return {
+      ...baseResult,
+      resultType: "STEP_SUCCEEDED",
+    };
+  }
+
+  const artifactId = `artifact-${taskId}`;
+  return {
+    ...baseResult,
+    resultType: "ARTIFACT_DRAFT",
+    outputReference: `artifact-draft-${taskId}`,
+    artifactVersionRef: {
+      kind: "ARTIFACT",
+      objectId: artifactId,
+      versionId: `${artifactId}-v1`,
+      versionNumber: 1,
+      digest: `sha256:${artifactId}-v1`,
+      artifactType: "技术方案",
+      accepted: false,
+    },
+    citationRefs: [
+      {
+        knowledgeVersionRef: {
+          kind: "KNOWLEDGE",
+          objectId: "knowledge-aios-docs",
+          versionId: "knowledge-aios-docs-v1",
+          versionNumber: 1,
+          digest: "sha256:knowledge-aios-docs-v1",
+        },
+        locator: "README.md#5-系统整体架构",
+        digest:
+          "sha256:citation:knowledge-aios-docs-v1:readme-architecture",
+      },
+    ],
+  };
+}
+
 function expectRepositoryError(
   error: unknown,
   code: TaskRepositoryError["code"],
@@ -202,6 +253,177 @@ describe("Task mock repository", () => {
     await expect(repo.submitTechnicalSolutionTask(scope, auditor)).rejects.toSatisfy(
       (error: unknown) => expectRepositoryError(error, "FORBIDDEN"),
     );
+    await expect(
+      repo.approveTaskPlan(scope, auditor, "task-seed-need-approval"),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "FORBIDDEN"),
+    );
+    await expect(
+      repo.recordExecutionStep(
+        scope,
+        auditor,
+        "task-seed-executing",
+        runtimeStepResult("task-seed-executing", 1),
+      ),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "FORBIDDEN"),
+    );
+    await expect(
+      repo.recordArtifactAcceptance(
+        scope,
+        auditor,
+        "task-seed-review",
+        "artifact-task-seed-review-v1",
+      ),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "FORBIDDEN"),
+    );
+  });
+
+  it("persists the first AI employee approval, execution, review, and completion lifecycle", async () => {
+    const repo = repository();
+    await repo.saveDraft(scope, productManager, technicalSolutionDraft);
+    const submitted = await repo.submitTechnicalSolutionTask(
+      scope,
+      productManager,
+    );
+
+    await expect(
+      repo.approveTaskPlan(scope, productManager, submitted.id),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "FORBIDDEN"),
+    );
+
+    const executing = await repo.approveTaskPlan(
+      scope,
+      lead,
+      submitted.id,
+    );
+    expect(executing).toMatchObject({
+      status: "EXECUTING",
+      currentOwner: {
+        actorType: "AGENT",
+        actorId: "agent-rd-001",
+      },
+      executionRun: {
+        id: `run-${submitted.id}-01`,
+        status: "RUNNING",
+        currentStepId: `${submitted.id}-step-01`,
+        workerPool: "agent-reasoning",
+      },
+    });
+    expect(executing.approvalPoints[0].status).toBe("APPROVED");
+    expect(executing.history.at(-1)?.actor).toEqual({
+      actorType: "USER",
+      actorId: "user-lead",
+    });
+
+    await expect(
+      repo.recordExecutionStep(
+        scope,
+        productManager,
+        submitted.id,
+        runtimeStepResult(submitted.id, 1),
+      ),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "FORBIDDEN"),
+    );
+    await expect(
+      repo.recordExecutionStep(
+        scope,
+        lead,
+        submitted.id,
+        runtimeStepResult(submitted.id, 2),
+      ),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "VALIDATION"),
+    );
+
+    for (const sequence of [1, 2, 3] as const) {
+      const progressed = await repo.recordExecutionStep(
+        scope,
+        lead,
+        submitted.id,
+        runtimeStepResult(submitted.id, sequence),
+      );
+      expect(progressed.executionRun?.checkpoints).toHaveLength(sequence);
+      expect(progressed.executionRun?.currentStepId).toBe(
+        `${submitted.id}-step-${String(sequence + 1).padStart(2, "0")}`,
+      );
+    }
+
+    const review = await repo.recordExecutionStep(
+      scope,
+      lead,
+      submitted.id,
+      runtimeStepResult(submitted.id, 4),
+    );
+    expect(review).toMatchObject({
+      status: "REVIEW",
+      currentOwner: {
+        actorType: "USER",
+        actorId: "user-lead",
+      },
+      executionRun: {
+        status: "SUCCEEDED",
+      },
+    });
+    expect(review.executionRun?.checkpoints).toHaveLength(4);
+    expect(review.executionRun?.steps[4]).toMatchObject({
+      status: "WAITING_HUMAN",
+      resultType: "HUMAN_REVIEW",
+    });
+    expect(review.artifactVersionRefs[0]).toMatchObject({
+      objectId: `artifact-${submitted.id}`,
+      accepted: false,
+    });
+    expect(review.citationRefs[0].locator).toBe(
+      "README.md#5-系统整体架构",
+    );
+    expect(review.history.at(-1)?.actor).toEqual({
+      actorType: "AGENT",
+      actorId: "agent-rd-001",
+    });
+
+    await expect(
+      repo.recordArtifactAcceptance(
+        scope,
+        productManager,
+        submitted.id,
+        `artifact-${submitted.id}-v1`,
+      ),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "FORBIDDEN"),
+    );
+
+    const completed = await repo.recordArtifactAcceptance(
+      scope,
+      lead,
+      submitted.id,
+      `artifact-${submitted.id}-v1`,
+    );
+    expect(completed).toMatchObject({
+      status: "COMPLETED",
+      aggregateVersion: 7,
+    });
+    expect(completed.currentOwner).toBeUndefined();
+    expect(completed.executionRun?.steps[4]).toMatchObject({
+      status: "SUCCEEDED",
+      resultType: "HUMAN_REVIEW",
+    });
+    expect(completed.approvalPoints.map(({ status }) => status)).toEqual([
+      "APPROVED",
+      "APPROVED",
+    ]);
+    expect(completed.artifactVersionRefs[0].accepted).toBe(true);
+    expect(completed.history.at(-1)?.actor).toEqual({
+      actorType: "USER",
+      actorId: "user-lead",
+    });
+
+    await expect(
+      repository().getTask(scope, lead, submitted.id),
+    ).resolves.toEqual(completed);
   });
 
   it.each([

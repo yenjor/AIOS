@@ -3,14 +3,20 @@ import { organization, users, workspace } from "@/mock/fixtures";
 import type {
   AgentAssignment,
   ApprovalPoint,
+  ArtifactVersionRef,
   CapabilityVersionRef,
+  CitationRef,
+  ExecutionRun,
+  ExecutionStepRecord,
   ExecutionPlan,
   ExpectedArtifact,
   KnowledgeVersionRef,
   PlanStep,
+  RuntimeStepResult,
   TaskActor,
   TaskDetail,
   TaskDraft,
+  TaskHistoryActor,
   TaskHistoryItem,
   TaskListItem,
   TaskOwner,
@@ -21,6 +27,7 @@ import type {
   TaskWizardStep,
   ToolVersionRef,
   VersionRef,
+  WorkflowCheckpoint,
 } from "../model";
 import {
   RISK_LEVELS,
@@ -95,6 +102,23 @@ export interface TaskRepository {
     scope: TaskScope,
     actor: TaskActor,
   ): Promise<TaskDetail>;
+  approveTaskPlan(
+    scope: TaskScope,
+    actor: TaskActor,
+    taskId: string,
+  ): Promise<TaskDetail>;
+  recordExecutionStep(
+    scope: TaskScope,
+    actor: TaskActor,
+    taskId: string,
+    result: RuntimeStepResult,
+  ): Promise<TaskDetail>;
+  recordArtifactAcceptance(
+    scope: TaskScope,
+    actor: TaskActor,
+    taskId: string,
+    artifactVersionId: string,
+  ): Promise<TaskDetail>;
 }
 
 export interface CreateTaskRepositoryOptions {
@@ -165,8 +189,9 @@ interface StoredTaskRecord {
   executionPlan: ExecutionPlan;
   approvalPoints: ApprovalPoint[];
   expectedArtifact: ExpectedArtifact;
-  artifactVersionRefs: [];
-  citationRefs: [];
+  artifactVersionRefs: ArtifactVersionRef[];
+  citationRefs: CitationRef[];
+  executionRun?: ExecutionRun;
   history: TaskHistoryItem[];
   aggregateVersion: number;
 }
@@ -640,7 +665,14 @@ const approvalPointContract = [
 function isCanonicalApprovalPoints(
   value: unknown,
   taskId: string,
+  taskStatus: TaskStatus,
 ): value is ApprovalPoint[] {
+  const expectedStatuses =
+    taskStatus === "NEED_APPROVAL"
+      ? (["PENDING", "PENDING"] as const)
+      : taskStatus === "COMPLETED"
+        ? (["APPROVED", "APPROVED"] as const)
+        : (["APPROVED", "PENDING"] as const);
   return (
     Array.isArray(value) &&
     value.length === approvalPointContract.length &&
@@ -654,12 +686,21 @@ function isCanonicalApprovalPoints(
         point.name === expected.name &&
         point.requiredFor === expected.requiredFor &&
         point.riskLevel === "R1" &&
-        point.status === "PENDING" &&
+        point.status === expectedStatuses[index] &&
         point.reviewerUserIds.length === 1 &&
         point.reviewerUserIds[0] === "user-lead"
       );
     }) &&
     new Set(value.map((point) => point.id)).size === value.length
+  );
+}
+
+function isTaskHistoryActor(value: unknown): value is TaskHistoryActor {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["actorType", "actorId"]) &&
+    ((value.actorType === "USER" && isKnownUserId(value.actorId)) ||
+      (value.actorType === "AGENT" && value.actorId === "agent-rd-001"))
   );
 }
 
@@ -680,7 +721,7 @@ function isTaskHistoryItem(value: unknown, taskId: string): value is TaskHistory
     (value.fromStatus === null || isOneOf(value.fromStatus, TASK_STATUSES)) &&
     isOneOf(value.toStatus, TASK_STATUSES) &&
     isNonEmptyString(value.reasonCode) &&
-    isKnownTaskActor(value.actor) &&
+    isTaskHistoryActor(value.actor) &&
     isIsoTimestamp(value.occurredAt) &&
     isPositiveSafeInteger(value.aggregateVersion)
   );
@@ -707,6 +748,21 @@ const submittedHistoryContract = [
     toStatus: "NEED_APPROVAL",
     reasonCode: "TASK_NEED_APPROVAL",
   },
+  {
+    fromStatus: "NEED_APPROVAL",
+    toStatus: "EXECUTING",
+    reasonCode: "PLAN_APPROVED_EXECUTION_STARTED",
+  },
+  {
+    fromStatus: "EXECUTING",
+    toStatus: "REVIEW",
+    reasonCode: "ARTIFACT_SUBMITTED_FOR_REVIEW",
+  },
+  {
+    fromStatus: "REVIEW",
+    toStatus: "COMPLETED",
+    reasonCode: "ARTIFACT_ACCEPTED_TASK_COMPLETED",
+  },
 ] as const satisfies ReadonlyArray<{
   fromStatus: TaskStatus | null;
   toStatus: TaskStatus;
@@ -719,10 +775,22 @@ function isCanonicalSubmittedHistory(
   initiatorUserId: string,
   createdAt: string,
   updatedAt: string,
+  status: TaskStatus,
 ): value is TaskHistoryItem[] {
+  const expectedLength =
+    status === "NEED_APPROVAL"
+      ? 4
+      : status === "EXECUTING"
+        ? 5
+        : status === "REVIEW"
+          ? 6
+          : status === "COMPLETED"
+            ? 7
+            : 0;
   return (
     Array.isArray(value) &&
-    value.length === submittedHistoryContract.length &&
+    expectedLength > 0 &&
+    value.length === expectedLength &&
     value.every((item, index) => {
       if (!isTaskHistoryItem(item, taskId)) {
         return false;
@@ -734,7 +802,14 @@ function isCanonicalSubmittedHistory(
         item.fromStatus === expected.fromStatus &&
         item.toStatus === expected.toStatus &&
         item.reasonCode === expected.reasonCode &&
-        item.actor.userId === initiatorUserId &&
+        (index < 4
+          ? item.actor.actorType === "USER" &&
+            item.actor.actorId === initiatorUserId
+          : index === 5
+            ? item.actor.actorType === "AGENT" &&
+              item.actor.actorId === "agent-rd-001"
+            : item.actor.actorType === "USER" &&
+              item.actor.actorId === "user-lead") &&
         item.aggregateVersion === index + 1 &&
         item.occurredAt >= createdAt &&
         item.occurredAt <= updatedAt &&
@@ -744,6 +819,237 @@ function isCanonicalSubmittedHistory(
       );
     })
   );
+}
+
+function isArtifactVersionRef(
+  value: unknown,
+  taskId: string,
+): value is ArtifactVersionRef {
+  const objectId = `artifact-${taskId}`;
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, [
+      "kind",
+      "objectId",
+      "versionId",
+      "versionNumber",
+      "digest",
+      "artifactType",
+      "accepted",
+    ]) &&
+    value.kind === "ARTIFACT" &&
+    value.objectId === objectId &&
+    value.versionId === `${objectId}-v1` &&
+    value.versionNumber === 1 &&
+    value.digest === `sha256:${objectId}-v1` &&
+    value.artifactType === "技术方案" &&
+    typeof value.accepted === "boolean"
+  );
+}
+
+function isCitationRef(value: unknown): value is CitationRef {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["knowledgeVersionRef", "locator", "digest"]) &&
+    isKnownKnowledgeRef(value.knowledgeVersionRef) &&
+    value.locator === "README.md#5-系统整体架构" &&
+    value.digest ===
+      "sha256:citation:knowledge-aios-docs-v1:readme-architecture"
+  );
+}
+
+function isExecutionStepRecord(
+  value: unknown,
+  taskId: string,
+  index: number,
+): value is ExecutionStepRecord {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(
+      value,
+      ["stepId", "sequence", "name", "status"],
+      [
+        "resultType",
+        "summary",
+        "outputReference",
+        "outputDigest",
+        "completedAt",
+      ],
+    ) ||
+    value.stepId !==
+      `${taskId}-step-${String(index + 1).padStart(2, "0")}` ||
+    value.sequence !== index + 1 ||
+    value.name !== technicalSolutionPlanStepContract[index].name ||
+    !isOneOf(value.status, [
+      "PENDING",
+      "SUCCEEDED",
+      "WAITING_HUMAN",
+    ] as const)
+  ) {
+    return false;
+  }
+
+  if (value.status === "PENDING") {
+    return (
+      value.resultType === undefined &&
+      value.summary === undefined &&
+      value.outputReference === undefined &&
+      value.outputDigest === undefined &&
+      value.completedAt === undefined
+    );
+  }
+
+  if (value.status === "WAITING_HUMAN") {
+    return (
+      index === 4 &&
+      value.resultType === "HUMAN_REVIEW" &&
+      value.summary === "等待授权 Reviewer 验收 Artifact。" &&
+      value.outputReference === undefined &&
+      value.outputDigest === undefined &&
+      value.completedAt === undefined
+    );
+  }
+
+  return (
+    isOneOf(value.resultType, ["STEP_SUCCEEDED", "ARTIFACT_DRAFT", "HUMAN_REVIEW"] as const) &&
+    isNonEmptyString(value.summary) &&
+    (value.resultType === "HUMAN_REVIEW"
+      ? value.outputReference === undefined &&
+        value.outputDigest === undefined
+      : isNonEmptyString(value.outputReference) &&
+        isNonEmptyString(value.outputDigest)) &&
+    isIsoTimestamp(value.completedAt)
+  );
+}
+
+function isExecutionRun(
+  value: unknown,
+  taskId: string,
+  taskStatus: TaskStatus,
+): value is ExecutionRun {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(
+      value,
+      [
+        "id",
+        "taskId",
+        "runNumber",
+        "status",
+        "workflowVersionId",
+        "agentVersionId",
+        "executionPackageDigest",
+        "idempotencyKey",
+        "workerPool",
+        "attemptCount",
+        "startedAt",
+        "steps",
+        "checkpoints",
+      ],
+      [
+        "currentStepId",
+        "currentCheckpointId",
+        "checkpointedAt",
+        "finishedAt",
+      ],
+    ) ||
+    value.id !== `run-${taskId}-01` ||
+    value.taskId !== taskId ||
+    value.runNumber !== 1 ||
+    !isOneOf(value.status, ["RUNNING", "SUCCEEDED"] as const) ||
+    value.workflowVersionId !== "workflow-technical-solution-v1" ||
+    value.agentVersionId !== "agent-rd-001-v1" ||
+    value.executionPackageDigest !== `sha256:execution-package-${taskId}-v1` ||
+    value.idempotencyKey !== `start-${taskId}-plan-v1` ||
+    value.workerPool !== "agent-reasoning" ||
+    value.attemptCount !== 1 ||
+    !isIsoTimestamp(value.startedAt) ||
+    !Array.isArray(value.steps) ||
+    value.steps.length !== 5 ||
+    !value.steps.every((step, index) =>
+      isExecutionStepRecord(step, taskId, index),
+    ) ||
+    !Array.isArray(value.checkpoints)
+  ) {
+    return false;
+  }
+
+  const steps = value.steps as ExecutionStepRecord[];
+  const checkpoints = value.checkpoints as unknown[];
+  const completedRuntimeSteps = steps
+    .slice(0, 4)
+    .filter(({ status: stepStatus }) => stepStatus === "SUCCEEDED").length;
+  if (
+    checkpoints.length !== completedRuntimeSteps ||
+    !checkpoints.every((checkpoint, index) => {
+      const step = steps[index];
+      return (
+        isRecord(checkpoint) &&
+        hasExactKeys(checkpoint, [
+          "id",
+          "sequence",
+          "stepId",
+          "status",
+          "inputDigest",
+          "outputReference",
+          "outputDigest",
+          "createdAt",
+          "createdByAgentId",
+        ]) &&
+        checkpoint.id ===
+          `${value.id}-checkpoint-${String(index + 1).padStart(2, "0")}` &&
+        checkpoint.sequence === index + 1 &&
+        checkpoint.stepId === step.stepId &&
+        checkpoint.status === "COMPLETED" &&
+        checkpoint.inputDigest ===
+          `sha256:${value.executionPackageDigest}:input-step-${index + 1}` &&
+        checkpoint.outputReference === step.outputReference &&
+        checkpoint.outputDigest === step.outputDigest &&
+        checkpoint.createdAt === step.completedAt &&
+        checkpoint.createdByAgentId === "agent-rd-001"
+      );
+    })
+  ) {
+    return false;
+  }
+
+  if (taskStatus === "EXECUTING") {
+    const firstPending = steps
+      .slice(0, 4)
+      .find(({ status: stepStatus }) => stepStatus === "PENDING");
+    return (
+      value.status === "RUNNING" &&
+      firstPending !== undefined &&
+      value.currentStepId === firstPending.stepId &&
+      value.currentCheckpointId ===
+        (completedRuntimeSteps > 0
+          ? `${value.id}-checkpoint-${String(completedRuntimeSteps).padStart(2, "0")}`
+          : undefined) &&
+      value.checkpointedAt ===
+        (completedRuntimeSteps > 0
+          ? (checkpoints[completedRuntimeSteps - 1] as WorkflowCheckpoint)
+              .createdAt
+          : undefined) &&
+      value.finishedAt === undefined &&
+      steps[4].status === "PENDING"
+    );
+  }
+
+  if (taskStatus === "REVIEW" || taskStatus === "COMPLETED") {
+    return (
+      value.status === "SUCCEEDED" &&
+      completedRuntimeSteps === 4 &&
+      value.currentStepId === undefined &&
+      value.currentCheckpointId === `${value.id}-checkpoint-04` &&
+      value.checkpointedAt ===
+        (checkpoints[3] as WorkflowCheckpoint).createdAt &&
+      isIsoTimestamp(value.finishedAt) &&
+      steps[4].status ===
+        (taskStatus === "REVIEW" ? "WAITING_HUMAN" : "SUCCEEDED")
+    );
+  }
+
+  return false;
 }
 
 const draftKeys = [
@@ -876,7 +1182,10 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
       : "";
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, storedTaskRequiredKeys, ["currentOwner"]) ||
+    !hasExactKeys(value, storedTaskRequiredKeys, [
+      "currentOwner",
+      "executionRun",
+    ]) ||
     !isNonEmptyString(value.id) ||
     taskSequenceFromId(value.id) === undefined ||
     !isTaskScope(value.scope) ||
@@ -884,7 +1193,12 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
     !isNonEmptyString(value.goalSummary) ||
     value.templateName !== "生成技术方案" ||
     value.expectedArtifactType !== "技术方案" ||
-    value.status !== "NEED_APPROVAL" ||
+    !isOneOf(value.status, [
+      "NEED_APPROVAL",
+      "EXECUTING",
+      "REVIEW",
+      "COMPLETED",
+    ] as const) ||
     !isValidPriority(value.priority) ||
     !isOneOf(value.riskLevel, RISK_LEVELS) ||
     !isKnownTaskActor(value.initiator) ||
@@ -912,21 +1226,34 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
     !value.toolVersionRefs.every(isKnownToolRef) ||
     !isKnownWorkflowRef(value.workflowVersionRef) ||
     !isExecutionPlan(value.executionPlan, taskId) ||
-    !isCanonicalApprovalPoints(value.approvalPoints, taskId) ||
+    !isCanonicalApprovalPoints(
+      value.approvalPoints,
+      taskId,
+      value.status as TaskStatus,
+    ) ||
     !isExpectedArtifact(value.expectedArtifact) ||
     value.expectedArtifact.artifactType !== "技术方案" ||
     !Array.isArray(value.artifactVersionRefs) ||
-    value.artifactVersionRefs.length !== 0 ||
+    !value.artifactVersionRefs.every((reference) =>
+      isArtifactVersionRef(reference, taskId),
+    ) ||
     !Array.isArray(value.citationRefs) ||
-    value.citationRefs.length !== 0 ||
+    !value.citationRefs.every(isCitationRef) ||
+    (value.executionRun !== undefined &&
+      !isExecutionRun(
+        value.executionRun,
+        taskId,
+        value.status as TaskStatus,
+      )) ||
     !isCanonicalSubmittedHistory(
       value.history,
       taskId,
       value.initiator.userId,
       createdAt,
       updatedAt,
+      value.status as TaskStatus,
     ) ||
-    value.aggregateVersion !== 4
+    value.aggregateVersion !== (value.history as TaskHistoryItem[]).length
   ) {
     return false;
   }
@@ -934,7 +1261,32 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
   return (
     value.expectedArtifact.sections.join("|") ===
       goldenTechnicalSolutionTask.expectedArtifact.sections.join("|") &&
-    value.expectedArtifact.knowledgeCitationRequired
+    value.expectedArtifact.knowledgeCitationRequired &&
+    (value.status === "NEED_APPROVAL"
+      ? value.executionRun === undefined &&
+        value.currentOwner === undefined &&
+        value.artifactVersionRefs.length === 0 &&
+        value.citationRefs.length === 0
+      : value.status === "EXECUTING"
+        ? isExecutionRun(value.executionRun, taskId, "EXECUTING") &&
+          isRecord(value.currentOwner) &&
+          value.currentOwner.actorType === "AGENT" &&
+          value.currentOwner.actorId === "agent-rd-001" &&
+          value.artifactVersionRefs.length === 0 &&
+          value.citationRefs.length === 0
+        : value.status === "REVIEW"
+          ? isExecutionRun(value.executionRun, taskId, "REVIEW") &&
+            isRecord(value.currentOwner) &&
+            value.currentOwner.actorType === "USER" &&
+            value.currentOwner.actorId === "user-lead" &&
+            value.artifactVersionRefs.length === 1 &&
+            value.artifactVersionRefs[0].accepted === false &&
+            value.citationRefs.length === 1
+          : isExecutionRun(value.executionRun, taskId, "COMPLETED") &&
+            value.currentOwner === undefined &&
+            value.artifactVersionRefs.length === 1 &&
+            value.artifactVersionRefs[0].accepted === true &&
+            value.citationRefs.length === 1)
   );
 }
 
@@ -1184,8 +1536,11 @@ function storeTask(task: TaskDetail): StoredTaskRecord {
     executionPlan: cloneMutable(task.executionPlan),
     approvalPoints: cloneMutable(task.approvalPoints),
     expectedArtifact: cloneMutable(task.expectedArtifact),
-    artifactVersionRefs: [],
-    citationRefs: [],
+    artifactVersionRefs: cloneMutable(task.artifactVersionRefs),
+    citationRefs: cloneMutable(task.citationRefs),
+    executionRun: task.executionRun
+      ? cloneMutable(task.executionRun)
+      : undefined,
     history: cloneMutable(task.history),
     aggregateVersion: task.aggregateVersion,
   }) as StoredTaskRecord;
@@ -1522,7 +1877,10 @@ function createTechnicalSolutionTask(
       fromStatus: index === 0 ? null : statuses[index - 1],
       toStatus,
       reasonCode: index === 0 ? "TASK_CREATED" : `TASK_${toStatus}`,
-      actor: cloneMutable(actor),
+      actor: {
+        actorType: "USER",
+        actorId: actor.userId,
+      },
       occurredAt: now,
       aggregateVersion: index + 1,
     }),
@@ -1588,6 +1946,113 @@ function createTechnicalSolutionTask(
     history,
     aggregateVersion: 4,
   };
+}
+
+function createExecutionRun(task: TaskDetail, timestamp: string): ExecutionRun {
+  if (!task.executionPlan || !task.workflowVersionRef || !task.assignedAgent) {
+    throw new TaskRepositoryError(
+      "VALIDATION",
+      "Task execution requires a fixed Plan, Workflow, and Agent version.",
+    );
+  }
+  const runId = `run-${task.id}-01`;
+  return {
+    id: runId,
+    taskId: task.id,
+    runNumber: 1,
+    status: "RUNNING",
+    workflowVersionId: task.workflowVersionRef.versionId,
+    agentVersionId: task.assignedAgent.agentVersionRef.versionId,
+    executionPackageDigest: `sha256:execution-package-${task.id}-v1`,
+    currentStepId: task.executionPlan.steps[0].id,
+    idempotencyKey: `start-${task.id}-plan-v1`,
+    workerPool: "agent-reasoning",
+    attemptCount: 1,
+    startedAt: timestamp,
+    steps: task.executionPlan.steps.map((step) => ({
+      stepId: step.id,
+      sequence: step.sequence,
+      name: step.name,
+      status: "PENDING",
+    })),
+    checkpoints: [],
+  };
+}
+
+function appendTransition(
+  task: TaskDetail,
+  toStatus: TaskStatus,
+  reasonCode: string,
+  actor: TaskHistoryActor,
+  timestamp: string,
+): void {
+  const nextAggregateVersion = task.aggregateVersion + 1;
+  task.history.push({
+    id: `${task.id}-transition-${String(nextAggregateVersion).padStart(2, "0")}`,
+    fromStatus: task.status,
+    toStatus,
+    reasonCode,
+    actor: cloneMutable(actor),
+    occurredAt: timestamp,
+    aggregateVersion: nextAggregateVersion,
+  });
+  task.status = toStatus;
+  task.aggregateVersion = nextAggregateVersion;
+  task.updatedAt = timestamp;
+}
+
+function validateRuntimeStepResult(
+  result: unknown,
+): asserts result is RuntimeStepResult {
+  if (
+    !isRecord(result) ||
+    !hasExactKeys(
+      result,
+      [
+        "stepId",
+        "resultType",
+        "summary",
+        "outputReference",
+        "outputDigest",
+      ],
+      ["artifactVersionRef", "citationRefs"],
+    ) ||
+    !isNonEmptyString(result.stepId) ||
+    !isOneOf(result.resultType, [
+      "STEP_SUCCEEDED",
+      "ARTIFACT_DRAFT",
+    ] as const) ||
+    !isNonEmptyString(result.summary) ||
+    !isNonEmptyString(result.outputReference) ||
+    !isNonEmptyString(result.outputDigest)
+  ) {
+    throw new TaskRepositoryError(
+      "VALIDATION",
+      "Runtime Step result is invalid.",
+    );
+  }
+
+  if (
+    result.resultType === "ARTIFACT_DRAFT" &&
+    (!isRecord(result.artifactVersionRef) ||
+      !Array.isArray(result.citationRefs))
+  ) {
+    throw new TaskRepositoryError(
+      "VALIDATION",
+      "Artifact Step requires ArtifactVersionRef and CitationRef evidence.",
+    );
+  }
+
+  if (
+    result.resultType === "STEP_SUCCEEDED" &&
+    (result.artifactVersionRef !== undefined ||
+      result.citationRefs !== undefined)
+  ) {
+    throw new TaskRepositoryError(
+      "VALIDATION",
+      "A regular Step cannot attach Artifact evidence.",
+    );
+  }
 }
 
 export function createTaskRepository(
@@ -1683,6 +2148,51 @@ export function createTaskRepository(
     const created =
       storedWorkspace(envelope, false)?.createdTasks.map(materializeTask) ?? [];
     return [...seeds, ...created];
+  }
+
+  function mutableCreatedTask(
+    envelope: TaskStoreEnvelope,
+    taskId: string,
+  ): {
+    workspaceStore: StoredWorkspace;
+    taskIndex: number;
+    task: TaskDetail;
+  } {
+    const workspaceStore = storedWorkspace(envelope, false);
+    const taskIndex =
+      workspaceStore?.createdTasks.findIndex(({ id }) => id === taskId) ?? -1;
+    if (!workspaceStore || taskIndex < 0) {
+      throw new TaskRepositoryError(
+        "NOT_FOUND",
+        "Only a submitted Task in the current Workspace can be changed.",
+      );
+    }
+    return {
+      workspaceStore,
+      taskIndex,
+      task: materializeTask(workspaceStore.createdTasks[taskIndex]),
+    };
+  }
+
+  function requireReviewer(task: TaskDetail, actor: TaskActor): void {
+    if (!task.reviewerUserIds.includes(actor.userId)) {
+      throw new TaskRepositoryError(
+        "FORBIDDEN",
+        "The current actor is not an authorized Reviewer for this Task.",
+      );
+    }
+  }
+
+  function requireRuntimeController(
+    task: TaskDetail,
+    actor: TaskActor,
+  ): void {
+    if (task.assignedAgent?.humanOwner.userId !== actor.userId) {
+      throw new TaskRepositoryError(
+        "FORBIDDEN",
+        "Only the AI employee Human Owner can advance the deterministic Mock Runtime.",
+      );
+    }
   }
 
   return {
@@ -1827,6 +2337,250 @@ export function createTaskRepository(
       writeEnvelope(nextEnvelope);
       return cloneMutable(task);
     },
+
+    async approveTaskPlan(taskScope, actor, taskId): Promise<TaskDetail> {
+      await prepare(taskScope, actor);
+      requireWritePermission(actor);
+      const nextEnvelope = cloneMutable(readEnvelope());
+      const mutable = mutableCreatedTask(nextEnvelope, taskId);
+      const task = mutable.task;
+      requireReviewer(task, actor);
+      if (
+        task.status !== "NEED_APPROVAL" ||
+        task.executionRun !== undefined
+      ) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Only a Task waiting for its current Plan approval can start execution.",
+        );
+      }
+      const planApproval = task.approvalPoints.find(
+        ({ requiredFor }) => requiredFor === "PLAN_EXECUTION",
+      );
+      if (!planApproval || planApproval.status !== "PENDING") {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "The Plan approval point is unavailable.",
+        );
+      }
+      const timestamp = currentTimestamp();
+      planApproval.status = "APPROVED";
+      task.executionRun = createExecutionRun(task, timestamp);
+      task.currentOwner = {
+        actorType: "AGENT",
+        actorId: "agent-rd-001",
+        displayName: "AI研发员工",
+      };
+      appendTransition(
+        task,
+        "EXECUTING",
+        "PLAN_APPROVED_EXECUTION_STARTED",
+        { actorType: "USER", actorId: actor.userId },
+        timestamp,
+      );
+      mutable.workspaceStore.createdTasks[mutable.taskIndex] =
+        storeTask(task);
+      writeEnvelope(nextEnvelope);
+      return cloneMutable(task);
+    },
+
+    async recordExecutionStep(
+      taskScope,
+      actor,
+      taskId,
+      result,
+    ): Promise<TaskDetail> {
+      await prepare(taskScope, actor);
+      requireWritePermission(actor);
+      validateRuntimeStepResult(result);
+      const nextEnvelope = cloneMutable(readEnvelope());
+      const mutable = mutableCreatedTask(nextEnvelope, taskId);
+      const task = mutable.task;
+      requireRuntimeController(task, actor);
+
+      const existingResult = task.executionRun?.steps.find(
+        ({ stepId }) => stepId === result.stepId,
+      );
+      if (
+        existingResult?.status === "SUCCEEDED" &&
+        existingResult.outputDigest === result.outputDigest
+      ) {
+        return cloneMutable(task);
+      }
+      if (
+        task.status !== "EXECUTING" ||
+        !task.executionRun ||
+        task.executionRun.status !== "RUNNING"
+      ) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Task does not have an active ExecutionRun.",
+        );
+      }
+
+      const nextStep = task.executionRun.steps
+        .slice(0, 4)
+        .find(({ status }) => status === "PENDING");
+      if (!nextStep || nextStep.stepId !== result.stepId) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Runtime Step result is out of order.",
+        );
+      }
+      if (
+        (nextStep.sequence === 4) !==
+        (result.resultType === "ARTIFACT_DRAFT")
+      ) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Runtime Step result type does not match the fixed Workflow.",
+        );
+      }
+
+      const timestamp = currentTimestamp();
+      nextStep.status = "SUCCEEDED";
+      nextStep.resultType = result.resultType;
+      nextStep.summary = result.summary;
+      nextStep.outputReference = result.outputReference;
+      nextStep.outputDigest = result.outputDigest;
+      nextStep.completedAt = timestamp;
+      const checkpointSequence = task.executionRun.checkpoints.length + 1;
+      const checkpointId = `${task.executionRun.id}-checkpoint-${String(checkpointSequence).padStart(2, "0")}`;
+      task.executionRun.checkpoints.push({
+        id: checkpointId,
+        sequence: checkpointSequence,
+        stepId: nextStep.stepId,
+        status: "COMPLETED",
+        inputDigest: `sha256:${task.executionRun.executionPackageDigest}:input-step-${nextStep.sequence}`,
+        outputReference: result.outputReference,
+        outputDigest: result.outputDigest,
+        createdAt: timestamp,
+        createdByAgentId: "agent-rd-001",
+      });
+      task.executionRun.currentCheckpointId = checkpointId;
+      task.executionRun.checkpointedAt = timestamp;
+      task.updatedAt = timestamp;
+
+      if (result.resultType === "ARTIFACT_DRAFT") {
+        if (
+          !isArtifactVersionRef(result.artifactVersionRef, taskId) ||
+          result.artifactVersionRef.accepted ||
+          !Array.isArray(result.citationRefs) ||
+          result.citationRefs.length !== 1 ||
+          !result.citationRefs.every(isCitationRef)
+        ) {
+          throw new TaskRepositoryError(
+            "VALIDATION",
+            "Artifact Step evidence is invalid.",
+          );
+        }
+        task.executionRun.status = "SUCCEEDED";
+        delete task.executionRun.currentStepId;
+        task.executionRun.finishedAt = timestamp;
+        const humanReviewStep = task.executionRun.steps[4];
+        humanReviewStep.status = "WAITING_HUMAN";
+        humanReviewStep.resultType = "HUMAN_REVIEW";
+        humanReviewStep.summary = "等待授权 Reviewer 验收 Artifact。";
+        task.artifactVersionRefs = [
+          cloneMutable(result.artifactVersionRef),
+        ];
+        task.citationRefs = cloneMutable(result.citationRefs);
+        task.currentOwner = {
+          actorType: "USER",
+          actorId: "user-lead",
+          displayName: "陈明",
+        };
+        appendTransition(
+          task,
+          "REVIEW",
+          "ARTIFACT_SUBMITTED_FOR_REVIEW",
+          { actorType: "AGENT", actorId: "agent-rd-001" },
+          timestamp,
+        );
+      } else {
+        const followingStep = task.executionRun.steps
+          .slice(0, 4)
+          .find(({ status }) => status === "PENDING");
+        if (!followingStep) {
+          throw new TaskRepositoryError(
+            "VALIDATION",
+            "The fixed Workflow requires an Artifact Step before review.",
+          );
+        }
+        task.executionRun.currentStepId = followingStep.stepId;
+      }
+
+      mutable.workspaceStore.createdTasks[mutable.taskIndex] =
+        storeTask(task);
+      writeEnvelope(nextEnvelope);
+      return cloneMutable(task);
+    },
+
+    async recordArtifactAcceptance(
+      taskScope,
+      actor,
+      taskId,
+      artifactVersionId,
+    ): Promise<TaskDetail> {
+      await prepare(taskScope, actor);
+      requireWritePermission(actor);
+      const nextEnvelope = cloneMutable(readEnvelope());
+      const mutable = mutableCreatedTask(nextEnvelope, taskId);
+      const task = mutable.task;
+      requireReviewer(task, actor);
+      const artifactRef = task.artifactVersionRefs.find(
+        ({ versionId }) => versionId === artifactVersionId,
+      );
+      if (
+        task.status === "COMPLETED" &&
+        artifactRef?.accepted === true
+      ) {
+        return cloneMutable(task);
+      }
+      if (
+        task.status !== "REVIEW" ||
+        !task.executionRun ||
+        task.executionRun.status !== "SUCCEEDED" ||
+        !artifactRef ||
+        artifactRef.accepted
+      ) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Task is not waiting for this Artifact acceptance.",
+        );
+      }
+      const artifactApproval = task.approvalPoints.find(
+        ({ requiredFor }) => requiredFor === "ARTIFACT_ACCEPTANCE",
+      );
+      if (!artifactApproval || artifactApproval.status !== "PENDING") {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "Artifact acceptance point is unavailable.",
+        );
+      }
+
+      const timestamp = currentTimestamp();
+      artifactRef.accepted = true;
+      artifactApproval.status = "APPROVED";
+      const humanReviewStep = task.executionRun.steps[4];
+      humanReviewStep.status = "SUCCEEDED";
+      humanReviewStep.resultType = "HUMAN_REVIEW";
+      humanReviewStep.summary =
+        "陈明（user-lead）已依据 Completion Criteria 验收 Artifact。";
+      humanReviewStep.completedAt = timestamp;
+      delete task.currentOwner;
+      appendTransition(
+        task,
+        "COMPLETED",
+        "ARTIFACT_ACCEPTED_TASK_COMPLETED",
+        { actorType: "USER", actorId: actor.userId },
+        timestamp,
+      );
+      mutable.workspaceStore.createdTasks[mutable.taskIndex] =
+        storeTask(task);
+      writeEnvelope(nextEnvelope);
+      return cloneMutable(task);
+    },
   };
 }
 
@@ -1884,4 +2638,40 @@ export async function submitTechnicalSolutionTask(
   actor: TaskActor,
 ): Promise<TaskDetail> {
   return defaultRepository().submitTechnicalSolutionTask(scope, actor);
+}
+
+export async function approveTaskPlan(
+  scope: TaskScope,
+  actor: TaskActor,
+  taskId: string,
+): Promise<TaskDetail> {
+  return defaultRepository().approveTaskPlan(scope, actor, taskId);
+}
+
+export async function recordExecutionStep(
+  scope: TaskScope,
+  actor: TaskActor,
+  taskId: string,
+  result: RuntimeStepResult,
+): Promise<TaskDetail> {
+  return defaultRepository().recordExecutionStep(
+    scope,
+    actor,
+    taskId,
+    result,
+  );
+}
+
+export async function recordArtifactAcceptance(
+  scope: TaskScope,
+  actor: TaskActor,
+  taskId: string,
+  artifactVersionId: string,
+): Promise<TaskDetail> {
+  return defaultRepository().recordArtifactAcceptance(
+    scope,
+    actor,
+    taskId,
+    artifactVersionId,
+  );
 }

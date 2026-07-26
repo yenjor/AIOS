@@ -252,6 +252,110 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await expect(
     page.getByRole("heading", { name: GOLDEN_TITLE, exact: true }),
   ).toBeVisible();
+
+  await page.evaluate(() => {
+    window.sessionStorage.setItem(
+      "aios.mock.session.v1",
+      JSON.stringify({
+        userId: "user-lead",
+        organizationId: "org-guangwei",
+        workspaceId: "ws-ai",
+      }),
+    );
+  });
+  await page.reload();
+  await expect(page.getByText("陈明（研发负责人）", { exact: true })).toBeVisible();
+
+  const approvePlan = page.getByRole("button", {
+    name: "批准计划",
+    exact: true,
+  });
+  await expect(approvePlan).toBeEnabled();
+  await approvePlan.click();
+  await expect(page.locator('[data-task-status="EXECUTING"]')).toBeVisible();
+  await expect(
+    page.getByText("ExecutionRun · 确定性 Mock Runtime", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("已完成 0 / 4 个 Runtime Step", { exact: true }),
+  ).toBeVisible();
+
+  const advanceRuntime = page.getByRole("button", {
+    name: "开始执行",
+    exact: true,
+  });
+  for (const completed of [1, 2, 3, 4]) {
+    await expect(advanceRuntime).toBeEnabled();
+    await advanceRuntime.click();
+    if (completed < 4) {
+      await expect(
+        page.getByText(`已完成 ${completed} / 4 个 Runtime Step`, {
+          exact: true,
+        }),
+      ).toBeVisible();
+    }
+  }
+
+  await expect(page.locator('[data-task-status="REVIEW"]')).toBeVisible();
+  await expect(
+    page.getByText("4 个持久化检查点", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("第 5 步是 Human Review，不由 Agent Runtime 自动完成。", {
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  const artifactLink = page.getByRole("link", {
+    name: "查看 Artifact artifact-task-mock-0001",
+    exact: true,
+  });
+  await expect(artifactLink).toBeVisible();
+  await artifactLink.click();
+  await expect(page).toHaveURL(
+    /\/artifacts\/artifact-task-mock-0001$/,
+  );
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: `${GOLDEN_TITLE} · 技术方案`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("PENDING_REVIEW", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("README.md#5-系统整体架构", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Artifact 等待 Reviewer 验收", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "返回所属 Task", exact: true }).click();
+  await expect(page).toHaveURL(/\/tasks\/task-mock-0001$/);
+  const acceptArtifact = page.getByRole("button", {
+    name: "接受 Artifact",
+    exact: true,
+  });
+  await expect(acceptArtifact).toBeEnabled();
+  await acceptArtifact.click();
+  await expect(page.locator('[data-task-status="COMPLETED"]')).toBeVisible();
+  await expect(page.getByText("技术方案 · 已接受", { exact: true })).toBeVisible();
+
+  await page
+    .getByRole("link", {
+      name: "查看 Artifact artifact-task-mock-0001",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByText("ACCEPTED", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Artifact 已由 Reviewer 验收", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/Accepted by user-lead/)).toBeVisible();
+  await page.screenshot({
+    path: join(SCREENSHOT_DIRECTORY, "ai-employee-completed.png"),
+    fullPage: true,
+  });
 });
 
 test("Auditor 只能读取 Task 且所有创建入口与直达向导均被拒绝", async ({
@@ -301,6 +405,7 @@ test("fresh Task responses never serialize protected Task fixtures", async ({
     "/tasks",
     "/tasks/new",
     "/tasks/task-golden-technical-solution",
+    "/artifacts/artifact-task-mock-0001",
   ];
   const protectedNeedles = [
     "task-seed-",

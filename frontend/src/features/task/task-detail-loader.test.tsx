@@ -84,7 +84,7 @@ function minimumDetail(): TaskDetail {
         fromStatus: null,
         toStatus: "DRAFT",
         reasonCode: "TASK_CREATED",
-        actor: { userId: "user-pm" },
+        actor: { actorType: "USER", actorId: "user-pm" },
         occurredAt: "2026-07-25T08:00:00.000Z",
         aggregateVersion: 1,
       },
@@ -131,7 +131,10 @@ describe("TaskDetailLoader", () => {
         name: "生成 Task Center 技术方案",
       }),
     ).toBeVisible();
-    expect(screen.getByText("赵岚（Auditor）可只读查看")).toBeVisible();
+    expect(screen.getByText("赵岚（Auditor）")).toBeVisible();
+    expect(
+      screen.getByText("当前身份仅可查看此 Task 的执行证据。"),
+    ).toBeVisible();
   });
 
   it.each(["FORBIDDEN", "NOT_FOUND"] as const)(

@@ -73,6 +73,16 @@ export interface CitationRef {
   digest: string;
 }
 
+export type TaskHistoryActor =
+  | {
+      actorType: "USER";
+      actorId: string;
+    }
+  | {
+      actorType: "AGENT";
+      actorId: "agent-rd-001";
+    };
+
 export interface HumanOwnerRef {
   userId: string;
   displayName: string;
@@ -178,9 +188,75 @@ export interface TaskHistoryItem {
   fromStatus: TaskStatus | null;
   toStatus: TaskStatus;
   reasonCode: string;
-  actor: TaskActor;
+  actor: TaskHistoryActor;
   occurredAt: string;
   aggregateVersion: number;
+}
+
+export type ExecutionRunStatus = "RUNNING" | "SUCCEEDED";
+
+export type ExecutionStepStatus =
+  | "PENDING"
+  | "SUCCEEDED"
+  | "WAITING_HUMAN";
+
+export type ExecutionStepResultType =
+  | "STEP_SUCCEEDED"
+  | "ARTIFACT_DRAFT"
+  | "HUMAN_REVIEW";
+
+export interface ExecutionStepRecord {
+  stepId: string;
+  sequence: number;
+  name: string;
+  status: ExecutionStepStatus;
+  resultType?: ExecutionStepResultType;
+  summary?: string;
+  outputReference?: string;
+  outputDigest?: string;
+  completedAt?: string;
+}
+
+export interface WorkflowCheckpoint {
+  id: string;
+  sequence: number;
+  stepId: string;
+  status: "COMPLETED";
+  inputDigest: string;
+  outputReference: string;
+  outputDigest: string;
+  createdAt: string;
+  createdByAgentId: "agent-rd-001";
+}
+
+export interface ExecutionRun {
+  id: string;
+  taskId: string;
+  runNumber: number;
+  status: ExecutionRunStatus;
+  workflowVersionId: string;
+  agentVersionId: string;
+  executionPackageDigest: string;
+  currentStepId?: string;
+  currentCheckpointId?: string;
+  idempotencyKey: string;
+  workerPool: "agent-reasoning";
+  attemptCount: number;
+  startedAt: string;
+  checkpointedAt?: string;
+  finishedAt?: string;
+  steps: ExecutionStepRecord[];
+  checkpoints: WorkflowCheckpoint[];
+}
+
+export interface RuntimeStepResult {
+  stepId: string;
+  resultType: "STEP_SUCCEEDED" | "ARTIFACT_DRAFT";
+  summary: string;
+  outputReference: string;
+  outputDigest: string;
+  artifactVersionRef?: ArtifactVersionRef;
+  citationRefs?: CitationRef[];
 }
 
 export interface TaskListItem {
@@ -218,6 +294,7 @@ export interface TaskDetail extends TaskListItem {
   expectedArtifact: ExpectedArtifact;
   artifactVersionRefs: ArtifactVersionRef[];
   citationRefs: CitationRef[];
+  executionRun?: ExecutionRun;
   history: TaskHistoryItem[];
   aggregateVersion: number;
 }

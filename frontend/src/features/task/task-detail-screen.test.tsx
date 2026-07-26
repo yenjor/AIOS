@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { PlannedTaskDetail } from "./model";
 import { TaskDetailScreen } from "./task-detail-screen";
@@ -186,7 +186,7 @@ function plannedTask(): PlannedTaskDetail {
         fromStatus: null,
         toStatus: "DRAFT",
         reasonCode: "TASK_CREATED",
-        actor: { userId: "user-pm" },
+        actor: { actorType: "USER", actorId: "user-pm" },
         occurredAt: "2026-07-25T08:00:00.000Z",
         aggregateVersion: 1,
       },
@@ -195,7 +195,7 @@ function plannedTask(): PlannedTaskDetail {
         fromStatus: "DRAFT",
         toStatus: "READY",
         reasonCode: "TASK_READY",
-        actor: { userId: "user-pm" },
+        actor: { actorType: "USER", actorId: "user-pm" },
         occurredAt: "2026-07-25T08:01:00.000Z",
         aggregateVersion: 2,
       },
@@ -204,7 +204,7 @@ function plannedTask(): PlannedTaskDetail {
         fromStatus: "READY",
         toStatus: "PLANNING",
         reasonCode: "TASK_PLANNING",
-        actor: { userId: "user-pm" },
+        actor: { actorType: "USER", actorId: "user-pm" },
         occurredAt: "2026-07-25T08:02:00.000Z",
         aggregateVersion: 3,
       },
@@ -213,7 +213,7 @@ function plannedTask(): PlannedTaskDetail {
         fromStatus: "PLANNING",
         toStatus: "NEED_APPROVAL",
         reasonCode: "TASK_NEED_APPROVAL",
-        actor: { userId: "user-pm" },
+        actor: { actorType: "USER", actorId: "user-pm" },
         occurredAt: "2026-07-25T08:03:00.000Z",
         aggregateVersion: 4,
       },
@@ -233,7 +233,7 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={plannedTask()}
         scopeLabels={scopeLabels}
-        viewer={{ name: "赵岚", role: "Auditor" }}
+        viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
       />,
     );
 
@@ -262,7 +262,7 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={plannedTask()}
         scopeLabels={scopeLabels}
-        viewer={{ name: "陈明", role: "研发负责人" }}
+        viewer={{ userId: "user-lead", name: "陈明", role: "研发负责人" }}
       />,
     );
 
@@ -302,7 +302,7 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={plannedTask()}
         scopeLabels={scopeLabels}
-        viewer={{ name: "陈明", role: "研发负责人" }}
+        viewer={{ userId: "user-lead", name: "陈明", role: "研发负责人" }}
       />,
     );
 
@@ -350,7 +350,7 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={plannedTask()}
         scopeLabels={scopeLabels}
-        viewer={{ name: "陈明", role: "研发负责人" }}
+        viewer={{ userId: "user-lead", name: "陈明", role: "研发负责人" }}
       />,
     );
 
@@ -361,7 +361,7 @@ describe("TaskDetailScreen", () => {
       screen.getByText(/当前 Task 停止在计划确认审批点/),
     ).toBeVisible();
     expect(
-      screen.getByText(/审批、Artifact 与 Audit 的专用页面尚未实现/),
+      screen.getByText(/当前增量开放“计划批准/),
     ).toBeVisible();
 
     const controlledActions = [
@@ -383,7 +383,7 @@ describe("TaskDetailScreen", () => {
       const action = screen.getByRole("button", { name: actionName });
       expect(action).toBeDisabled();
       expect(action).toHaveAccessibleDescription(
-        "当前增量仅开放 Task 只读详情，受控动作将在对应引擎和权限流程实现后启用。",
+        "当前增量开放“计划批准 → 确定性 Mock Runtime → Artifact 验收”的首个 AI 员工闭环。",
       );
     }
     expect(
@@ -391,12 +391,38 @@ describe("TaskDetailScreen", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("allows only the fixed Reviewer to approve a submitted mutable Task", async () => {
+    const interaction = userEvent.setup();
+    const task = plannedTask();
+    task.id = "task-mock-0001";
+    const onControlledAction = vi.fn();
+
+    render(
+      <TaskDetailScreen
+        task={task}
+        scopeLabels={scopeLabels}
+        viewer={{ userId: "user-lead", name: "陈明", role: "研发负责人" }}
+        onControlledAction={onControlledAction}
+      />,
+    );
+
+    const approve = screen.getByRole("button", { name: "批准计划" });
+    expect(approve).toBeEnabled();
+    expect(screen.getByRole("button", { name: "开始执行" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "接受 Artifact" }),
+    ).toBeDisabled();
+
+    await interaction.click(approve);
+    expect(onControlledAction).toHaveBeenCalledWith("批准计划");
+  });
+
   it("shows only persisted collaboration and audit evidence", () => {
     render(
       <TaskDetailScreen
         task={plannedTask()}
         scopeLabels={scopeLabels}
-        viewer={{ name: "赵岚", role: "Auditor" }}
+        viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
       />,
     );
 
@@ -436,7 +462,7 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={compatibleTask}
         scopeLabels={scopeLabels}
-        viewer={{ name: "周航", role: "开发工程师" }}
+        viewer={{ userId: "user-dev", name: "周航", role: "开发工程师" }}
       />,
     );
 
@@ -468,7 +494,7 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={completedTask}
         scopeLabels={scopeLabels}
-        viewer={{ name: "赵岚", role: "Auditor" }}
+        viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
       />,
     );
 
@@ -484,7 +510,7 @@ describe("TaskDetailScreen", () => {
     ).toBeVisible();
     expect(within(artifact).queryByText("尚未生成")).not.toBeInTheDocument();
     expect(artifact).toHaveTextContent(
-      "仅显示 ArtifactVersionRef 证据，正文未在当前 read model 提供。",
+      "Artifact 正文由独立 Read Model 提供；此处保留版本引用和验收状态。",
     );
   });
 
@@ -509,7 +535,7 @@ describe("TaskDetailScreen", () => {
         <TaskDetailScreen
           task={terminalTask}
           scopeLabels={scopeLabels}
-          viewer={{ name: "赵岚", role: "Auditor" }}
+          viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
         />,
       );
 
@@ -522,7 +548,7 @@ describe("TaskDetailScreen", () => {
       ).toBeVisible();
       expect(within(artifact).queryByText("尚未生成")).not.toBeInTheDocument();
       expect(artifact).toHaveTextContent(
-        "仅显示 ArtifactVersionRef 证据，正文未在当前 read model 提供。",
+        "Artifact 正文由独立 Read Model 提供；此处保留版本引用和验收状态。",
       );
     },
   );

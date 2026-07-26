@@ -242,7 +242,10 @@ function makeHistory(
     fromStatus: index === 0 ? null : path[index - 1],
     toStatus,
     reasonCode: index === 0 ? "TASK_CREATED" : `TASK_${toStatus}`,
-    actor: { ...actor },
+    actor: {
+      actorType: "USER",
+      actorId: actor.userId,
+    },
     occurredAt: `2026-07-25T${String(baseHour).padStart(2, "0")}:${String(index).padStart(2, "0")}:00.000Z`,
     aggregateVersion: index + 1,
   }));

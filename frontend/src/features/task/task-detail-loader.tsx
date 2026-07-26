@@ -12,7 +12,16 @@ import {
   TaskRepositoryError,
 } from "./mock/task-repository";
 import type { TaskDetail } from "./model";
-import { TaskDetailScreen } from "./task-detail-screen";
+import {
+  approvePlanAndStartExecution,
+  acceptTaskArtifact,
+  advanceFirstAiEmployee,
+} from "./task-execution-service";
+import {
+  TaskDetailScreen,
+  type TaskDetailActionState,
+  type TaskDetailControlledAction,
+} from "./task-detail-screen";
 
 type LoaderState =
   | { status: "idle" }
@@ -31,6 +40,9 @@ export interface TaskDetailLoaderProps {
 export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
   const { hydrated, organization, user, workspace } = useSession();
   const [state, setState] = useState<LoaderState>({ status: "idle" });
+  const [actionState, setActionState] = useState<TaskDetailActionState>({
+    status: "idle",
+  });
   const [requestVersion, setRequestVersion] = useState(0);
   const latestRequestRef = useRef(0);
   const hasCompleteSession = Boolean(
@@ -196,6 +208,45 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
     );
   }
 
+  async function handleControlledAction(
+    action: TaskDetailControlledAction,
+  ): Promise<void> {
+    if (
+      state.status !== "ready" ||
+      !requestKey ||
+      !user ||
+      !organization ||
+      !workspace
+    ) {
+      return;
+    }
+
+    const scope = {
+      organizationId: organization.id,
+      workspaceId: workspace.id,
+    };
+    const actor = { userId: user.id };
+    setActionState({ status: "working", action });
+
+    try {
+      const task =
+        action === "批准计划"
+          ? await approvePlanAndStartExecution(scope, actor, taskId)
+          : action === "开始执行"
+            ? await advanceFirstAiEmployee(scope, actor, taskId)
+            : await acceptTaskArtifact(scope, actor, taskId);
+      setState({ status: "ready", requestKey, task });
+      setActionState({ status: "idle" });
+    } catch {
+      setActionState({
+        status: "error",
+        action,
+        message:
+          "受控动作未完成。系统已保留最后一个有效状态，请确认当前身份和 Task 状态后重试。",
+      });
+    }
+  }
+
   return (
     <TaskDetailScreen
       task={state.task}
@@ -203,7 +254,9 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
         organizationName: organization.name,
         workspaceName: workspace.name,
       }}
-      viewer={{ name: user.name, role: user.role }}
+      viewer={{ userId: user.id, name: user.name, role: user.role }}
+      actionState={actionState}
+      onControlledAction={handleControlledAction}
     />
   );
 }

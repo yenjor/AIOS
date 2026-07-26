@@ -5,14 +5,17 @@ import {
   Boxes,
   Building2,
   CircleAlert,
+  CircleCheck,
   FileCheck2,
   Fingerprint,
   History,
+  LoaderCircle,
   LockKeyhole,
   Network,
   PlayCircle,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useId } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -34,14 +37,30 @@ export interface TaskScopeLabels {
 }
 
 export interface TaskDetailViewer {
+  userId: string;
   name: string;
   role: WorkspaceRole;
+}
+
+export type TaskDetailControlledAction =
+  | "批准计划"
+  | "开始执行"
+  | "接受 Artifact";
+
+export interface TaskDetailActionState {
+  status: "idle" | "working" | "error";
+  action?: TaskDetailControlledAction;
+  message?: string;
 }
 
 export interface TaskDetailScreenProps {
   task: DeepReadonly<TaskDetail>;
   scopeLabels: TaskScopeLabels;
   viewer: TaskDetailViewer;
+  actionState?: TaskDetailActionState;
+  onControlledAction?: (
+    action: TaskDetailControlledAction,
+  ) => void | Promise<void>;
 }
 
 interface DisplayVersionRef {
@@ -84,6 +103,12 @@ const CONTROLLED_ACTIONS = [
   "要求 Artifact 返工",
 ] as const;
 
+const SUPPORTED_ACTIONS = new Set<TaskDetailControlledAction>([
+  "批准计划",
+  "开始执行",
+  "接受 Artifact",
+]);
+
 function userLabel(userId: string) {
   const name = USER_NAMES[userId];
   return name ? `${name}（${userId}）` : userId;
@@ -98,14 +123,17 @@ function ReferenceCard({
   reference,
   actionId,
   operationType,
+  container = "li",
 }: {
   label: string;
   reference: DeepReadonly<VersionRef>;
   actionId?: string;
   operationType?: "READ";
+  container?: "li" | "div";
 }) {
+  const Root = container;
   return (
-    <li className="min-w-0 rounded-lg border border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] p-3">
+    <Root className="min-w-0 rounded-lg border border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">
           {label}
@@ -140,7 +168,7 @@ function ReferenceCard({
           </div>
         ) : null}
       </dl>
-    </li>
+    </Root>
   );
 }
 
@@ -179,8 +207,31 @@ export function TaskDetailScreen({
   task,
   scopeLabels,
   viewer,
+  actionState = { status: "idle" },
+  onControlledAction,
 }: TaskDetailScreenProps) {
   const controlledActionDescriptionId = `${useId()}-controlled-actions`;
+  const isMutableMockTask = task.id.startsWith("task-mock-");
+  const isHumanOwner = task.assignedAgent?.humanOwner.userId === viewer.userId;
+  const isReviewer = task.reviewerUserIds.includes(viewer.userId);
+  const completedRuntimeStepCount =
+    task.executionRun?.steps
+      .slice(0, 4)
+      .filter(({ status }) => status === "SUCCEEDED").length ?? 0;
+  const enabledAction: TaskDetailControlledAction | undefined =
+    isMutableMockTask &&
+    isReviewer &&
+    task.status === "NEED_APPROVAL"
+      ? "批准计划"
+      : isMutableMockTask &&
+          isHumanOwner &&
+          task.status === "EXECUTING"
+        ? "开始执行"
+        : isMutableMockTask &&
+            isReviewer &&
+            task.status === "REVIEW"
+          ? "接受 Artifact"
+          : undefined;
   const fixedReferences: DisplayVersionRef[] = [
     ...(task.assignedAgent
       ? [
@@ -234,10 +285,12 @@ export function TaskDetailScreen({
           </div>
           <div className="shrink-0 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] px-4 py-3 text-sm">
             <p className="font-semibold">
-              {viewer.name}（{viewer.role}）可只读查看
+              {viewer.name}（{viewer.role}）
             </p>
             <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
-              当前页面不改变 Task、Plan、Approval 或 Artifact。
+              {enabledAction
+                ? `当前可执行受控动作：${enabledAction}`
+                : "当前身份仅可查看此 Task 的执行证据。"}
             </p>
           </div>
         </div>
@@ -412,27 +465,134 @@ export function TaskDetailScreen({
         </ReadonlySection>
 
         <ReadonlySection id="task-execution" label="执行" icon={PlayCircle}>
-          <Card className="p-5">
-            <div className="flex items-start gap-3">
-              <CircleAlert
-                className="mt-0.5 shrink-0 text-[var(--aios-warning-foreground)]"
-                size={20}
-                aria-hidden="true"
-              />
-              <div>
-                <h3 className="font-semibold">
-                  {task.history.some(({ toStatus }) => toStatus === "EXECUTING")
-                    ? "执行详情未在当前增量开放"
-                    : "尚未开始"}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-                  {task.status === "NEED_APPROVAL"
-                    ? "当前 Task 停止在计划确认审批点。"
-                    : `当前持久化状态为 ${TASK_STATUS_LABELS[task.status]}，本页不模拟 Runtime、Step 或 Tool 调用。`}
+          {task.executionRun ? (
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
+              <Card className="p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-semibold">
+                    ExecutionRun · 确定性 Mock Runtime
+                  </h3>
+                  <Badge
+                    tone={
+                      task.executionRun.status === "SUCCEEDED"
+                        ? "success"
+                        : "info"
+                    }
+                  >
+                    {task.executionRun.status}
+                  </Badge>
+                </div>
+                <p className="mt-3 break-all font-mono text-xs text-[var(--aios-muted)]">
+                  {task.executionRun.id}
                 </p>
-              </div>
+                <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-1">
+                  <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
+                    <dt className="text-xs text-[var(--aios-muted)]">
+                      Runtime Progress
+                    </dt>
+                    <dd className="mt-1 font-semibold">
+                      已完成 {completedRuntimeStepCount} / 4 个 Runtime Step
+                    </dd>
+                  </div>
+                  <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
+                    <dt className="text-xs text-[var(--aios-muted)]">
+                      Checkpoint
+                    </dt>
+                    <dd className="mt-1 font-semibold">
+                      {task.executionRun.checkpoints.length} 个持久化检查点
+                    </dd>
+                  </div>
+                  <div className="rounded-lg bg-[var(--aios-canvas)] p-3 sm:col-span-2 xl:col-span-1">
+                    <dt className="text-xs text-[var(--aios-muted)]">
+                      Execution Package Digest
+                    </dt>
+                    <dd className="mt-1 break-all font-mono text-xs">
+                      {task.executionRun.executionPackageDigest}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-4 text-xs leading-5 text-[var(--aios-muted)]">
+                  此 Runtime 仅验证 AIOS 的执行契约；不调用外部模型、写入型
+                  Tool 或生产系统。
+                </p>
+              </Card>
+
+              <Card className="p-5">
+                <h3 className="font-semibold">Step 与 Checkpoint</h3>
+                <ol className="mt-4 space-y-3">
+                  {task.executionRun.steps.map((step) => (
+                    <li
+                      key={step.stepId}
+                      className="rounded-lg border border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] p-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {step.status === "SUCCEEDED" ? (
+                            <CircleCheck
+                              className="shrink-0 text-[var(--aios-success-foreground)]"
+                              size={18}
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <CircleAlert
+                              className="shrink-0 text-[var(--aios-warning-foreground)]"
+                              size={18}
+                              aria-hidden="true"
+                            />
+                          )}
+                          <span className="text-sm font-semibold">
+                            {step.sequence}. {step.name}
+                          </span>
+                        </div>
+                        <Badge
+                          tone={
+                            step.status === "SUCCEEDED"
+                              ? "success"
+                              : step.status === "WAITING_HUMAN"
+                                ? "warning"
+                                : "neutral"
+                          }
+                        >
+                          {step.status}
+                        </Badge>
+                      </div>
+                      {step.summary ? (
+                        <p className="mt-2 text-xs leading-5 text-[var(--aios-muted)]">
+                          {step.summary}
+                        </p>
+                      ) : null}
+                      {step.outputReference ? (
+                        <p className="mt-2 break-all font-mono text-xs text-[var(--aios-muted)]">
+                          {step.outputReference}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-4 text-xs leading-5 text-[var(--aios-muted)]">
+                  第 5 步是 Human Review，不由 Agent Runtime 自动完成。
+                </p>
+              </Card>
             </div>
-          </Card>
+          ) : (
+            <Card className="p-5">
+              <div className="flex items-start gap-3">
+                <CircleAlert
+                  className="mt-0.5 shrink-0 text-[var(--aios-warning-foreground)]"
+                  size={20}
+                  aria-hidden="true"
+                />
+                <div>
+                  <h3 className="font-semibold">尚未开始</h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
+                    {task.status === "NEED_APPROVAL"
+                      ? "当前 Task 停止在计划确认审批点。Reviewer 批准后才创建 ExecutionRun。"
+                      : `当前持久化状态为 ${TASK_STATUS_LABELS[task.status]}，尚无 ExecutionRun 证据。`}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
         </ReadonlySection>
 
         <ReadonlySection id="task-artifact" label="Artifact" icon={FileCheck2}>
@@ -472,17 +632,25 @@ export function TaskDetailScreen({
               ) : (
                 <>
                   <p className="mt-3 text-xs leading-5 text-[var(--aios-muted)]">
-                    仅显示 ArtifactVersionRef 证据，正文未在当前 read model 提供。
+                    Artifact 正文由独立 Read Model 提供；此处保留版本引用和验收状态。
                   </p>
                   <ul className="mt-4 space-y-3">
                     {task.artifactVersionRefs.map((reference) => (
-                      <ReferenceCard
-                        key={reference.versionId}
-                        label={`${reference.artifactType} · ${
-                          reference.accepted ? "已接受" : "未接受"
-                        }`}
-                        reference={reference}
-                      />
+                      <li key={reference.versionId}>
+                        <Link
+                          href={`/artifacts/${reference.objectId}`}
+                          className="mb-2 inline-flex min-h-11 items-center rounded-lg px-1 text-sm font-semibold text-[var(--aios-primary)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
+                        >
+                          查看 Artifact {reference.objectId}
+                        </Link>
+                        <ReferenceCard
+                          label={`${reference.artifactType} · ${
+                            reference.accepted ? "已接受" : "未接受"
+                          }`}
+                          reference={reference}
+                          container="div"
+                        />
+                      </li>
                     ))}
                   </ul>
                 </>
@@ -557,7 +725,9 @@ export function TaskDetailScreen({
                         {historyItem.toStatus}
                       </p>
                       <p className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">
-                        {historyItem.reasonCode} · {historyItem.actor.userId}
+                        {historyItem.reasonCode} ·{" "}
+                        {historyItem.actor.actorType}:
+                        {historyItem.actor.actorId}
                       </p>
                     </div>
                     <div className="text-xs text-[var(--aios-muted)] sm:text-right">
@@ -600,23 +770,78 @@ export function TaskDetailScreen({
             id={controlledActionDescriptionId}
             className="mt-2 text-sm leading-6 text-[var(--aios-muted)]"
           >
-            当前增量仅开放 Task 只读详情，受控动作将在对应引擎和权限流程实现后启用。
+            当前增量开放“计划批准 → 确定性 Mock Runtime → Artifact
+            验收”的首个 AI 员工闭环。
           </p>
           <p className="mt-1 text-sm leading-6 text-[var(--aios-muted)]">
-            审批、Artifact 与 Audit 的专用页面尚未实现，本页仅提供只读证据。
+            只有固定 Reviewer / Human Owner 可以推进；其余动作和 Auditor
+            身份保持只读。
           </p>
+          {actionState.status === "error" ? (
+            <p
+              role="alert"
+              className="mt-4 rounded-lg bg-[color-mix(in_srgb,var(--aios-error)_12%,var(--aios-surface))] p-3 text-sm text-[var(--aios-error-foreground)]"
+            >
+              {actionState.message ??
+                "受控动作未完成，Task 状态未被推测或覆盖。"}
+            </p>
+          ) : null}
+          {actionState.status === "working" ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className="mt-4 flex items-center gap-2 text-sm text-[var(--aios-muted)]"
+            >
+              <LoaderCircle
+                className="animate-spin motion-reduce:animate-none"
+                size={17}
+                aria-hidden="true"
+              />
+              正在执行：{actionState.action}
+            </p>
+          ) : null}
           <div className="mt-4 flex flex-wrap gap-3">
-            {CONTROLLED_ACTIONS.map((action) => (
-              <Button
-                key={action}
-                variant="secondary"
-                disabled
-                aria-describedby={controlledActionDescriptionId}
-                title="当前增量尚未启用此受控动作"
-              >
-                {action}
-              </Button>
-            ))}
+            {CONTROLLED_ACTIONS.map((action) => {
+              const supported = SUPPORTED_ACTIONS.has(
+                action as TaskDetailControlledAction,
+              );
+              const active = action === enabledAction;
+              const disabled =
+                !supported ||
+                !active ||
+                !onControlledAction ||
+                actionState.status === "working";
+              return (
+                <Button
+                  key={action}
+                  variant={active ? "primary" : "secondary"}
+                  disabled={disabled}
+                  aria-describedby={controlledActionDescriptionId}
+                  aria-busy={
+                    actionState.status === "working" &&
+                    actionState.action === action
+                  }
+                  title={
+                    active
+                      ? `执行受控动作：${action}`
+                      : supported
+                        ? "当前状态或身份不允许此受控动作"
+                        : "当前增量尚未启用此受控动作"
+                  }
+                  onClick={
+                    active
+                      ? () => {
+                          void onControlledAction?.(
+                            action as TaskDetailControlledAction,
+                          );
+                        }
+                      : undefined
+                  }
+                >
+                  {action}
+                </Button>
+              );
+            })}
           </div>
         </Card>
       </section>
