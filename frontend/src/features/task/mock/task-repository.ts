@@ -1,4 +1,5 @@
 import { organization, users, workspace } from "@/mock/fixtures";
+import { resolveCapabilityVersionForTask } from "@/features/capability/public-contract";
 
 import type {
   AgentAssignment,
@@ -44,7 +45,6 @@ import {
   goldenTechnicalSolutionTask,
   readOnlyCodeToolVersionRef,
   taskFixtures,
-  technicalSolutionCapabilityVersionRef,
 } from "./task-fixtures";
 
 export const TASK_STORE_KEY = "aios.mock.task-store.v1";
@@ -387,11 +387,7 @@ function matchesVersionRef(
 }
 
 function isKnownCapabilityRef(value: unknown): value is CapabilityVersionRef {
-  return matchesVersionRef(
-    value,
-    technicalSolutionCapabilityVersionRef,
-    "CAPABILITY",
-  );
+  return isVersionRef(value, "CAPABILITY");
 }
 
 function isKnownKnowledgeRef(value: unknown): value is KnowledgeVersionRef {
@@ -2315,6 +2311,32 @@ export function createTaskRepository(
       const storedDraft = workspaceStore?.draftsByActor[actor.userId];
       const draft = storedDraft ? materializeDraft(storedDraft) : undefined;
       requireCompleteTechnicalSolutionDraft(draft);
+      let resolvedCapability;
+      try {
+        resolvedCapability = await resolveCapabilityVersionForTask(
+          taskScope,
+          actor,
+          draft.capabilityVersionRefs[0].versionId,
+          "GENERATE_TECHNICAL_DESIGN",
+        );
+      } catch {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "The selected CapabilityVersion is not currently Published or authorized.",
+        );
+      }
+      if (
+        !matchesVersionRef(
+          draft.capabilityVersionRefs[0],
+          resolvedCapability.versionRef,
+          "CAPABILITY",
+        )
+      ) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "The selected CapabilityVersion reference failed digest validation.",
+        );
+      }
       if (envelope.nextTaskSequence === Number.MAX_SAFE_INTEGER) {
         throw new TaskRepositoryError(
           "VALIDATION",

@@ -22,6 +22,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import type { CapabilitySelectionOption } from "@/features/capability/model";
 import { cn } from "@/lib/cn";
 
 import {
@@ -77,6 +78,7 @@ const FIELD_STEPS: Record<WizardField, TaskWizardStep> = {
   constraintsText: 2,
   outOfScopeText: 2,
   includeKnowledge: 3,
+  capabilityVersionId: 3,
   completionCriteriaText: 4,
 };
 
@@ -92,6 +94,7 @@ const FIELD_LABELS: Record<WizardField, string> = {
   constraintsText: "约束",
   outOfScopeText: "不做事项",
   includeKnowledge: "知识库版本",
+  capabilityVersionId: "CapabilityVersion",
   completionCriteriaText: "Completion Criteria",
 };
 
@@ -99,6 +102,7 @@ export interface TaskWizardProps {
   scope: TaskScope;
   actor: TaskActor;
   initialDraft?: TaskDraft;
+  capabilityOptions?: CapabilitySelectionOption[];
   scopeLabels: {
     organizationName: string;
     workspaceName: string;
@@ -219,6 +223,20 @@ export function TaskWizard({
   scope,
   actor,
   initialDraft,
+  capabilityOptions = [
+    {
+      capabilityId: TECHNICAL_SOLUTION_CAPABILITY_REF.objectId,
+      capabilityName: "技术方案生成",
+      purpose:
+        "根据 Task 目标、约束和授权知识生成可验收的技术方案 Artifact。",
+      taskType: "GENERATE_TECHNICAL_DESIGN",
+      versionRef: TECHNICAL_SOLUTION_CAPABILITY_REF,
+      modelProfile: "reasoning-structured-output",
+      workflowVersionId: "workflow-technical-solution-v1",
+      knowledgeRequired: true,
+      toolActions: ["codegraph.context"],
+    },
+  ],
   scopeLabels,
 }: TaskWizardProps) {
   const router = useRouter();
@@ -246,6 +264,10 @@ export function TaskWizard({
 
   const isGolden = values.templateName === GOLDEN_TEMPLATE;
   const isBusy = operation.status === "saving";
+  const selectedCapability = capabilityOptions.find(
+    ({ versionRef }) =>
+      versionRef.versionId === values.capabilityVersionId,
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -312,7 +334,15 @@ export function TaskWizard({
     operationLockRef.current = true;
     const requestRevision = ++requestRevisionRef.current;
     const editRevision = editRevisionRef.current;
-    const snapshot = wizardStateToDraft(valuesRef.current, step);
+    const capability = capabilityOptions.find(
+      ({ versionRef }) =>
+        versionRef.versionId === valuesRef.current.capabilityVersionId,
+    );
+    const snapshot = wizardStateToDraft(
+      valuesRef.current,
+      step,
+      capability?.versionRef,
+    );
     setOperation({ status: "saving" });
     try {
       await saveDraft(scope, actor, snapshot);
@@ -442,7 +472,23 @@ export function TaskWizard({
     operationLockRef.current = true;
     const requestRevision = ++requestRevisionRef.current;
     const editRevision = editRevisionRef.current;
-    const snapshot = wizardStateToDraft(valuesRef.current, 5);
+    const capability = capabilityOptions.find(
+      ({ versionRef }) =>
+        versionRef.versionId === valuesRef.current.capabilityVersionId,
+    );
+    if (!capability) {
+      showErrors({
+        capabilityVersionId:
+          "请选择一个当前 Workspace 可用的 Published 能力版本。",
+      });
+      operationLockRef.current = false;
+      return;
+    }
+    const snapshot = wizardStateToDraft(
+      valuesRef.current,
+      5,
+      capability.versionRef,
+    );
     setOperation({ status: "saving" });
     try {
       await saveDraft(scope, actor, snapshot);
@@ -760,8 +806,100 @@ export function TaskWizard({
       <div>
         <SectionHeading
           title="提供上下文"
-          description="仅绑定当前 Workspace 已授权且版本固定的知识库引用，不保存知识正文或 Secret。"
+          description="选择当前 Workspace 已发布的能力版本，并绑定已授权、版本固定的知识库引用。"
         />
+        <fieldset className="mt-6">
+          <legend className="text-sm font-semibold">
+            Published CapabilityVersion
+          </legend>
+          {capabilityOptions.length > 0 ? (
+            <div className="mt-3 grid gap-3">
+              {capabilityOptions.map((option, index) => (
+                <label
+                  key={option.versionRef.versionId}
+                  className={cn(
+                    "cursor-pointer rounded-lg border p-4 focus-within:outline-2 focus-within:outline-[var(--aios-primary)]",
+                    values.capabilityVersionId ===
+                      option.versionRef.versionId
+                      ? "border-[var(--aios-primary)] bg-[color-mix(in_srgb,var(--aios-primary)_7%,var(--aios-surface))]"
+                      : "border-[var(--aios-control-border)] bg-[var(--aios-surface)]",
+                  )}
+                >
+                  <span className="flex items-start gap-3">
+                    <input
+                      aria-describedby={describedBy(
+                        "capabilityVersionId",
+                        errors,
+                      )}
+                      checked={
+                        values.capabilityVersionId ===
+                        option.versionRef.versionId
+                      }
+                      className="mt-1 accent-[var(--aios-primary)]"
+                      id={
+                        index === 0
+                          ? "capabilityVersionId"
+                          : `capability-${index + 1}`
+                      }
+                      name="capabilityVersion"
+                      type="radio"
+                      onChange={() =>
+                        updateValue(
+                          "capabilityVersionId",
+                          option.versionRef.versionId,
+                        )
+                      }
+                    />
+                    <span className="min-w-0">
+                      <span className="block font-semibold">
+                        {option.capabilityName} · v
+                        {option.versionRef.versionNumber}
+                      </span>
+                      <span className="mt-1 block text-sm leading-6 text-[var(--aios-muted)]">
+                        {option.purpose}
+                      </span>
+                      <span className="mt-2 block break-all font-mono text-xs text-[var(--aios-muted)]">
+                        {option.versionRef.versionId}
+                      </span>
+                      <span className="mt-1 block text-xs text-[var(--aios-muted)]">
+                        ModelPolicy：{option.modelProfile} · Workflow：
+                        {option.workflowVersionId}
+                      </span>
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--aios-warning)_35%,var(--aios-surface))] p-4 text-sm text-[var(--aios-warning-foreground)]"
+              role="alert"
+            >
+              当前身份没有可用于“生成技术方案”的 Published
+              CapabilityVersion。请由 Capability Builder
+              完成评测与发布后再提交 Task。
+            </div>
+          )}
+          <p
+            className={supportingClass}
+            id="capabilityVersionId-help"
+          >
+            Task 保存固定 VersionRef 与 Digest；Suspended、Deprecated
+            或 Retired 版本不会出现在选择列表中。
+          </p>
+          <FieldError
+            field="capabilityVersionId"
+            errors={errors}
+          />
+          {selectedCapability ? (
+            <Link
+              href={`/capabilities/${selectedCapability.capabilityId}`}
+              className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
+            >
+              查看能力组成与评测证据
+            </Link>
+          ) : null}
+        </fieldset>
         <fieldset className="mt-6">
           <legend className="text-sm font-semibold">
             授权知识库版本
@@ -1040,10 +1178,16 @@ export function TaskWizard({
               Workspace 成员可见；草稿按 actor 隔离。
             </p>
           </Card>
-          <RefSummary
-            label="CapabilityVersion"
-            {...TECHNICAL_SOLUTION_CAPABILITY_REF}
-          />
+          {selectedCapability ? (
+            <RefSummary
+              label="CapabilityVersion"
+              {...selectedCapability.versionRef}
+            />
+          ) : (
+            <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm text-[var(--aios-muted)]">
+              尚未选择 Published CapabilityVersion
+            </div>
+          )}
           <RefSummary
             label="知识库版本"
             {...AIOS_KNOWLEDGE_REF}

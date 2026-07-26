@@ -14,7 +14,9 @@ describe("Sidebar", () => {
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
 
     for (const group of ["工作", "AI 资源", "企业连接", "管理与治理"]) {
-      expect(within(navigation).getByRole("heading", { name: group })).toBeVisible();
+      expect(
+        within(navigation).getByRole("heading", { name: group }),
+      ).toBeVisible();
     }
 
     const approvedItems = [
@@ -24,7 +26,7 @@ describe("Sidebar", () => {
       "Artifact",
       "AI 员工",
       "知识库",
-      "Capability",
+      "能力中心",
       "Workflow",
       "Tool",
       "MCP 连接",
@@ -41,13 +43,13 @@ describe("Sidebar", () => {
     expect(within(navigation).getByText("3")).toBeVisible();
   });
 
-  it("enables Workspace, Task and 知识库 while explaining every future item", () => {
+  it("enables Workspace, Task, 知识库 and 能力中心 while explaining future items", () => {
     render(<Sidebar open onClose={vi.fn()} />);
 
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
     const enabledLinks = navigation.querySelectorAll("a[href]");
 
-    expect(enabledLinks).toHaveLength(3);
+    expect(enabledLinks).toHaveLength(4);
     expect(enabledLinks[0]).toHaveAccessibleName("工作台");
     expect(enabledLinks[0]).toHaveAttribute("href", "/workspace");
     expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
@@ -55,12 +57,13 @@ describe("Sidebar", () => {
     expect(enabledLinks[1]).toHaveAttribute("href", "/tasks");
     expect(enabledLinks[2]).toHaveAccessibleName("知识库");
     expect(enabledLinks[2]).toHaveAttribute("href", "/knowledge");
+    expect(enabledLinks[3]).toHaveAccessibleName("能力中心");
+    expect(enabledLinks[3]).toHaveAttribute("href", "/capabilities");
 
     const disabledLabels = [
       "审批待办，3 项待处理",
       "Artifact",
       "AI 员工",
-      "Capability",
       "Workflow",
       "Tool",
       "MCP 连接",
@@ -95,10 +98,14 @@ describe("Sidebar", () => {
 
     const brand = screen.getByTestId("sidebar-brand");
     expect(brand).toHaveTextContent("AIOS");
-    expect(within(brand).getByText("A")).toHaveClass("md:inline", "xl:hidden");
-    expect(within(brand).getByText("AIOS", { selector: "[aria-hidden='true']" })).toHaveClass(
-      "md:hidden",
-      "xl:inline",
+    expect(within(brand).getByText("A")).toHaveClass(
+      "md:inline",
+      "xl:hidden",
     );
+    expect(
+      within(brand).getByText("AIOS", {
+        selector: "[aria-hidden='true']",
+      }),
+    ).toHaveClass("md:hidden", "xl:inline");
   });
 });

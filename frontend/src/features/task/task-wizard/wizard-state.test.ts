@@ -5,6 +5,7 @@ import {
   draftToWizardState,
   wizardStateToDraft,
 } from "./wizard-state";
+import { TECHNICAL_SOLUTION_CAPABILITY_REF } from "./wizard-config";
 import {
   buildTechnicalSolutionDraft,
   resolveWizardProgress,
@@ -26,7 +27,11 @@ describe("Task wizard state", () => {
     values.completionCriteriaText = "结构完整\n引用可追溯";
     values.includeKnowledge = true;
 
-    const draft = wizardStateToDraft(values);
+    const draft = wizardStateToDraft(
+      values,
+      5,
+      TECHNICAL_SOLUTION_CAPABILITY_REF,
+    );
 
     expect(Object.keys(draft).sort()).toEqual(
       [

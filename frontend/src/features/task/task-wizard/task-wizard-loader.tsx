@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/features/session/session-provider";
+import { listPublishedCapabilityOptions } from "@/features/capability/mock/capability-repository";
+import type { CapabilitySelectionOption } from "@/features/capability/model";
 
 import {
   getDraft,
@@ -21,7 +23,12 @@ import { TaskWizard } from "./task-wizard";
 
 type LoaderState =
   | { status: "idle" }
-  | { status: "ready"; requestKey: string; draft?: TaskDraft }
+  | {
+      status: "ready";
+      requestKey: string;
+      draft?: TaskDraft;
+      capabilityOptions: CapabilitySelectionOption[];
+    }
   | { status: "forbidden"; requestKey: string }
   | {
       status: "error";
@@ -76,9 +83,21 @@ export function TaskWizardLoader() {
           return;
         }
 
-        const draft = await getDraft(scope, actor);
+        const [draft, capabilityOptions] = await Promise.all([
+          getDraft(scope, actor),
+          listPublishedCapabilityOptions(
+            scope,
+            actor,
+            "GENERATE_TECHNICAL_DESIGN",
+          ),
+        ]);
         if (active && requestId === latestRequestRef.current) {
-          setState({ status: "ready", requestKey, draft });
+          setState({
+            status: "ready",
+            requestKey,
+            draft,
+            capabilityOptions,
+          });
         }
       })
       .catch((error: unknown) => {
@@ -205,6 +224,7 @@ export function TaskWizardLoader() {
       key={requestKey}
       actor={{ userId: user.id }}
       initialDraft={state.draft}
+      capabilityOptions={state.capabilityOptions}
       scope={{
         organizationId: organization.id,
         workspaceId: workspace.id,

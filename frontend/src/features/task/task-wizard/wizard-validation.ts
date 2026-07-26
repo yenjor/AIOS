@@ -1,5 +1,8 @@
 import type { TaskDraft, TaskWizardStep } from "../model";
-import { GOLDEN_TEMPLATE } from "./wizard-config";
+import {
+  GOLDEN_TEMPLATE,
+  TECHNICAL_SOLUTION_CAPABILITY_REF,
+} from "./wizard-config";
 import {
   localDateTimeToIso,
   type TaskWizardValues,
@@ -8,6 +11,7 @@ import {
 
 export type WizardField =
   | "templateName"
+  | "capabilityVersionId"
   | "title"
   | "goal"
   | "currentProblem"
@@ -81,6 +85,14 @@ export function validateStep(
     errors.includeKnowledge =
       "黄金路径必须绑定一个已授权的知识库版本。";
   }
+  if (
+    step === 3 &&
+    values.templateName === GOLDEN_TEMPLATE &&
+    !values.capabilityVersionId
+  ) {
+    errors.capabilityVersionId =
+      "请选择一个当前 Workspace 可用的 Published 能力版本。";
+  }
 
   if (step === 4 && isBlank(values.completionCriteriaText)) {
     errors.completionCriteriaText = "请至少提供一项 Completion Criteria。";
@@ -135,5 +147,9 @@ export function buildTechnicalSolutionDraft(
   if (Object.keys(errors).length > 0) {
     throw new Error("The Task wizard is incomplete.");
   }
-  return wizardStateToDraft(values, 5);
+  return wizardStateToDraft(
+    values,
+    5,
+    TECHNICAL_SOLUTION_CAPABILITY_REF,
+  );
 }

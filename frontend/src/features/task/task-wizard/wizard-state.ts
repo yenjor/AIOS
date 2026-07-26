@@ -1,4 +1,5 @@
 import type {
+  CapabilityVersionRef,
   TaskDraft,
   TaskWizardStep,
 } from "../model";
@@ -17,6 +18,7 @@ import {
 
 export interface TaskWizardValues {
   templateName?: TaskTemplateName;
+  capabilityVersionId: string;
   title: string;
   goal: string;
   currentProblem: string;
@@ -37,6 +39,7 @@ export interface TaskWizardState {
 
 export function createInitialWizardValues(): TaskWizardValues {
   return {
+    capabilityVersionId: TECHNICAL_SOLUTION_CAPABILITY_REF.versionId,
     title: "",
     goal: "",
     currentProblem: "",
@@ -106,6 +109,9 @@ export function draftToWizardState(
     values: {
       ...defaults,
       templateName: draft.templateName,
+      capabilityVersionId:
+        draft.capabilityVersionRefs?.[0]?.versionId ??
+        defaults.capabilityVersionId,
       title: draft.title ?? "",
       goal: draft.goal ?? "",
       currentProblem: draft.currentProblem ?? "",
@@ -127,6 +133,7 @@ export function draftToWizardState(
 export function wizardStateToDraft(
   values: TaskWizardValues,
   wizardStep: TaskWizardStep = 5,
+  capabilityVersionRef?: CapabilityVersionRef,
 ): TaskDraft {
   const expectedCompletionAt = localDateTimeToIso(
     values.expectedCompletionLocal,
@@ -155,10 +162,10 @@ export function wizardStateToDraft(
     ...(values.includeKnowledge
       ? { knowledgeVersionRefs: [{ ...AIOS_KNOWLEDGE_REF }] }
       : {}),
-    ...(technicalSolution
+    ...(technicalSolution && capabilityVersionRef
       ? {
           capabilityVersionRefs: [
-            { ...TECHNICAL_SOLUTION_CAPABILITY_REF },
+            { ...capabilityVersionRef },
           ],
           toolVersionRefs: [{ ...READ_ONLY_TOOL_REF }],
           assignedAgent: structuredClone(AGENT_ASSIGNMENT),

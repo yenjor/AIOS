@@ -1,0 +1,215 @@
+"use client";
+
+import {
+  Activity,
+  AlertCircle,
+  ArrowLeft,
+  Boxes,
+  BrainCircuit,
+  CheckCircle2,
+  FileCheck2,
+  GitBranch,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  Send,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+import type { CapabilityAction, CapabilityActionState } from "./capability-detail-loader";
+import { CapabilityStatusBadge } from "./capability-status-badge";
+import type { Capability, CapabilityPermissionDecision, CapabilityVersion } from "./model";
+
+const ownerNames: Record<string, string> = {
+  "user-lead": "陈明", "user-admin": "吴桐", "user-pm": "林悦", "user-dev": "周航",
+};
+
+function RefCard({ label, objectId, versionId, digest }: { label: string; objectId: string; versionId: string; digest: string }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">{label}</p>
+      <p className="mt-2 break-all text-sm font-semibold">{objectId}</p>
+      <p className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">{versionId}</p>
+      <p className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">{digest}</p>
+    </div>
+  );
+}
+
+function VersionDetail({ version }: { version: CapabilityVersion }) {
+  const evaluation = version.evaluationSummaries.at(-1);
+  return (
+    <Card className="p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-[var(--aios-muted)]">CapabilityVersion v{version.versionNumber}</p>
+          <h2 className="mt-1 break-all font-mono text-lg font-semibold">{version.id}</h2>
+          <p className="mt-2 break-all font-mono text-xs text-[var(--aios-muted)]">{version.contentDigest}</p>
+        </div>
+        <CapabilityStatusBadge status={version.status} />
+      </div>
+
+      <section className="mt-6">
+        <h3 className="font-semibold">SkillDefinition</h3>
+        <dl className="mt-3 grid gap-3 rounded-lg bg-[var(--aios-canvas)] p-4 text-sm sm:grid-cols-2">
+          <div><dt className="text-xs text-[var(--aios-muted)]">Purpose</dt><dd className="mt-1">{version.skillDefinition.purpose}</dd></div>
+          <div><dt className="text-xs text-[var(--aios-muted)]">TaskType / Risk</dt><dd className="mt-1">{version.skillDefinition.taskTypes.join(", ")} · {version.skillDefinition.riskClassification}</dd></div>
+          <div><dt className="text-xs text-[var(--aios-muted)]">Input</dt><dd className="mt-1">{version.skillDefinition.inputContract}</dd></div>
+          <div><dt className="text-xs text-[var(--aios-muted)]">Output</dt><dd className="mt-1">{version.skillDefinition.outputContract}</dd></div>
+        </dl>
+      </section>
+
+      <section className="mt-6">
+        <h3 className="font-semibold">固定组件引用</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <RefCard label="PromptTemplateRef" objectId={version.promptTemplateRef.promptId} versionId={version.promptTemplateRef.versionId} digest={version.promptTemplateRef.digest} />
+          <RefCard label="WorkflowVersionRef" objectId={version.workflowVersionRef.workflowId} versionId={version.workflowVersionRef.versionId} digest={version.workflowVersionRef.digest} />
+          <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">ModelPolicy</p>
+            <p className="mt-2 font-semibold">{version.modelPolicy.profile}</p>
+            <p className="mt-2 text-xs leading-5 text-[var(--aios-muted)]">Organization data policy · Structured output · {version.modelPolicy.fallbackAllowed ? "受控 Fallback" : "无 Fallback"}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
+          <h3 className="flex items-center gap-2 font-semibold"><BrainCircuit size={18} aria-hidden="true" />KnowledgeRequirement</h3>
+          {version.knowledgeRequirements.length ? (
+            <ul className="mt-3 space-y-2 text-sm text-[var(--aios-muted)]">{version.knowledgeRequirements.map((requirement, index) => <li key={index}>CURRENT_WORKSPACE · {requirement.classificationCeiling} · Citation {requirement.citationRequired ? "Required" : "Optional"}</li>)}</ul>
+          ) : <p className="mt-3 text-sm text-[var(--aios-muted)]">没有知识依赖。</p>}
+        </div>
+        <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
+          <h3 className="flex items-center gap-2 font-semibold"><Wrench size={18} aria-hidden="true" />ToolRequirement</h3>
+          {version.toolRequirements.length ? (
+            <ul className="mt-3 space-y-2 text-sm text-[var(--aios-muted)]">{version.toolRequirements.map((requirement) => <li key={requirement.action}><span className="font-mono">{requirement.action}</span> · {requirement.riskLevel} · {requirement.required ? "Required" : "Optional"}</li>)}</ul>
+          ) : <p className="mt-3 text-sm text-[var(--aios-muted)]">没有 Tool Action 依赖。</p>}
+        </div>
+        <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
+          <h3 className="flex items-center gap-2 font-semibold"><ShieldCheck size={18} aria-hidden="true" />PermissionRequirement</h3>
+          <div className="mt-3 flex flex-wrap gap-2">{version.permissionRequirements.map((requirement) => <Badge key={`${requirement.resource}:${requirement.action}`} tone="neutral">{requirement.resource}:{requirement.action}</Badge>)}</div>
+        </div>
+        <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
+          <h3 className="flex items-center gap-2 font-semibold"><FileCheck2 size={18} aria-hidden="true" />ArtifactContract</h3>
+          <p className="mt-3 text-sm">{version.artifactContract.artifactType} · 必须人工 Review</p>
+          <p className="mt-2 text-xs text-[var(--aios-muted)]">{version.artifactContract.completionCriteriaMapping.join("；")}</p>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4">
+          <h3 className="font-semibold">EvaluationGate</h3>
+          <p className="mt-2 text-sm text-[var(--aios-muted)]">{version.evaluationGate.sampleSetVersion} · {version.evaluationGate.minimumRuns} runs · Quality ≥ {version.evaluationGate.qualityThreshold}</p>
+          {evaluation ? (
+            <div className="mt-3 rounded-lg bg-[var(--aios-surface)] p-3 text-sm">
+              <div className="flex items-center gap-2"><CheckCircle2 className="text-[var(--aios-success-foreground)]" size={17} aria-hidden="true" /><strong>{evaluation.result}</strong> · Score {evaluation.qualityScore}</div>
+              <p className="mt-2 break-all font-mono text-xs text-[var(--aios-muted)]">{evaluation.evidenceReference}</p>
+            </div>
+          ) : <p className="mt-3 text-sm text-[var(--aios-muted)]">尚未执行评测。</p>}
+        </div>
+        <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4">
+          <h3 className="font-semibold">FailurePolicy</h3>
+          <ul className="mt-2 space-y-1 text-sm text-[var(--aios-muted)]">
+            <li>Model：{version.failurePolicy.modelFailure}</li>
+            <li>Permission：{version.failurePolicy.permissionDenied}</li>
+            <li>Missing Knowledge：{version.failurePolicy.missingKnowledge}</li>
+            <li>Unknown Tool Result：{version.failurePolicy.unknownToolResult}</li>
+          </ul>
+        </div>
+      </section>
+    </Card>
+  );
+}
+
+export function CapabilityDetailScreen({
+  item,
+  permission,
+  actionState,
+  onAction,
+  scopeLabels,
+}: {
+  item: Capability;
+  permission: CapabilityPermissionDecision;
+  actionState: CapabilityActionState;
+  onAction: (action: CapabilityAction, versionId?: string, reason?: string) => Promise<void>;
+  scopeLabels: { organizationName: string; workspaceName: string };
+}) {
+  const [selectedVersionId, setSelectedVersionId] = useState(
+    item.publishedVersionId ?? item.versions.at(-1)!.id,
+  );
+  const selected =
+    item.versions.find(({ id }) => id === selectedVersionId) ??
+    item.versions.at(-1)!;
+  const busy = actionState.status === "working";
+
+  function suspend() {
+    const reason = window.prompt("请输入暂停原因。新 Task 将无法解析此版本。");
+    if (reason?.trim()) void onAction("SUSPEND", selected.id, reason.trim());
+  }
+
+  return (
+    <div className="mx-auto max-w-[1500px]">
+      <Link href="/capabilities" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[var(--aios-primary)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]">
+        <ArrowLeft size={16} aria-hidden="true" />返回能力中心
+      </Link>
+      <header className="mt-3 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[var(--aios-primary)]">Capability Aggregate</p>
+          <h1 className="mt-1 text-3xl font-semibold">{item.name}</h1>
+          <p className="mt-2 break-all font-mono text-xs text-[var(--aios-muted)]">{item.code} · {item.id}</p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">{item.purpose}</p>
+          <p className="mt-2 text-xs text-[var(--aios-muted)]">{scopeLabels.organizationName} / {scopeLabels.workspaceName} · Owner {ownerNames[item.ownerId] ?? item.ownerId} · Aggregate v{item.aggregateVersion}</p>
+        </div>
+        {permission.canManage ? (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" disabled={busy} onClick={() => void onAction("CREATE_VERSION")}><Plus size={17} aria-hidden="true" />创建新版本</Button>
+            {selected.status === "DRAFT" ? <Button disabled={busy} onClick={() => void onAction("EVALUATE", selected.id)}><Activity size={17} aria-hidden="true" />运行 Mock 评测</Button> : null}
+            {selected.status === "IN_REVIEW" ? <Button disabled={busy} onClick={() => void onAction("PUBLISH", selected.id)}><Send size={17} aria-hidden="true" />Review 并发布</Button> : null}
+            {selected.status === "PUBLISHED" ? <><Button variant="secondary" disabled={busy} onClick={suspend}><PauseCircle size={17} aria-hidden="true" />暂停</Button><Button variant="secondary" disabled={busy} onClick={() => void onAction("DEPRECATE", selected.id)}>Deprecated</Button></> : null}
+            {selected.status === "SUSPENDED" ? <Button disabled={busy} onClick={() => void onAction("RESUME", selected.id)}><PlayCircle size={17} aria-hidden="true" />复核并恢复</Button> : null}
+          </div>
+        ) : <p className="rounded-lg border border-[var(--aios-control-border)] px-4 py-3 text-sm text-[var(--aios-muted)]">{permission.reason}</p>}
+      </header>
+
+      {actionState.status === "working" ? (
+        <Card role="status" aria-live="polite" className="mt-5 flex items-center gap-3 p-4"><Activity className="animate-pulse text-[var(--aios-primary)] motion-reduce:animate-none" size={18} aria-hidden="true" />正在执行 {actionState.action}，写入前会验证状态与权限…</Card>
+      ) : actionState.status === "error" ? (
+        <Card role="alert" className="mt-5 flex items-start gap-3 border-[color-mix(in_srgb,var(--aios-error)_35%,var(--aios-surface))] p-4"><AlertCircle className="mt-0.5 text-[var(--aios-error-foreground)]" size={18} aria-hidden="true" /><p className="text-sm">{actionState.message}</p></Card>
+      ) : null}
+
+      <section className="mt-6 grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <Card className="h-fit p-4">
+          <h2 className="flex items-center gap-2 font-semibold"><GitBranch size={18} aria-hidden="true" />版本历史</h2>
+          <div className="mt-4 grid gap-2">
+            {[...item.versions].sort((a, b) => b.versionNumber - a.versionNumber).map((version) => (
+              <button
+                key={version.id}
+                type="button"
+                onClick={() => setSelectedVersionId(version.id)}
+                className={`min-h-11 rounded-lg border p-3 text-left focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)] ${selected.id === version.id ? "border-[var(--aios-primary)] bg-[color-mix(in_srgb,var(--aios-primary)_7%,var(--aios-surface))]" : "border-[var(--aios-control-border)]"}`}
+              >
+                <span className="flex items-center justify-between gap-2"><strong>v{version.versionNumber}</strong><CapabilityStatusBadge status={version.status} /></span>
+                <span className="mt-2 block break-all font-mono text-xs text-[var(--aios-muted)]">{version.id}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+        <VersionDetail version={selected} />
+      </section>
+
+      <Card className="mt-5 p-5">
+        <h2 className="flex items-center gap-2 font-semibold"><Boxes size={18} aria-hidden="true" />Usage 与运行边界</h2>
+        <p className="mt-3 text-sm leading-6 text-[var(--aios-muted)]">
+          Task 引用 {item.referencedTaskIds.length} 次。Published 只证明设计、评测和 Review 通过，不授予 Agent、User、知识或 Tool 权限；Runtime 仍按 Assignment、TaskType、Workspace、Permission 与 AutonomyLevel 计算交集。
+        </p>
+        {item.referencedTaskIds.length ? <div className="mt-3 flex flex-wrap gap-2">{item.referencedTaskIds.map((taskId) => <Link className="rounded-full border border-[var(--aios-control-border)] px-3 py-1 text-xs font-semibold" href={`/tasks/${taskId}`} key={taskId}>{taskId}</Link>)}</div> : null}
+      </Card>
+    </div>
+  );
+}

@@ -50,7 +50,7 @@ export const navigation: NavigationGroup[] = [
     items: [
       { label: "AI 员工", href: "/agents", enabled: false, icon: Bot },
       { label: "知识库", href: "/knowledge", enabled: true, icon: BrainCircuit },
-      { label: "Capability", href: "/capabilities", enabled: false, icon: Boxes },
+      { label: "能力中心", href: "/capabilities", enabled: true, icon: Boxes },
       { label: "Workflow", href: "/workflows", enabled: false, icon: Workflow },
     ],
   },

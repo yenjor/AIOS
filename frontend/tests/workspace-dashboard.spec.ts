@@ -121,7 +121,7 @@ test.describe("平板导航", () => {
   });
 });
 
-test("完整导航保持 README 模块归属且工作台、Task 与知识库可进入", async ({ page }) => {
+test("完整导航保持 README 模块归属且工作台、Task、知识库与能力中心可进入", async ({ page }) => {
   await enterWorkspaceAsLead(page);
 
   const navigation = page.getByRole("navigation", { name: "主要导航" });
@@ -133,7 +133,7 @@ test("完整导航保持 README 模块归属且工作台、Task 与知识库可�
     "Artifact",
     "AI 员工",
     "知识库",
-    "Capability",
+    "能力中心",
     "Workflow",
     "Tool",
     "MCP 连接",
@@ -156,7 +156,7 @@ test("完整导航保持 README 模块归属且工作台、Task 与知识库可�
   }
 
   await expect(navigation.getByRole("link")).toHaveCount(14);
-  await expect(navigation.locator("a[href]")).toHaveCount(3);
+  await expect(navigation.locator("a[href]")).toHaveCount(4);
 
   const workspaceLink = navigation.getByRole("link", {
     name: "工作台",
@@ -179,8 +179,15 @@ test("完整导航保持 README 模块归属且工作台、Task 与知识库可�
   await expect(knowledgeLink).toHaveAttribute("href", "/knowledge");
   await expect(knowledgeLink).not.toHaveAttribute("aria-disabled", "true");
 
+  const capabilityLink = navigation.getByRole("link", {
+    name: "能力中心",
+    exact: true,
+  });
+  await expect(capabilityLink).toHaveAttribute("href", "/capabilities");
+  await expect(capabilityLink).not.toHaveAttribute("aria-disabled", "true");
+
   const disabledItems = expectedItems.filter(
-    (item) => !["工作台", "Task", "知识库"].includes(item),
+    (item) => !["工作台", "Task", "知识库", "能力中心"].includes(item),
   );
   for (const item of disabledItems) {
     const disabledLink = navigation.getByRole("link", {

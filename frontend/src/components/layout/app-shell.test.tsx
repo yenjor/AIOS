@@ -113,7 +113,7 @@ describe("AppShell", () => {
     expect(document.body.style.overflow).toBe("hidden");
 
     await interaction.tab({ shift: true });
-    expect(screen.getByRole("link", { name: "知识库" })).toHaveFocus();
+    expect(screen.getByRole("link", { name: "能力中心" })).toHaveFocus();
     await interaction.tab();
     expect(screen.getByRole("button", { name: "关闭主导航" })).toHaveFocus();
 
