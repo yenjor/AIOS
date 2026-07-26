@@ -121,7 +121,7 @@ test.describe("平板导航", () => {
   });
 });
 
-test("完整导航保持 README 模块归属且只有工作台可进入", async ({ page }) => {
+test("完整导航保持 README 模块归属且工作台与 Task 可进入", async ({ page }) => {
   await enterWorkspaceAsLead(page);
 
   const navigation = page.getByRole("navigation", { name: "主要导航" });
@@ -156,7 +156,7 @@ test("完整导航保持 README 模块归属且只有工作台可进入", async 
   }
 
   await expect(navigation.getByRole("link")).toHaveCount(14);
-  await expect(navigation.locator("a[href]")).toHaveCount(1);
+  await expect(navigation.locator("a[href]")).toHaveCount(2);
 
   const workspaceLink = navigation.getByRole("link", {
     name: "工作台",
@@ -165,7 +165,14 @@ test("完整导航保持 README 模块归属且只有工作台可进入", async 
   await expect(workspaceLink).toHaveAttribute("href", "/workspace");
   await expect(workspaceLink).toHaveAttribute("aria-current", "page");
 
-  for (const item of expectedItems.slice(1)) {
+  const taskLink = navigation.getByRole("link", {
+    name: "Task",
+    exact: true,
+  });
+  await expect(taskLink).toHaveAttribute("href", "/tasks");
+  await expect(taskLink).not.toHaveAttribute("aria-disabled", "true");
+
+  for (const item of expectedItems.slice(2)) {
     const disabledLink = navigation.getByRole("link", {
       name: new RegExp(`^${item}(?:\\s|，|$)`),
     });
