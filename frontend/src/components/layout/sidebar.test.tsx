@@ -41,24 +41,25 @@ describe("Sidebar", () => {
     expect(within(navigation).getByText("3")).toBeVisible();
   });
 
-  it("enables only Workspace and Task while explaining every future item", () => {
+  it("enables Workspace, Task and Knowledge while explaining every future item", () => {
     render(<Sidebar open onClose={vi.fn()} />);
 
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
     const enabledLinks = navigation.querySelectorAll("a[href]");
 
-    expect(enabledLinks).toHaveLength(2);
+    expect(enabledLinks).toHaveLength(3);
     expect(enabledLinks[0]).toHaveAccessibleName("工作台");
     expect(enabledLinks[0]).toHaveAttribute("href", "/workspace");
     expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
     expect(enabledLinks[1]).toHaveAccessibleName("Task");
     expect(enabledLinks[1]).toHaveAttribute("href", "/tasks");
+    expect(enabledLinks[2]).toHaveAccessibleName("Knowledge");
+    expect(enabledLinks[2]).toHaveAttribute("href", "/knowledge");
 
     const disabledLabels = [
       "审批待办，3 项待处理",
       "Artifact",
       "AI 员工",
-      "Knowledge",
       "Capability",
       "Workflow",
       "Tool",

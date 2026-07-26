@@ -10,6 +10,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
@@ -791,9 +792,16 @@ export function TaskWizard({
             </span>
           </label>
           <p className={supportingClass} id="includeKnowledge-help">
-            仅保存 KnowledgeVersionRef；检索时仍需再次执行权限校验。
+            此引用来自 Knowledge Center 的有效版本。Task
+            仅保存 KnowledgeVersionRef；执行检索时仍需再次进行权限校验。
           </p>
           <FieldError field="includeKnowledge" errors={errors} />
+          <Link
+            href="/knowledge/knowledge-aios-docs"
+            className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
+          >
+            在 Knowledge Center 查看固定版本
+          </Link>
         </fieldset>
         <div className="mt-6 flex items-start gap-3 rounded-lg border border-[var(--aios-control-border)] p-4">
           <Info
@@ -802,9 +810,9 @@ export function TaskWizard({
             size={19}
           />
           <p className="text-sm leading-6 text-[var(--aios-muted)]">
-            当前 Mock TaskDraft 尚未建模任务材料引用、关联 Task/Artifact、
-            权威来源与敏感范围。这些内容不会被假装持久化；本步骤只实现已有的
-            KnowledgeVersionRef 边界。
+            Knowledge Center 负责来源、所有者、敏感等级、发布状态与历史版本；
+            Task 只消费已授权的固定版本，不复制正文，也不能直接修改正式
+            Knowledge。
           </p>
         </div>
       </div>
