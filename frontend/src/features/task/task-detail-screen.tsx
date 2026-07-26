@@ -48,6 +48,7 @@ interface DisplayVersionRef {
   label: string;
   reference: DeepReadonly<VersionRef>;
   actionId?: string;
+  operationType?: "READ";
 }
 
 const USER_NAMES: Readonly<Record<string, string>> = {
@@ -68,7 +69,11 @@ const DETAIL_NAVIGATION = [
 ] as const;
 
 const CONTROLLED_ACTIONS = [
-  "批准并开始执行",
+  "补充信息",
+  "批准计划",
+  "驳回计划",
+  "要求调整计划",
+  "开始执行",
   "暂停",
   "恢复",
   "取消",
@@ -76,7 +81,7 @@ const CONTROLLED_ACTIONS = [
   "调用 Tool",
   "接受 Artifact",
   "驳回 Artifact",
-  "发起返工",
+  "要求 Artifact 返工",
 ] as const;
 
 function userLabel(userId: string) {
@@ -92,10 +97,12 @@ function ReferenceCard({
   label,
   reference,
   actionId,
+  operationType,
 }: {
   label: string;
   reference: DeepReadonly<VersionRef>;
   actionId?: string;
+  operationType?: "READ";
 }) {
   return (
     <li className="min-w-0 rounded-lg border border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] p-3">
@@ -122,6 +129,14 @@ function ReferenceCard({
           <div>
             <dt className="text-[var(--aios-muted)]">Action</dt>
             <dd className="mt-0.5 break-all font-mono">{actionId}</dd>
+          </div>
+        ) : null}
+        {operationType ? (
+          <div>
+            <dt className="text-[var(--aios-muted)]">Operation Type</dt>
+            <dd className="mt-0.5 font-semibold">
+              {operationType} · 只读
+            </dd>
           </div>
         ) : null}
       </dl>
@@ -187,6 +202,7 @@ export function TaskDetailScreen({
       label: "Tool",
       reference,
       actionId: reference.actionId,
+      operationType: reference.operationType,
     })),
     ...(task.workflowVersionRef
       ? [{ label: "Workflow", reference: task.workflowVersionRef }]
@@ -365,14 +381,17 @@ export function TaskDetailScreen({
               </p>
               {fixedReferences.length > 0 ? (
                 <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                  {fixedReferences.map(({ label, reference, actionId }) => (
+                  {fixedReferences.map(
+                    ({ label, reference, actionId, operationType }) => (
                     <ReferenceCard
                       key={`${label}-${reference.versionId}`}
                       label={label}
                       reference={reference}
                       actionId={actionId}
+                      operationType={operationType}
                     />
-                  ))}
+                    ),
+                  )}
                 </ul>
               ) : (
                 <p className="mt-4 rounded-lg bg-[var(--aios-canvas)] p-4 text-sm text-[var(--aios-muted)]">
@@ -451,17 +470,22 @@ export function TaskDetailScreen({
                   </p>
                 </div>
               ) : (
-                <ul className="mt-4 space-y-3">
-                  {task.artifactVersionRefs.map((reference) => (
-                    <ReferenceCard
-                      key={reference.versionId}
-                      label={`${reference.artifactType} · ${
-                        reference.accepted ? "已接受" : "未接受"
-                      }`}
-                      reference={reference}
-                    />
-                  ))}
-                </ul>
+                <>
+                  <p className="mt-3 text-xs leading-5 text-[var(--aios-muted)]">
+                    仅显示 ArtifactVersionRef 证据，正文未在当前 read model 提供。
+                  </p>
+                  <ul className="mt-4 space-y-3">
+                    {task.artifactVersionRefs.map((reference) => (
+                      <ReferenceCard
+                        key={reference.versionId}
+                        label={`${reference.artifactType} · ${
+                          reference.accepted ? "已接受" : "未接受"
+                        }`}
+                        reference={reference}
+                      />
+                    ))}
+                  </ul>
+                </>
               )}
               {task.citationRefs.length > 0 ? (
                 <>

@@ -329,6 +329,7 @@ describe("TaskDetailScreen", () => {
       "tool-codegraph-read-v1",
       "workflow-technical-solution-v1",
       "codegraph.context",
+      "READ · 只读",
     ]) {
       expect(within(overview).getByText(reference)).toBeVisible();
     }
@@ -363,14 +364,31 @@ describe("TaskDetailScreen", () => {
       screen.getByText(/审批、Artifact 与 Audit 的专用页面尚未实现/),
     ).toBeVisible();
 
-    const controlledActions = screen.getAllByRole("button");
-    expect(controlledActions).toHaveLength(9);
-    for (const action of controlledActions) {
+    const controlledActions = [
+      "补充信息",
+      "批准计划",
+      "驳回计划",
+      "要求调整计划",
+      "开始执行",
+      "暂停",
+      "恢复",
+      "取消",
+      "人工接管",
+      "调用 Tool",
+      "接受 Artifact",
+      "驳回 Artifact",
+      "要求 Artifact 返工",
+    ];
+    for (const actionName of controlledActions) {
+      const action = screen.getByRole("button", { name: actionName });
       expect(action).toBeDisabled();
       expect(action).toHaveAccessibleDescription(
         "当前增量仅开放 Task 只读详情，受控动作将在对应引擎和权限流程实现后启用。",
       );
     }
+    expect(
+      screen.queryByRole("button", { name: "批准并开始执行" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows only persisted collaboration and audit evidence", () => {
@@ -430,4 +448,82 @@ describe("TaskDetailScreen", () => {
     );
     expect(screen.queryByText("capability-technical-solution-v1")).not.toBeInTheDocument();
   });
+
+  it("shows an accepted ArtifactVersionRef for a completed Task without inventing content", () => {
+    const completedTask = plannedTask();
+    completedTask.status = "COMPLETED";
+    completedTask.artifactVersionRefs = [
+      {
+        kind: "ARTIFACT",
+        objectId: "artifact-deliverable-task-completed",
+        versionId: "artifact-deliverable-task-completed-v1",
+        versionNumber: 1,
+        digest: "sha256:artifact-deliverable-task-completed-v1",
+        artifactType: "技术方案",
+        accepted: true,
+      },
+    ];
+
+    render(
+      <TaskDetailScreen
+        task={completedTask}
+        scopeLabels={scopeLabels}
+        viewer={{ name: "赵岚", role: "Auditor" }}
+      />,
+    );
+
+    const artifact = screen.getByRole("region", { name: "Artifact" });
+    expect(within(artifact).getByText("技术方案 · 已接受")).toBeVisible();
+    expect(
+      within(artifact).getByText("artifact-deliverable-task-completed-v1"),
+    ).toBeVisible();
+    expect(
+      within(artifact).getByText(
+        "sha256:artifact-deliverable-task-completed-v1",
+      ),
+    ).toBeVisible();
+    expect(within(artifact).queryByText("尚未生成")).not.toBeInTheDocument();
+    expect(artifact).toHaveTextContent(
+      "仅显示 ArtifactVersionRef 证据，正文未在当前 read model 提供。",
+    );
+  });
+
+  it.each(["FAILED", "CANCELLED"] as const)(
+    "shows the required execution summary evidence for a %s Task",
+    (status) => {
+      const terminalTask = plannedTask();
+      terminalTask.status = status;
+      terminalTask.artifactVersionRefs = [
+        {
+          kind: "ARTIFACT",
+          objectId: `artifact-execution-summary-${status.toLowerCase()}`,
+          versionId: `artifact-execution-summary-${status.toLowerCase()}-v1`,
+          versionNumber: 1,
+          digest: `sha256:artifact-execution-summary-${status.toLowerCase()}-v1`,
+          artifactType: "执行摘要",
+          accepted: false,
+        },
+      ];
+
+      render(
+        <TaskDetailScreen
+          task={terminalTask}
+          scopeLabels={scopeLabels}
+          viewer={{ name: "赵岚", role: "Auditor" }}
+        />,
+      );
+
+      const artifact = screen.getByRole("region", { name: "Artifact" });
+      expect(within(artifact).getByText("执行摘要 · 未接受")).toBeVisible();
+      expect(
+        within(artifact).getByText(
+          `artifact-execution-summary-${status.toLowerCase()}-v1`,
+        ),
+      ).toBeVisible();
+      expect(within(artifact).queryByText("尚未生成")).not.toBeInTheDocument();
+      expect(artifact).toHaveTextContent(
+        "仅显示 ArtifactVersionRef 证据，正文未在当前 read model 提供。",
+      );
+    },
+  );
 });
