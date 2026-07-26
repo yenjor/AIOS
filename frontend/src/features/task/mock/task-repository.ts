@@ -18,6 +18,7 @@ import type {
   TaskPermissionDecision,
   TaskQuery,
   TaskScope,
+  TaskWizardStep,
   ToolVersionRef,
   VersionRef,
 } from "../model";
@@ -110,6 +111,10 @@ interface StoredAgentAssignment {
 }
 
 interface StoredTaskDraft {
+  wizardStep?: TaskWizardStep;
+  currentProblem?: string;
+  workScope?: string;
+  expectedCompletionAt?: string;
   templateName?: TaskTemplateName;
   title?: string;
   goal?: string;
@@ -742,6 +747,10 @@ function isCanonicalSubmittedHistory(
 }
 
 const draftKeys = [
+  "wizardStep",
+  "currentProblem",
+  "workScope",
+  "expectedCompletionAt",
   "templateName",
   "title",
   "goal",
@@ -758,12 +767,25 @@ const draftKeys = [
   "updatedAt",
 ] as const;
 
+const taskWizardSteps = [1, 2, 3, 4, 5] as const satisfies readonly TaskWizardStep[];
+
+function isTaskWizardStep(value: unknown): value is TaskWizardStep {
+  return taskWizardSteps.includes(value as TaskWizardStep);
+}
+
 function isStoredTaskDraft(value: unknown): value is StoredTaskDraft {
   if (!isRecord(value) || !hasExactKeys(value, [], draftKeys)) {
     return false;
   }
 
   return (
+    (value.wizardStep === undefined ||
+      isTaskWizardStep(value.wizardStep)) &&
+    (value.currentProblem === undefined ||
+      isNonEmptyString(value.currentProblem)) &&
+    (value.workScope === undefined || isNonEmptyString(value.workScope)) &&
+    (value.expectedCompletionAt === undefined ||
+      isIsoTimestamp(value.expectedCompletionAt)) &&
     (value.templateName === undefined ||
       isOneOf(value.templateName, TASK_TEMPLATE_NAMES)) &&
     (value.title === undefined || isNonEmptyString(value.title)) &&
@@ -1265,6 +1287,13 @@ function isTaskDraftInput(value: unknown): value is TaskDraft {
   }
 
   return (
+    (value.wizardStep === undefined ||
+      isTaskWizardStep(value.wizardStep)) &&
+    (value.currentProblem === undefined ||
+      isNonEmptyString(value.currentProblem)) &&
+    (value.workScope === undefined || isNonEmptyString(value.workScope)) &&
+    (value.expectedCompletionAt === undefined ||
+      isIsoTimestamp(value.expectedCompletionAt)) &&
     (value.templateName === undefined ||
       isOneOf(value.templateName, TASK_TEMPLATE_NAMES)) &&
     (value.title === undefined || isNonEmptyString(value.title)) &&
@@ -1327,6 +1356,10 @@ function requireCompleteTechnicalSolutionDraft(
 ): asserts draft is Required<
   Pick<
     TaskDraft,
+    | "wizardStep"
+    | "currentProblem"
+    | "workScope"
+    | "expectedCompletionAt"
     | "templateName"
     | "title"
     | "goal"
@@ -1345,6 +1378,10 @@ function requireCompleteTechnicalSolutionDraft(
   TaskDraft {
   if (
     !draft ||
+    draft.wizardStep !== 5 ||
+    !isNonEmptyString(draft.currentProblem) ||
+    !isNonEmptyString(draft.workScope) ||
+    !isIsoTimestamp(draft.expectedCompletionAt) ||
     draft.templateName !== "生成技术方案" ||
     !isNonEmptyString(draft.title) ||
     !isNonEmptyString(draft.goal) ||
@@ -1509,7 +1546,7 @@ function createTechnicalSolutionTask(
     id: taskId,
     scope: cloneMutable(canonicalScope),
     title: draft.title,
-    goalSummary: draft.goal,
+    goalSummary: draft.currentProblem,
     templateName: "生成技术方案",
     expectedArtifactType: "技术方案",
     status: "NEED_APPROVAL",
@@ -1526,7 +1563,11 @@ function createTechnicalSolutionTask(
     createdAt: now,
     updatedAt: now,
     goal: draft.goal,
-    constraints: cloneMutable(draft.constraints),
+    constraints: [
+      ...cloneMutable(draft.constraints),
+      `工作范围：${draft.workScope}`,
+      `期望完成时间：${draft.expectedCompletionAt}`,
+    ],
     outOfScope: cloneMutable(draft.outOfScope),
     completionCriteria: cloneMutable(draft.completionCriteria),
     assignedAgent: cloneMutable(draft.assignedAgent),

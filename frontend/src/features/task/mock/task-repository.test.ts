@@ -44,7 +44,16 @@ type PermissionQuery = (
   actor: TaskActor,
 ) => Promise<TaskPermissionDecision>;
 
-const technicalSolutionDraft: TaskDraft = {
+const technicalSolutionDraft: TaskDraft & {
+  wizardStep: 5;
+  currentProblem: string;
+  workScope: string;
+  expectedCompletionAt: string;
+} = {
+  wizardStep: 5,
+  currentProblem: "当前 Task 创建流程缺少可恢复的业务问题上下文",
+  workScope: "Task Center 创建向导与提交结果映射",
+  expectedCompletionAt: "2026-08-15T10:30:00.000Z",
   templateName: "生成技术方案",
   title: "设计 Task Center 黄金路径",
   goal: "形成可供研发团队评审并实施的技术方案",
@@ -271,6 +280,63 @@ describe("Task mock repository", () => {
     );
   });
 
+  it("round-trips Task wizard metadata losslessly, overwrites later saves, and preserves actor isolation", async () => {
+    const repo = repository();
+    const firstInput = {
+      wizardStep: 2,
+      currentProblem: "需要持久化向导业务问题",
+      workScope: "Task 创建向导前两步",
+      expectedCompletionAt: "2026-08-01T09:00:00.000Z",
+    };
+
+    const firstSaved = await repo.saveDraft(
+      scope,
+      lead,
+      firstInput as TaskDraft,
+    );
+    expect(firstSaved).toEqual({
+      ...firstInput,
+      updatedAt: "2026-07-26T08:00:00.000Z",
+    });
+    await expect(repository().getDraft(scope, lead)).resolves.toEqual(
+      firstSaved,
+    );
+
+    const changed = {
+      wizardStep: 3,
+      currentProblem: "更新后的业务问题",
+      workScope: "Task 创建向导前三步",
+      expectedCompletionAt: "2026-08-02T09:00:00.000Z",
+    };
+    const overwritten = await repo.saveDraft(
+      scope,
+      lead,
+      changed as TaskDraft,
+    );
+    expect(overwritten).toEqual({
+      ...changed,
+      updatedAt: "2026-07-26T08:00:00.000Z",
+    });
+    await expect(repo.getDraft(scope, lead)).resolves.toEqual(overwritten);
+    await expect(repo.getDraft(scope, developer)).resolves.toBeUndefined();
+  });
+
+  it.each([
+    ["wizard step below range", { wizardStep: 0 }],
+    ["wizard step above range", { wizardStep: 6 }],
+    ["fractional wizard step", { wizardStep: 2.5 }],
+    ["string wizard step", { wizardStep: "2" }],
+    ["blank current problem", { currentProblem: "   " }],
+    ["blank work scope", { workScope: "\t" }],
+    ["invalid completion timestamp", { expectedCompletionAt: "2026-08-01" }],
+  ])("rejects invalid Task wizard metadata: %s", async (_label, value) => {
+    await expect(
+      repository().saveDraft(scope, lead, value as unknown as TaskDraft),
+    ).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "VALIDATION"),
+    );
+  });
+
   it("submits atomically, removes its draft, increments IDs, and records real transitions", async () => {
     const repo = repository();
     await repo.saveDraft(scope, lead, technicalSolutionDraft);
@@ -282,7 +348,13 @@ describe("Task mock repository", () => {
       templateName: "生成技术方案",
       priority: 50,
       riskLevel: "R1",
+      goalSummary: technicalSolutionDraft.currentProblem,
     });
+    expect(firstTask.constraints).toEqual([
+      ...technicalSolutionDraft.constraints!,
+      `工作范围：${technicalSolutionDraft.workScope}`,
+      `期望完成时间：${technicalSolutionDraft.expectedCompletionAt}`,
+    ]);
     expect(firstTask.history.map(({ toStatus }) => toStatus)).toEqual([
       "DRAFT",
       "READY",
@@ -323,6 +395,33 @@ describe("Task mock repository", () => {
       (await repo.listTasks(scope, productManager, { keyword: "未完成草稿" })).total,
     ).toBe(0);
   });
+
+  it.each([
+    ["wizardStep", 4],
+    ["currentProblem", undefined],
+    ["workScope", undefined],
+    ["expectedCompletionAt", undefined],
+  ] as const)(
+    "requires final wizard metadata before submission: %s",
+    async (field, value) => {
+      const incomplete = structuredClone(technicalSolutionDraft) as
+        TaskDraft & Record<string, unknown>;
+      if (value === undefined) {
+        delete incomplete[field];
+      } else {
+        incomplete[field] = value;
+      }
+      const repo = repository();
+      await repo.saveDraft(scope, lead, incomplete);
+
+      await expect(
+        repo.submitTechnicalSolutionTask(scope, lead),
+      ).rejects.toSatisfy(
+        (error: unknown) => expectRepositoryError(error, "VALIDATION"),
+      );
+      await expect(repo.getDraft(scope, lead)).resolves.toBeDefined();
+    },
+  );
 
   it("supports keyword, status, template, risk, and every ownership filter", async () => {
     const repo = repository();
@@ -572,6 +671,32 @@ describe("Task mock repository", () => {
   });
 
   it.each([
+    ["invalid wizard step", (draft: Record<string, unknown>) => {
+      draft.wizardStep = 6;
+    }],
+    ["blank current problem", (draft: Record<string, unknown>) => {
+      draft.currentProblem = " ";
+    }],
+    ["invalid completion timestamp", (draft: Record<string, unknown>) => {
+      draft.expectedCompletionAt = "not-a-timestamp";
+    }],
+  ])("clears persisted invalid Task wizard metadata: %s", async (_label, mutate) => {
+    const repo = repository();
+    await repo.saveDraft(scope, lead, technicalSolutionDraft);
+    const envelope = JSON.parse(storage.getItem(TASK_STORE_KEY)!) as Record<
+      string,
+      unknown
+    >;
+    mutate(getStoredDraft(envelope, lead.userId));
+    storage.setItem(TASK_STORE_KEY, JSON.stringify(envelope));
+
+    await expect(repo.getDraft(scope, lead)).rejects.toSatisfy(
+      (error: unknown) => expectRepositoryError(error, "INVALID_STORE"),
+    );
+    expect(storage.getItem(TASK_STORE_KEY)).toBeNull();
+  });
+
+  it.each([
     ["Auditor draft", (envelope: Record<string, unknown>) => {
       const workspaceStore = getStoredWorkspace(envelope);
       const drafts = workspaceStore.draftsByActor as Record<string, unknown>;
@@ -720,6 +845,18 @@ function getStoredWorkspace(
 ): Record<string, unknown> {
   const workspaces = envelope.workspaces as Record<string, Record<string, unknown>>;
   return Object.values(workspaces)[0];
+}
+
+function getStoredDraft(
+  envelope: Record<string, unknown>,
+  actorId: string,
+): Record<string, unknown> {
+  const workspaceStore = getStoredWorkspace(envelope);
+  const drafts = workspaceStore.draftsByActor as Record<
+    string,
+    Record<string, unknown>
+  >;
+  return drafts[actorId];
 }
 
 function getStoredPlanSteps(

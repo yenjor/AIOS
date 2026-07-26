@@ -138,7 +138,13 @@ export interface ExpectedArtifact {
   knowledgeCitationRequired: boolean;
 }
 
+export type TaskWizardStep = 1 | 2 | 3 | 4 | 5;
+
 export interface TaskDraft {
+  wizardStep?: TaskWizardStep;
+  currentProblem?: string;
+  workScope?: string;
+  expectedCompletionAt?: string;
   templateName?: TaskTemplateName;
   title?: string;
   goal?: string;
