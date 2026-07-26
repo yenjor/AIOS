@@ -10,6 +10,7 @@ describe("Task creation route shell", () => {
     );
 
     expect(source).toContain("TaskWizardLoader");
+    expect(source).toContain('title: "创建 Task | AIOS"');
     expect(source).not.toContain("task-fixtures");
     expect(source).not.toContain("sessionStorage");
     expect(source).not.toContain("生成 AIOS Task Center 技术方案");

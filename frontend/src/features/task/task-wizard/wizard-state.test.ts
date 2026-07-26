@@ -7,6 +7,7 @@ import {
 } from "./wizard-state";
 import {
   buildTechnicalSolutionDraft,
+  resolveWizardProgress,
   validateAllSteps,
   validateStep,
 } from "./wizard-validation";
@@ -86,6 +87,33 @@ describe("Task wizard state", () => {
 });
 
 describe("Task wizard validation", () => {
+  it("clamps forged progress to the first incomplete step while preserving valid current steps", () => {
+    const incomplete = createInitialWizardValues();
+    incomplete.templateName = "生成技术方案";
+    expect(resolveWizardProgress(5, incomplete)).toEqual({
+      currentStep: 2,
+      maxReachableStep: 2,
+    });
+
+    const complete = createInitialWizardValues();
+    Object.assign(complete, {
+      templateName: "生成技术方案",
+      title: "完整草稿",
+      goal: "形成方案",
+      currentProblem: "缺少方案",
+      workScope: "Task Center",
+      expectedCompletionLocal: "2026-08-01T18:00",
+      constraintsText: "遵循架构",
+      outOfScopeText: "不改后端",
+      completionCriteriaText: "结构完整",
+      includeKnowledge: true,
+    });
+    expect(resolveWizardProgress(3, complete)).toEqual({
+      currentStep: 3,
+      maxReachableStep: 5,
+    });
+  });
+
   it("validates one step at a time and all steps before submit", () => {
     const values = createInitialWizardValues();
     expect(validateStep(1, values)).toHaveProperty("templateName");

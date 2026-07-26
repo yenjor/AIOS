@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
   type ReactNode,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -51,6 +52,7 @@ import {
   wizardStateToDraft,
 } from "./wizard-state";
 import {
+  resolveWizardProgress,
   validateAllSteps,
   validateStep,
   type WizardErrors,
@@ -106,7 +108,10 @@ type OperationState =
   | { status: "idle" }
   | { status: "saving" }
   | { status: "saved" }
-  | { status: "error"; kind: "save" | "discard" | "submit" };
+  | {
+      status: "error";
+      kind: "save" | "discard" | "submit" | "stale";
+    };
 
 function FieldError({
   field,
@@ -217,11 +222,15 @@ export function TaskWizard({
 }: TaskWizardProps) {
   const router = useRouter();
   const restored = draftToWizardState(initialDraft);
-  const [currentStep, setCurrentStep] = useState<TaskWizardStep>(
+  const restoredProgress = resolveWizardProgress(
     restored.currentStep,
+    restored.values,
+  );
+  const [currentStep, setCurrentStep] = useState<TaskWizardStep>(
+    restoredProgress.currentStep,
   );
   const [maxReachableStep, setMaxReachableStep] =
-    useState<TaskWizardStep>(restored.currentStep);
+    useState<TaskWizardStep>(restoredProgress.maxReachableStep);
   const [values, setValues] = useState<TaskWizardValues>(restored.values);
   const [errors, setErrors] = useState<WizardErrors>({});
   const [operation, setOperation] = useState<OperationState>({
@@ -229,14 +238,41 @@ export function TaskWizard({
   });
   const [hasDraft, setHasDraft] = useState(Boolean(initialDraft));
   const operationLockRef = useRef(false);
+  const valuesRef = useRef(restored.values);
+  const editRevisionRef = useRef(0);
+  const requestRevisionRef = useRef(0);
+  const mountedRef = useRef(true);
 
   const isGolden = values.templateName === GOLDEN_TEMPLATE;
+  const isBusy = operation.status === "saving";
+
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+      requestRevisionRef.current += 1;
+      operationLockRef.current = false;
+    },
+    [],
+  );
 
   function updateValue<K extends keyof TaskWizardValues>(
     field: K,
     value: TaskWizardValues[K],
   ) {
-    setValues((current) => ({ ...current, [field]: value }));
+    if (operationLockRef.current) {
+      return;
+    }
+    const nextValues = { ...valuesRef.current, [field]: value };
+    valuesRef.current = nextValues;
+    editRevisionRef.current += 1;
+    setValues(nextValues);
+    const validatedMaximum = resolveWizardProgress(
+      5,
+      nextValues,
+    ).maxReachableStep;
+    setMaxReachableStep((current) =>
+      Math.min(current, validatedMaximum) as TaskWizardStep,
+    );
     setErrors((current) => {
       if (!Object.hasOwn(current, field)) {
         return current;
@@ -273,22 +309,42 @@ export function TaskWizard({
       return false;
     }
     operationLockRef.current = true;
+    const requestRevision = ++requestRevisionRef.current;
+    const editRevision = editRevisionRef.current;
+    const snapshot = wizardStateToDraft(valuesRef.current, step);
     setOperation({ status: "saving" });
     try {
-      await saveDraft(scope, actor, wizardStateToDraft(values, step));
+      await saveDraft(scope, actor, snapshot);
+      if (
+        !mountedRef.current ||
+        requestRevision !== requestRevisionRef.current
+      ) {
+        return false;
+      }
+      if (editRevision !== editRevisionRef.current) {
+        setOperation({ status: "error", kind: "stale" });
+        return false;
+      }
       setHasDraft(true);
       setOperation({ status: "saved" });
       return true;
     } catch {
-      setOperation({ status: "error", kind: "save" });
+      if (
+        mountedRef.current &&
+        requestRevision === requestRevisionRef.current
+      ) {
+        setOperation({ status: "error", kind: "save" });
+      }
       return false;
     } finally {
-      operationLockRef.current = false;
+      if (requestRevision === requestRevisionRef.current) {
+        operationLockRef.current = false;
+      }
     }
   }
 
   async function handleNext() {
-    const stepErrors = validateStep(currentStep, values);
+    const stepErrors = validateStep(currentStep, valuesRef.current);
     if (Object.keys(stepErrors).length > 0) {
       showErrors(stepErrors);
       return;
@@ -339,19 +395,36 @@ export function TaskWizard({
       return;
     }
     operationLockRef.current = true;
+    const requestRevision = ++requestRevisionRef.current;
     setOperation({ status: "saving" });
     try {
       await discardDraft(scope, actor);
-      setValues(createInitialWizardValues());
+      if (
+        !mountedRef.current ||
+        requestRevision !== requestRevisionRef.current
+      ) {
+        return;
+      }
+      const resetValues = createInitialWizardValues();
+      valuesRef.current = resetValues;
+      editRevisionRef.current += 1;
+      setValues(resetValues);
       setCurrentStep(1);
       setMaxReachableStep(1);
       setErrors({});
       setHasDraft(false);
       setOperation({ status: "idle" });
     } catch {
-      setOperation({ status: "error", kind: "discard" });
+      if (
+        mountedRef.current &&
+        requestRevision === requestRevisionRef.current
+      ) {
+        setOperation({ status: "error", kind: "discard" });
+      }
     } finally {
-      operationLockRef.current = false;
+      if (requestRevision === requestRevisionRef.current) {
+        operationLockRef.current = false;
+      }
     }
   }
 
@@ -359,22 +432,49 @@ export function TaskWizard({
     if (!isGolden || operationLockRef.current) {
       return;
     }
-    const allErrors = validateAllSteps(values);
+    const allErrors = validateAllSteps(valuesRef.current);
     if (Object.keys(allErrors).length > 0) {
       showErrors(allErrors);
       return;
     }
 
     operationLockRef.current = true;
+    const requestRevision = ++requestRevisionRef.current;
+    const editRevision = editRevisionRef.current;
+    const snapshot = wizardStateToDraft(valuesRef.current, 5);
     setOperation({ status: "saving" });
     try {
-      await saveDraft(scope, actor, wizardStateToDraft(values, 5));
+      await saveDraft(scope, actor, snapshot);
+      if (
+        !mountedRef.current ||
+        requestRevision !== requestRevisionRef.current
+      ) {
+        return;
+      }
+      if (editRevision !== editRevisionRef.current) {
+        setOperation({ status: "error", kind: "stale" });
+        return;
+      }
       const task = await submitTechnicalSolutionTask(scope, actor);
+      if (
+        !mountedRef.current ||
+        requestRevision !== requestRevisionRef.current ||
+        editRevision !== editRevisionRef.current
+      ) {
+        return;
+      }
       router.push(`/tasks/${task.id}`);
     } catch {
-      setOperation({ status: "error", kind: "submit" });
+      if (
+        mountedRef.current &&
+        requestRevision === requestRevisionRef.current
+      ) {
+        setOperation({ status: "error", kind: "submit" });
+      }
     } finally {
-      operationLockRef.current = false;
+      if (requestRevision === requestRevisionRef.current) {
+        operationLockRef.current = false;
+      }
     }
   }
 
@@ -1007,6 +1107,8 @@ export function TaskWizard({
           save: "草稿保存失败。输入仍保留，可以重试保存。",
           discard: "草稿丢弃失败。现有草稿与输入均未被清除。",
           submit: "Task 提交失败。草稿与输入仍保留，可以重试提交。",
+          stale:
+            "检测到保存期间内容发生变化，未将旧快照标记为已保存。请保存最新内容后继续。",
         }[operation.kind]
       : undefined;
 
@@ -1092,7 +1194,9 @@ export function TaskWizard({
               />
               {operationMessage}
             </span>
-            {operation.status === "error" && operation.kind === "save" ? (
+            {operation.status === "error" &&
+            (operation.kind === "save" ||
+              operation.kind === "stale") ? (
               <Button
                 variant="secondary"
                 onClick={() => void persistDraft(currentStep)}
@@ -1120,7 +1224,15 @@ export function TaskWizard({
         ) : null}
       </div>
 
-      <Card className="mt-4 min-w-0 p-4 sm:p-6">{stepContent}</Card>
+      <Card className="mt-4 min-w-0 p-4 sm:p-6">
+        <fieldset
+          aria-busy={isBusy}
+          className="m-0 min-w-0 border-0 p-0"
+          disabled={isBusy}
+        >
+          {stepContent}
+        </fieldset>
+      </Card>
 
       <footer className="mt-5 flex flex-col-reverse gap-3 border-t border-[var(--aios-control-border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row">

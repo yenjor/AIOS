@@ -73,7 +73,11 @@ export function validateStep(
     }
   }
 
-  if (step === 3 && !values.includeKnowledge) {
+  if (
+    step === 3 &&
+    values.templateName === GOLDEN_TEMPLATE &&
+    !values.includeKnowledge
+  ) {
     errors.includeKnowledge =
       "黄金路径必须绑定一个已授权的 Knowledge Version。";
   }
@@ -95,6 +99,30 @@ export function validateAllSteps(
     }),
     {},
   );
+}
+
+export interface WizardProgress {
+  currentStep: TaskWizardStep;
+  maxReachableStep: TaskWizardStep;
+}
+
+export function resolveWizardProgress(
+  requestedStep: TaskWizardStep,
+  values: TaskWizardValues,
+): WizardProgress {
+  for (const step of [1, 2, 3, 4] as const) {
+    if (Object.keys(validateStep(step, values)).length > 0) {
+      return {
+        currentStep: Math.min(requestedStep, step) as TaskWizardStep,
+        maxReachableStep: step,
+      };
+    }
+  }
+
+  return {
+    currentStep: requestedStep,
+    maxReachableStep: 5,
+  };
 }
 
 export function buildTechnicalSolutionDraft(

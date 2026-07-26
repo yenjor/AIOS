@@ -23,6 +23,16 @@ vi.mock("../mock/task-repository", async (importOriginal) => ({
 const scope = { organizationId: "org-guangwei", workspaceId: "ws-ai" };
 const actor = { userId: "user-pm" };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 function renderWizard(initialDraft?: TaskDraft) {
   return render(
     <TaskWizard
@@ -92,6 +102,28 @@ describe("TaskWizard", () => {
     expect(screen.getByLabelText("任务范围")).toHaveValue("恢复任务范围");
     expect(screen.getByLabelText("Priority")).toHaveValue(25);
     expect(screen.getByLabelText("期望完成时间")).not.toHaveValue("");
+  });
+
+  it("clamps an incomplete forged step-five draft and keeps future steps locked", () => {
+    renderWizard({
+      wizardStep: 5,
+      templateName: "生成技术方案",
+      priority: 50,
+      riskLevel: "R1",
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "定义工作" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "第 2 步：定义工作" }),
+    ).toHaveAttribute("aria-current", "step");
+    expect(
+      screen.getByRole("button", { name: "第 3 步：提供上下文" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "提交 Task" }),
+    ).not.toBeInTheDocument();
   });
 
   it("announces field errors and focuses the first invalid field", async () => {
@@ -169,6 +201,174 @@ describe("TaskWizard", () => {
     );
   });
 
+  it("freezes edits while saving and persists the captured snapshot", async () => {
+    const interaction = userEvent.setup();
+    const pendingSave = deferred<TaskDraft>();
+    repository.saveDraft.mockReturnValueOnce(pendingSave.promise);
+    renderWizard({
+      wizardStep: 2,
+      templateName: "生成技术方案",
+      title: "保存前标题",
+      goal: "形成方案",
+      currentProblem: "缺少方案",
+      workScope: "Task Center",
+      expectedCompletionAt: "2026-08-01T10:00:00.000Z",
+      constraints: ["遵循架构"],
+      outOfScope: ["不改后端"],
+      priority: 50,
+      riskLevel: "R1",
+    });
+
+    await interaction.click(screen.getByRole("button", { name: "保存草稿" }));
+    await waitFor(() => expect(repository.saveDraft).toHaveBeenCalledTimes(1));
+
+    const title = screen.getByLabelText("Task 标题");
+    expect(title).toBeDisabled();
+    expect(screen.getByLabelText("Risk")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "下一步" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "第 1 步：选择模板" }),
+    ).toBeDisabled();
+    fireEvent.change(title, { target: { value: "竞态标题" } });
+    expect(title).toHaveValue("保存前标题");
+
+    const savedSnapshot = repository.saveDraft.mock.calls[0][2];
+    pendingSave.resolve(savedSnapshot);
+    expect(await screen.findByRole("status")).toHaveTextContent("草稿已保存");
+    expect(savedSnapshot.title).toBe("保存前标题");
+  });
+
+  it("freezes navigation during submit and routes only after the captured task resolves", async () => {
+    const interaction = userEvent.setup();
+    const pendingSubmit = deferred<
+      Awaited<ReturnType<TaskRepository["submitTechnicalSolutionTask"]>>
+    >();
+    repository.submitTechnicalSolutionTask.mockReturnValue(
+      pendingSubmit.promise,
+    );
+    renderWizard({
+      wizardStep: 5,
+      templateName: "生成技术方案",
+      title: "提交快照",
+      goal: "形成方案",
+      currentProblem: "缺少方案",
+      workScope: "Task Center",
+      expectedCompletionAt: "2026-08-01T10:00:00.000Z",
+      constraints: ["遵循架构"],
+      outOfScope: ["不改后端"],
+      priority: 50,
+      riskLevel: "R1",
+      knowledgeVersionRefs: [
+        {
+          kind: "KNOWLEDGE",
+          objectId: "knowledge-aios-docs",
+          versionId: "knowledge-aios-docs-v1",
+          versionNumber: 1,
+          digest: "sha256:knowledge-aios-docs-v1",
+        },
+      ],
+      completionCriteria: ["结构完整"],
+    });
+
+    await interaction.click(screen.getByRole("button", { name: "提交 Task" }));
+    await waitFor(() =>
+      expect(repository.submitTechnicalSolutionTask).toHaveBeenCalledTimes(1),
+    );
+    expect(screen.getByRole("button", { name: "提交 Task" })).toBeDisabled();
+    const stepTwo = screen.getByRole("button", {
+      name: "第 2 步：定义工作",
+    });
+    expect(stepTwo).toBeDisabled();
+    fireEvent.click(stepTwo);
+    expect(
+      screen.getByRole("button", { name: "第 5 步：确认执行" }),
+    ).toHaveAttribute("aria-current", "step");
+    expect(push).not.toHaveBeenCalled();
+
+    pendingSubmit.resolve({
+      id: "task-mock-0099",
+    } as Awaited<
+      ReturnType<TaskRepository["submitTechnicalSolutionTask"]>
+    >);
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/tasks/task-mock-0099"),
+    );
+  });
+
+  it("replaces a cleared field and restores it as empty after refresh", async () => {
+    const interaction = userEvent.setup();
+    let savedSnapshot: TaskDraft | undefined;
+    repository.saveDraft.mockImplementation(async (_scope, _actor, draft) => {
+      savedSnapshot = structuredClone(draft);
+      return structuredClone(draft);
+    });
+    const view = renderWizard({
+      wizardStep: 2,
+      templateName: "生成技术方案",
+      title: "需要清空",
+      priority: 50,
+      riskLevel: "R1",
+    });
+
+    fireEvent.change(screen.getByLabelText("Task 标题"), {
+      target: { value: "" },
+    });
+    await interaction.click(screen.getByRole("button", { name: "保存草稿" }));
+    await screen.findByRole("status");
+    expect(savedSnapshot).not.toHaveProperty("title");
+
+    view.unmount();
+    renderWizard(savedSnapshot);
+    expect(screen.getByLabelText("Task 标题")).toHaveValue("");
+  });
+
+  it("replaces golden-only refs when switching to a draft-only template", async () => {
+    const interaction = userEvent.setup();
+    let savedSnapshot: TaskDraft | undefined;
+    repository.saveDraft.mockImplementation(async (_scope, _actor, draft) => {
+      savedSnapshot = structuredClone(draft);
+      return structuredClone(draft);
+    });
+    const view = renderWizard({
+      wizardStep: 1,
+      templateName: "生成技术方案",
+      priority: 50,
+      riskLevel: "R1",
+      capabilityVersionRefs: [
+        {
+          kind: "CAPABILITY",
+          objectId: "capability-technical-solution",
+          versionId: "capability-technical-solution-v1",
+          versionNumber: 1,
+          digest: "sha256:capability-technical-solution-v1",
+        },
+      ],
+      toolVersionRefs: [
+        {
+          kind: "TOOL",
+          objectId: "tool-codegraph-read",
+          versionId: "tool-codegraph-read-v1",
+          versionNumber: 1,
+          digest: "sha256:tool-codegraph-read-v1",
+          actionId: "codegraph.context",
+          operationType: "READ",
+        },
+      ],
+    });
+
+    await interaction.click(screen.getByRole("radio", { name: /分析需求/ }));
+    await interaction.click(screen.getByRole("button", { name: "保存草稿" }));
+    await screen.findByRole("status");
+    expect(savedSnapshot).toMatchObject({ templateName: "分析需求" });
+    expect(savedSnapshot).not.toHaveProperty("capabilityVersionRefs");
+    expect(savedSnapshot).not.toHaveProperty("toolVersionRefs");
+    expect(savedSnapshot).not.toHaveProperty("assignedAgent");
+
+    view.unmount();
+    renderWizard(savedSnapshot);
+    expect(screen.getByRole("radio", { name: /分析需求/ })).toBeChecked();
+  });
+
   it("discards only after native confirmation and restores the initial wizard", async () => {
     const interaction = userEvent.setup();
     renderWizard({ templateName: "分析需求" });
@@ -197,6 +397,9 @@ describe("TaskWizard", () => {
       templateName: "分析需求",
       title: "分析需求",
       goal: "明确需求",
+      currentProblem: "边界不清",
+      workScope: "需求分析",
+      expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["当前问题：边界不清", "任务范围：需求"],
       outOfScope: ["不编码"],
       priority: 50,
@@ -243,9 +446,13 @@ describe("TaskWizard", () => {
         completionCriteria: ["结构完整"],
       });
 
-      await interaction.click(
-        screen.getByRole("button", { name: "提交 Task" }),
-      );
+      expect(
+        screen.getByRole("heading", { name: "定义工作" }),
+      ).toBeVisible();
+      expect(
+        screen.getByRole("button", { name: "第 3 步：提供上下文" }),
+      ).toBeDisabled();
+      await interaction.click(screen.getByRole("button", { name: "下一步" }));
 
       expect(screen.getByRole("alert")).toHaveTextContent("R0 或 R1");
       expect(screen.getByLabelText("Risk")).toHaveFocus();
@@ -261,8 +468,24 @@ describe("TaskWizard", () => {
     renderWizard({
       wizardStep: 4,
       templateName: "生成技术方案",
+      title: "技术方案",
+      goal: "形成方案",
+      currentProblem: "缺少方案",
+      workScope: "Task Center",
+      expectedCompletionAt: "2026-08-01T10:00:00.000Z",
+      constraints: ["遵循架构"],
+      outOfScope: ["不改后端"],
       riskLevel: "R1",
       priority: 50,
+      knowledgeVersionRefs: [
+        {
+          kind: "KNOWLEDGE",
+          objectId: "knowledge-aios-docs",
+          versionId: "knowledge-aios-docs-v1",
+          versionNumber: 1,
+          digest: "sha256:knowledge-aios-docs-v1",
+        },
+      ],
     });
 
     expect(
@@ -365,7 +588,7 @@ describe("TaskWizard", () => {
     expect(push).toHaveBeenCalledWith("/tasks/task-mock-0001");
   });
 
-  it("revalidates every step at submit and focuses the first invalid field", async () => {
+  it("clamps a forged final step and focuses the first invalid field on continue", async () => {
     const interaction = userEvent.setup();
     renderWizard({
       wizardStep: 5,
@@ -374,7 +597,11 @@ describe("TaskWizard", () => {
       priority: 50,
     });
 
-    await interaction.click(screen.getByRole("button", { name: "提交 Task" }));
+    expect(
+      screen.queryByRole("button", { name: "提交 Task" }),
+    ).not.toBeInTheDocument();
+
+    await interaction.click(screen.getByRole("button", { name: "下一步" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent("请修正");
     expect(screen.getByLabelText("Task 标题")).toHaveFocus();
