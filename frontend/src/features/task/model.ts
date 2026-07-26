@@ -63,6 +63,8 @@ export interface PlanVersionRef extends VersionRef {
 
 export interface ArtifactVersionRef extends VersionRef {
   kind: "ARTIFACT";
+  artifactType: TaskArtifactType | "执行摘要";
+  accepted: boolean;
 }
 
 export interface CitationRef {

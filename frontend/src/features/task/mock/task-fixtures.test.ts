@@ -167,6 +167,34 @@ describe("Task fixtures", () => {
     ]);
   });
 
+  it("associates required Artifact evidence with terminal Task fixtures", () => {
+    const failed = taskFixtures.find(({ status }) => status === "FAILED");
+    const cancelled = taskFixtures.find(({ status }) => status === "CANCELLED");
+    const completed = taskFixtures.find(({ status }) => status === "COMPLETED");
+
+    expect(failed?.artifactVersionRefs).toEqual([
+      expect.objectContaining({
+        kind: "ARTIFACT",
+        artifactType: "执行摘要",
+        accepted: false,
+      }),
+    ]);
+    expect(cancelled?.artifactVersionRefs).toEqual([
+      expect.objectContaining({
+        kind: "ARTIFACT",
+        artifactType: "执行摘要",
+        accepted: false,
+      }),
+    ]);
+    expect(completed?.artifactVersionRefs).toEqual([
+      expect.objectContaining({
+        kind: "ARTIFACT",
+        artifactType: "代码理解报告",
+        accepted: true,
+      }),
+    ]);
+  });
+
   it("contains no credential-like key or value", () => {
     expectNoSecrets([
       taskFixtures,

@@ -438,6 +438,18 @@ describe("Task mock repository", () => {
   });
 
   it.each([
+    ["Auditor draft", (envelope: Record<string, unknown>) => {
+      const workspaceStore = getStoredWorkspace(envelope);
+      const drafts = workspaceStore.draftsByActor as Record<string, unknown>;
+      drafts["user-auditor"] = {
+        templateName: "生成技术方案",
+        title: "Auditor 不可创建",
+      };
+    }],
+    ["Auditor Task initiator", (envelope: Record<string, unknown>) => {
+      const task = getFirstStoredTask(envelope);
+      (task.initiator as Record<string, unknown>).userId = "user-auditor";
+    }],
     ["invalid status", (envelope: Record<string, unknown>) => {
       const task = getFirstStoredTask(envelope);
       task.status = "RUNNING";
@@ -454,6 +466,29 @@ describe("Task mock repository", () => {
     ["unknown nested field", (envelope: Record<string, unknown>) => {
       const task = getFirstStoredTask(envelope);
       task.extra = true;
+    }],
+    ["changed fixed plan step name", (envelope: Record<string, unknown>) => {
+      getStoredPlanSteps(envelope)[0].name = "被篡改的步骤";
+    }],
+    ["changed fixed plan step type", (envelope: Record<string, unknown>) => {
+      getStoredPlanSteps(envelope)[1].stepType = "AGENT";
+    }],
+    ["changed fixed plan step owner", (envelope: Record<string, unknown>) => {
+      getStoredPlanSteps(envelope)[3].responsibility = "AI研发员工";
+    }],
+    ["changed fixed plan step risk", (envelope: Record<string, unknown>) => {
+      getStoredPlanSteps(envelope)[2].riskLevel = "R0";
+    }],
+    ["changed plan scope digest", (envelope: Record<string, unknown>) => {
+      const task = getFirstStoredTask(envelope);
+      (task.executionPlan as Record<string, unknown>).scopeDigest =
+        "sha256:tampered-scope";
+    }],
+    ["broken history from/to boundary", (envelope: Record<string, unknown>) => {
+      getStoredHistory(envelope)[1].fromStatus = "PLANNING";
+    }],
+    ["non-monotonic history version", (envelope: Record<string, unknown>) => {
+      getStoredHistory(envelope)[2].aggregateVersion = 9;
     }],
   ])("clears a structurally invalid store: %s", async (_label, mutate) => {
     const repo = repository();
@@ -474,8 +509,28 @@ describe("Task mock repository", () => {
 });
 
 function getFirstStoredTask(envelope: Record<string, unknown>): Record<string, unknown> {
-  const workspaces = envelope.workspaces as Record<string, Record<string, unknown>>;
-  const workspaceStore = Object.values(workspaces)[0];
+  const workspaceStore = getStoredWorkspace(envelope);
   const tasks = workspaceStore.createdTasks as Array<Record<string, unknown>>;
   return tasks[0];
+}
+
+function getStoredWorkspace(
+  envelope: Record<string, unknown>,
+): Record<string, unknown> {
+  const workspaces = envelope.workspaces as Record<string, Record<string, unknown>>;
+  return Object.values(workspaces)[0];
+}
+
+function getStoredPlanSteps(
+  envelope: Record<string, unknown>,
+): Array<Record<string, unknown>> {
+  const task = getFirstStoredTask(envelope);
+  const plan = task.executionPlan as Record<string, unknown>;
+  return plan.steps as Array<Record<string, unknown>>;
+}
+
+function getStoredHistory(
+  envelope: Record<string, unknown>,
+): Array<Record<string, unknown>> {
+  return getFirstStoredTask(envelope).history as Array<Record<string, unknown>>;
 }

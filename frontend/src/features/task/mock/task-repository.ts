@@ -445,6 +445,41 @@ function isPlanStep(value: unknown): value is PlanStep {
   );
 }
 
+const technicalSolutionPlanStepContract = [
+  {
+    name: "需求理解与约束确认",
+    stepType: "AGENT",
+    responsibility: "AI研发员工",
+    riskLevel: "R0",
+  },
+  {
+    name: "代码与模块影响分析",
+    stepType: "KNOWLEDGE_RETRIEVAL",
+    responsibility: "AI研发员工",
+    riskLevel: "R0",
+  },
+  {
+    name: "形成技术方案草稿",
+    stepType: "AGENT",
+    responsibility: "AI研发员工",
+    riskLevel: "R1",
+  },
+  {
+    name: "方案结构和引用检查",
+    stepType: "VALIDATION",
+    responsibility: "Validation",
+    riskLevel: "R1",
+  },
+  {
+    name: "Artifact人工验收",
+    stepType: "HUMAN_REVIEW",
+    responsibility: "Reviewer",
+    riskLevel: "R1",
+  },
+] as const satisfies ReadonlyArray<
+  Pick<PlanStep, "name" | "stepType" | "responsibility" | "riskLevel">
+>;
+
 function isExecutionPlan(value: unknown, taskId: string): value is ExecutionPlan {
   if (
     !isRecord(value) ||
@@ -474,7 +509,19 @@ function isExecutionPlan(value: unknown, taskId: string): value is ExecutionPlan
     value.versionRef.versionId === `${objectId}-v1` &&
     value.versionRef.versionNumber === 1 &&
     value.versionRef.digest === `sha256:${objectId}-v1` &&
-    value.steps.every((step, index) => step.sequence === index + 1)
+    value.scopeDigest === `sha256:scope-${taskId}` &&
+    value.steps.every((step, index) => {
+      const expected = technicalSolutionPlanStepContract[index];
+      return (
+        step.id ===
+          `${taskId}-step-${String(index + 1).padStart(2, "0")}` &&
+        step.sequence === index + 1 &&
+        step.name === expected.name &&
+        step.stepType === expected.stepType &&
+        step.responsibility === expected.responsibility &&
+        step.riskLevel === expected.riskLevel
+      );
+    })
   );
 }
 
@@ -527,6 +574,59 @@ function isTaskHistoryItem(value: unknown, taskId: string): value is TaskHistory
     isKnownTaskActor(value.actor) &&
     isNonEmptyString(value.occurredAt) &&
     isPositiveInteger(value.aggregateVersion)
+  );
+}
+
+const submittedHistoryContract = [
+  {
+    fromStatus: null,
+    toStatus: "DRAFT",
+    reasonCode: "TASK_CREATED",
+  },
+  {
+    fromStatus: "DRAFT",
+    toStatus: "READY",
+    reasonCode: "TASK_READY",
+  },
+  {
+    fromStatus: "READY",
+    toStatus: "PLANNING",
+    reasonCode: "TASK_PLANNING",
+  },
+  {
+    fromStatus: "PLANNING",
+    toStatus: "NEED_APPROVAL",
+    reasonCode: "TASK_NEED_APPROVAL",
+  },
+] as const satisfies ReadonlyArray<{
+  fromStatus: TaskStatus | null;
+  toStatus: TaskStatus;
+  reasonCode: string;
+}>;
+
+function isCanonicalSubmittedHistory(
+  value: unknown,
+  taskId: string,
+  initiatorUserId: string,
+): value is TaskHistoryItem[] {
+  return (
+    Array.isArray(value) &&
+    value.length === submittedHistoryContract.length &&
+    value.every((item, index) => {
+      if (!isTaskHistoryItem(item, taskId)) {
+        return false;
+      }
+      const expected = submittedHistoryContract[index];
+      return (
+        item.id ===
+          `${taskId}-transition-${String(index + 1).padStart(2, "0")}` &&
+        item.fromStatus === expected.fromStatus &&
+        item.toStatus === expected.toStatus &&
+        item.reasonCode === expected.reasonCode &&
+        item.actor.userId === initiatorUserId &&
+        item.aggregateVersion === index + 1
+      );
+    })
   );
 }
 
@@ -647,6 +747,7 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
     !isValidPriority(value.priority) ||
     !isOneOf(value.riskLevel, RISK_LEVELS) ||
     !isKnownTaskActor(value.initiator) ||
+    !writableActorIds.has(value.initiator.userId) ||
     (value.currentOwner !== undefined && !isStoredTaskOwner(value.currentOwner)) ||
     !isKnownUserIdArray(value.participantUserIds) ||
     !isKnownUserIdArray(value.approverUserIds) ||
@@ -678,12 +779,11 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
     value.artifactVersionRefs.length !== 0 ||
     !Array.isArray(value.citationRefs) ||
     value.citationRefs.length !== 0 ||
-    !Array.isArray(value.history) ||
-    value.history.length !== 4 ||
-    !value.history.every((item) => isTaskHistoryItem(item, taskId)) ||
-    value.history.at(-1)?.toStatus !== "NEED_APPROVAL" ||
-    value.history.map(({ toStatus }) => toStatus).join(",") !==
-      "DRAFT,READY,PLANNING,NEED_APPROVAL" ||
+    !isCanonicalSubmittedHistory(
+      value.history,
+      taskId,
+      value.initiator.userId,
+    ) ||
     value.aggregateVersion !== 4
   ) {
     return false;
@@ -716,7 +816,7 @@ function isStoredWorkspace(value: unknown): value is StoredWorkspace {
   return (
     Object.entries(value.draftsByActor).every(
       ([actorId, draft]) =>
-        validActorIds.has(actorId) && isStoredTaskDraft(draft),
+        writableActorIds.has(actorId) && isStoredTaskDraft(draft),
     ) &&
     value.createdTasks.every(isStoredTaskRecord) &&
     new Set(

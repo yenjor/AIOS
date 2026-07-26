@@ -3,6 +3,7 @@ import type { DeepReadonly } from "@/types/domain";
 import type {
   AgentAssignment,
   ApprovalPoint,
+  ArtifactVersionRef,
   CapabilityVersionRef,
   ExecutionPlan,
   ExpectedArtifact,
@@ -263,6 +264,42 @@ interface FixtureInput {
   reviewerUserIds?: string[];
 }
 
+function makeTerminalArtifactRefs(
+  taskId: string,
+  status: TaskStatus,
+  artifactType: ExpectedArtifact["artifactType"],
+): ArtifactVersionRef[] {
+  if (status === "FAILED" || status === "CANCELLED") {
+    return [
+      {
+        kind: "ARTIFACT",
+        objectId: `artifact-execution-summary-${taskId}`,
+        versionId: `artifact-execution-summary-${taskId}-v1`,
+        versionNumber: 1,
+        digest: `sha256:artifact-execution-summary-${taskId}-v1`,
+        artifactType: "执行摘要",
+        accepted: false,
+      },
+    ];
+  }
+
+  if (status === "COMPLETED") {
+    return [
+      {
+        kind: "ARTIFACT",
+        objectId: `artifact-deliverable-${taskId}`,
+        versionId: `artifact-deliverable-${taskId}-v1`,
+        versionNumber: 1,
+        digest: `sha256:artifact-deliverable-${taskId}-v1`,
+        artifactType,
+        accepted: true,
+      },
+    ];
+  }
+
+  return [];
+}
+
 function makeFixture(input: FixtureInput): TaskDetail {
   const expectedArtifact: ExpectedArtifact = {
     artifactType: TASK_TEMPLATE_ARTIFACTS[input.templateName],
@@ -324,7 +361,11 @@ function makeFixture(input: FixtureInput): TaskDetail {
         ? makeApprovalPoints(input.id)
         : [],
     expectedArtifact,
-    artifactVersionRefs: [],
+    artifactVersionRefs: makeTerminalArtifactRefs(
+      input.id,
+      input.status,
+      expectedArtifact.artifactType,
+    ),
     citationRefs: [],
     history: makeHistory(input.id, input.status, initiator, input.baseHour),
     aggregateVersion: statusPaths[input.status].length,
