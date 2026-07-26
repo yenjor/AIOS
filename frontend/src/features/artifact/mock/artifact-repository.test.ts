@@ -36,7 +36,7 @@ const sectionTitles = [
   "风险",
   "测试建议",
   "回退考虑",
-  "Knowledge Citation",
+  "知识库引用",
 ] as const;
 
 const draft: TechnicalSolutionArtifactDraft = {

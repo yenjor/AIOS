@@ -121,7 +121,7 @@ test.describe("平板导航", () => {
   });
 });
 
-test("完整导航保持 README 模块归属且工作台、Task 与 Knowledge 可进入", async ({ page }) => {
+test("完整导航保持 README 模块归属且工作台、Task 与知识库可进入", async ({ page }) => {
   await enterWorkspaceAsLead(page);
 
   const navigation = page.getByRole("navigation", { name: "主要导航" });
@@ -132,7 +132,7 @@ test("完整导航保持 README 模块归属且工作台、Task 与 Knowledge �
     "审批待办",
     "Artifact",
     "AI 员工",
-    "Knowledge",
+    "知识库",
     "Capability",
     "Workflow",
     "Tool",
@@ -173,14 +173,14 @@ test("完整导航保持 README 模块归属且工作台、Task 与 Knowledge �
   await expect(taskLink).not.toHaveAttribute("aria-disabled", "true");
 
   const knowledgeLink = navigation.getByRole("link", {
-    name: "Knowledge",
+    name: "知识库",
     exact: true,
   });
   await expect(knowledgeLink).toHaveAttribute("href", "/knowledge");
   await expect(knowledgeLink).not.toHaveAttribute("aria-disabled", "true");
 
   const disabledItems = expectedItems.filter(
-    (item) => !["工作台", "Task", "Knowledge"].includes(item),
+    (item) => !["工作台", "Task", "知识库"].includes(item),
   );
   for (const item of disabledItems) {
     const disabledLink = navigation.getByRole("link", {

@@ -350,7 +350,7 @@ export function KnowledgeDetailScreen({
               href="/knowledge"
               className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
             >
-              返回 Knowledge Center
+              返回知识库
             </Link>
             {permission.canManage && !hasDraft ? (
               <Link
@@ -479,7 +479,7 @@ export function KnowledgeDetailScreen({
           </div>
           <Card className="p-5">
             <p className="text-sm leading-6 text-[var(--aios-muted)]">
-              Task 和 Capability 仅保存 KnowledgeVersionRef；历史执行继续保留原版本证据。
+              Task 和 Capability 仅保存知识库版本引用；历史执行继续保留原版本证据。
             </p>
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--aios-muted)]">

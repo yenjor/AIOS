@@ -592,7 +592,7 @@ describe("TaskWizard", () => {
       screen.getByRole("heading", { name: "必须通过的检查" }),
     ).toBeVisible();
     expect(screen.getByText("Artifact 结构完整性")).toBeVisible();
-    expect(screen.getByText("Knowledge Citation 可追溯")).toBeVisible();
+    expect(screen.getByText("知识库引用可追溯")).toBeVisible();
     expect(screen.getByText("Reviewer 人工验收")).toBeVisible();
   });
 
@@ -666,7 +666,7 @@ describe("TaskWizard", () => {
           "风险",
           "测试建议",
           "回退考虑",
-          "Knowledge Citation",
+          "知识库引用",
         ],
         knowledgeCitationRequired: true,
       },
@@ -782,7 +782,7 @@ describe("TaskWizard", () => {
           "风险",
           "测试建议",
           "回退考虑",
-          "Knowledge Citation",
+          "知识库引用",
         ],
         knowledgeCitationRequired: true,
       },

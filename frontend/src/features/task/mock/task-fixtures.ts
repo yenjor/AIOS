@@ -99,7 +99,7 @@ const expectedTechnicalSolution: ExpectedArtifact = {
     "风险",
     "测试建议",
     "回退考虑",
-    "Knowledge Citation",
+    "知识库引用",
   ],
   knowledgeCitationRequired: true,
 };
@@ -153,7 +153,7 @@ function makePlan(taskId: string): ExecutionPlan {
         id: `${taskId}-step-03`,
         sequence: 3,
         name: "形成技术方案草稿",
-        description: "依据固定 Capability 与 Knowledge Version 形成结构化草稿。",
+        description: "依据固定 Capability 与知识库版本形成结构化草稿。",
         stepType: "AGENT",
         responsibility: "AI研发员工",
         riskLevel: "R1",
@@ -162,7 +162,7 @@ function makePlan(taskId: string): ExecutionPlan {
         id: `${taskId}-step-04`,
         sequence: 4,
         name: "方案结构和引用检查",
-        description: "检查 Artifact 结构、关键结论和 Knowledge Citation。",
+        description: "检查 Artifact 结构、关键结论和知识库引用。",
         stepType: "VALIDATION",
         responsibility: "Validation",
         riskLevel: "R1",
@@ -310,7 +310,7 @@ function makeFixture(input: FixtureInput): TaskDetail {
     sections:
       input.templateName === "生成技术方案"
         ? [...expectedTechnicalSolution.sections]
-        : ["目标与范围", "执行结果", "风险与建议", "Knowledge Citation"],
+        : ["目标与范围", "执行结果", "风险与建议", "知识库引用"],
     knowledgeCitationRequired: true,
   };
   const initiator = { userId: input.initiatorId };
@@ -342,7 +342,7 @@ function makeFixture(input: FixtureInput): TaskDetail {
     outOfScope: ["不执行未授权写入"],
     completionCriteria: [
       `${expectedArtifact.artifactType}符合结构要求`,
-      "关键结论包含 Knowledge Citation",
+      "关键结论包含知识库引用",
       "Artifact 完成人工验收",
     ],
     assignedAgent: hasPlan ? structuredClone(assignedAgent) : undefined,
@@ -486,7 +486,7 @@ const mutableTaskFixtures: TaskDetail[] = [
   makeFixture({
     id: "task-seed-paused",
     title: "暂停知识权限检查",
-    goal: "完成代码理解报告前复核 Knowledge 权限",
+    goal: "完成代码理解报告前复核知识库权限",
     templateName: "理解代码",
     status: "PAUSED",
     priority: 30,

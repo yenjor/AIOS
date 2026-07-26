@@ -87,7 +87,7 @@ export function KnowledgeCreateLoader() {
           size={21}
           aria-hidden="true"
         />
-        正在校验 Knowledge 管理权限…
+        正在校验知识库管理权限…
       </Card>
     ) : null;
   }
@@ -102,10 +102,10 @@ export function KnowledgeCreateLoader() {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">当前身份不能新增 Knowledge</h1>
+            <h1 className="font-semibold">当前身份不能新增知识</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               只有研发负责人或 Workspace Admin
-              可注册、创建版本和发布正式 Knowledge。
+              可注册、创建版本和发布正式知识。
             </p>
           </div>
         </div>
@@ -118,7 +118,7 @@ export function KnowledgeCreateLoader() {
       <Card role="alert" className="mx-auto max-w-xl p-6">
         <h1 className="font-semibold">权限校验失败</h1>
         <p className="mt-2 text-sm text-[var(--aios-muted)]">
-          系统未执行 Knowledge 写入。
+          系统未执行知识库写入。
         </p>
       </Card>
     );
@@ -156,7 +156,7 @@ export function KnowledgeCreateLoader() {
       setError(
         cause instanceof KnowledgeRepositoryError
           ? cause.message
-          : "Knowledge 注册失败，未写入不完整数据。",
+          : "知识注册失败，未写入不完整数据。",
       );
     }
   }

@@ -49,7 +49,7 @@ export const navigation: NavigationGroup[] = [
     label: "AI 资源",
     items: [
       { label: "AI 员工", href: "/agents", enabled: false, icon: Bot },
-      { label: "Knowledge", href: "/knowledge", enabled: true, icon: BrainCircuit },
+      { label: "知识库", href: "/knowledge", enabled: true, icon: BrainCircuit },
       { label: "Capability", href: "/capabilities", enabled: false, icon: Boxes },
       { label: "Workflow", href: "/workflows", enabled: false, icon: Workflow },
     ],

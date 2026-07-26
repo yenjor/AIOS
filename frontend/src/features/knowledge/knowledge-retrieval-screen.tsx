@@ -56,7 +56,7 @@ export function KnowledgeRetrievalScreen() {
         message:
           error instanceof KnowledgeRepositoryError
             ? error.message
-            : "Knowledge Retrieval 执行失败。",
+            : "知识库检索执行失败。",
       });
     }
   }
@@ -73,18 +73,18 @@ export function KnowledgeRetrievalScreen() {
             Permission-before-Relevance
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Knowledge Retrieval
+            知识库检索
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
             在当前 Organization、Workspace、身份和用途范围内检索有效且索引就绪的
-            KnowledgeVersion，并返回可追溯 Citation。
+            知识版本，并返回可追溯的引用证据。
           </p>
         </div>
         <Link
           href="/knowledge"
           className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
         >
-          返回 Knowledge Center
+          返回知识库
         </Link>
       </header>
 
@@ -119,7 +119,7 @@ export function KnowledgeRetrievalScreen() {
             id="knowledge-retrieval-query"
             className="min-h-11 flex-1 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3 text-sm focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
             maxLength={300}
-            placeholder="例如：AIOS Task 如何绑定固定 KnowledgeVersion？"
+            placeholder="例如：AIOS Task 如何绑定固定知识版本？"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -205,7 +205,7 @@ export function KnowledgeRetrievalScreen() {
                       <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                         <p className="flex items-center gap-2 text-xs font-semibold">
                           <ShieldCheck size={15} aria-hidden="true" />
-                          KnowledgeVersionId
+                          知识版本 ID
                         </p>
                         <p className="mt-2 break-all font-mono text-xs">
                           {result.citation.knowledgeVersionId}

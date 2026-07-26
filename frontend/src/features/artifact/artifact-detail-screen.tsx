@@ -137,7 +137,7 @@ export function ArtifactDetailScreen({
                 values={artifact.provenance.capabilityVersionIds}
               />
               <VersionList
-                label="KnowledgeVersion"
+                label="知识库版本"
                 values={artifact.provenance.knowledgeVersionIds}
               />
               <VersionList
@@ -228,7 +228,7 @@ export function ArtifactDetailScreen({
                 className="text-[var(--aios-primary)]"
                 aria-hidden="true"
               />
-              <h2 className="text-xl font-semibold">Knowledge Citation</h2>
+              <h2 className="text-xl font-semibold">知识库引用</h2>
             </div>
             <ul className="mt-4 space-y-3">
               {artifact.citations.map((citation) => (

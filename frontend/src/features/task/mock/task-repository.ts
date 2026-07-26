@@ -535,14 +535,14 @@ const technicalSolutionPlanStepContract = [
   },
   {
     name: "形成技术方案草稿",
-    description: "依据固定 Capability 与 Knowledge Version 形成结构化草稿。",
+    description: "依据固定 Capability 与知识库版本形成结构化草稿。",
     stepType: "AGENT",
     responsibility: "AI研发员工",
     riskLevel: "R1",
   },
   {
     name: "方案结构和引用检查",
-    description: "检查 Artifact 结构、关键结论和 Knowledge Citation。",
+    description: "检查 Artifact 结构、关键结论和知识库引用。",
     stepType: "VALIDATION",
     responsibility: "Validation",
     riskLevel: "R1",

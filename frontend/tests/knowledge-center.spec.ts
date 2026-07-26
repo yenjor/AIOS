@@ -36,7 +36,7 @@ async function expectNoPageOverflow(page: Page) {
     .toBe(true);
 }
 
-test("Knowledge 管理者完成注册、发布、检索、版本替代与纠错闭环", async ({
+test("知识库管理者完成注册、发布、检索、版本替代与纠错闭环", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -44,14 +44,14 @@ test("Knowledge 管理者完成注册、发布、检索、版本替代与纠错�
 
   const navigation = page.getByRole("navigation", { name: "主要导航" });
   await navigation
-    .getByRole("link", { name: "Knowledge", exact: true })
+    .getByRole("link", { name: "知识库", exact: true })
     .click();
   await expect(page).toHaveURL(/\/knowledge$/);
   await expect(
-    page.getByRole("heading", { name: "Knowledge Center", exact: true }),
+    page.getByRole("heading", { name: "知识库", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "新增 / 导入 Knowledge", exact: true }),
+    page.getByRole("link", { name: "新增 / 导入知识", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText("AIOS 项目文档", { exact: true }).first(),
@@ -65,12 +65,12 @@ test("Knowledge 管理者完成注册、发布、检索、版本替代与纠错�
   });
 
   await page
-    .getByRole("link", { name: "新增 / 导入 Knowledge", exact: true })
+    .getByRole("link", { name: "新增 / 导入知识", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "新增 Knowledge", exact: true }),
+    page.getByRole("heading", { name: "新增知识", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Knowledge Code", { exact: true }).fill(
+  await page.getByLabel("知识库编码", { exact: true }).fill(
     "release-verification-guide",
   );
   await page
@@ -91,11 +91,11 @@ test("Knowledge 管理者完成注册、发布、检索、版本替代与纠错�
     .getByLabel("文件名", { exact: true })
     .fill("release-verification.md");
   await page
-    .getByLabel("Knowledge 正文", { exact: true })
+    .getByLabel("知识正文", { exact: true })
     .fill(
       "# 发布校验\n\n发布前必须执行类型检查、单元测试和构建验证。发布后核对 Citation 与 Artifact 证据，异常时按回退清单恢复。",
     );
-  await page.getByRole("button", { name: "注册 Knowledge", exact: true }).click();
+  await page.getByRole("button", { name: "注册知识", exact: true }).click();
 
   await expect(page).toHaveURL(/\/knowledge\/knowledge-mock-0001$/, {
     timeout: 30_000,
@@ -118,7 +118,7 @@ test("Knowledge 管理者完成注册、发布、检索、版本替代与纠错�
 
   await page.goto("/knowledge/retrieval");
   await expect(
-    page.getByRole("heading", { name: "Knowledge Retrieval", exact: true }),
+    page.getByRole("heading", { name: "知识库检索", exact: true }),
   ).toBeVisible();
   await page
     .getByLabel("检索问题", { exact: true })
@@ -141,9 +141,9 @@ test("Knowledge 管理者完成注册、发布、检索、版本替代与纠错�
   ).toBeVisible();
   await page.getByLabel("文件名", { exact: true }).fill("release-verification-v2.md");
   await page
-    .getByLabel("Knowledge 正文", { exact: true })
+    .getByLabel("知识正文", { exact: true })
     .fill(
-      "# 发布校验 v2\n\n发布前执行类型检查、单元测试、E2E 与生产构建。发布后验证权限负向用例、固定 KnowledgeVersion Citation 和 Artifact，异常时执行已评审回退步骤。",
+      "# 发布校验 v2\n\n发布前执行类型检查、单元测试、E2E 与生产构建。发布后验证权限负向用例、固定知识库版本引用和 Artifact，异常时执行已评审回退步骤。",
     );
   await page.getByRole("button", { name: "创建 Draft", exact: true }).click();
   await expect(page).toHaveURL(/\/knowledge\/knowledge-mock-0001$/);
@@ -175,16 +175,16 @@ test("Knowledge 管理者完成注册、发布、检索、版本替代与纠错�
   });
 });
 
-test("Knowledge 对 Auditor 保持只读并隐藏机密条目", async ({
+test("知识库对 Auditor 保持只读并隐藏机密条目", async ({
   page,
 }) => {
   await enterWorkspace(page, "使用 赵岚（Auditor）身份");
   await page.goto("/knowledge");
   await expect(
-    page.getByRole("heading", { name: "Knowledge Center", exact: true }),
+    page.getByRole("heading", { name: "知识库", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "新增 / 导入 Knowledge", exact: true }),
+    page.getByRole("link", { name: "新增 / 导入知识", exact: true }),
   ).toHaveCount(0);
   await expect(
     page.getByText("AI 安全基线（受限）", { exact: true }),
@@ -193,20 +193,20 @@ test("Knowledge 对 Auditor 保持只读并隐藏机密条目", async ({
   await page.goto("/knowledge/new");
   await expect(
     page.getByRole("heading", {
-      name: "当前身份不能新增 Knowledge",
+      name: "当前身份不能新增知识",
       exact: true,
     }),
   ).toBeVisible();
 });
 
-test("Knowledge Center 在移动视口没有页面级横向溢出", async ({
+test("知识库在移动视口没有页面级横向溢出", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await enterWorkspace(page, "使用 陈明（研发负责人）身份");
   await page.goto("/knowledge");
   await expect(
-    page.getByRole("heading", { name: "Knowledge Center", exact: true }),
+    page.getByRole("heading", { name: "知识库", exact: true }),
   ).toBeVisible();
   await expectNoPageOverflow(page);
   await page.goto("/knowledge/knowledge-aios-docs");

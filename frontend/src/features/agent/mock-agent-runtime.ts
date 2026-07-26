@@ -21,9 +21,9 @@ export interface MockAgentRuntimeOutput {
 
 const RUNTIME_STEP_SUMMARIES: Readonly<Record<number, string>> = {
   1: "已在 Task Goal、Constraints、Completion Criteria 与 Scope Digest 内确认执行边界。",
-  2: "已通过固定 KnowledgeVersion 与只读 ToolVersion 完成授权资料检索，并保留 Citation。",
+  2: "已通过固定知识库版本与只读 ToolVersion 完成授权资料检索，并保留引用证据。",
   3: "已依据固定 CapabilityVersion 与 WorkflowVersion 形成结构化技术方案草稿。",
-  4: "已完成八个必需章节、Knowledge Citation 与 Reviewer 门禁检查。",
+  4: "已完成八个必需章节、知识库引用与 Reviewer 门禁检查。",
 };
 
 function normalizeList(values: readonly string[]): string {
@@ -57,7 +57,7 @@ function buildSections(task: TaskDetail): ArtifactSection[] {
     {
       title: "技术决策",
       paragraphs: [
-        "Task 保持核心协调入口，运行期仅使用已固定的 Agent、Capability、Knowledge、Workflow 与 Tool VersionRef。",
+        "Task 保持核心协调入口，运行期仅使用已固定的 Agent、Capability、知识库、Workflow 与 Tool VersionRef。",
         "每次只推进一个有界 Step，并在步骤完成后保存 WorkflowCheckpoint。",
         "Artifact 作为独立对象进入人工验收；Agent Runtime 不直接把 Task 标记为 Completed。",
       ],
@@ -83,7 +83,7 @@ function buildSections(task: TaskDetail): ArtifactSection[] {
       ],
     },
     {
-      title: "Knowledge Citation",
+      title: "知识库引用",
       paragraphs: task.knowledgeVersionRefs.map(
         (reference) =>
           `${reference.versionId} · ${reference.digest} · locator: README.md#5-系统整体架构`,

@@ -36,7 +36,7 @@ export const TECHNICAL_SOLUTION_SECTIONS = [
   "风险",
   "测试建议",
   "回退考虑",
-  "Knowledge Citation",
+  "知识库引用",
 ] as const;
 
 export const AGENT_ASSIGNMENT: AgentAssignment = {
@@ -114,7 +114,7 @@ export function expectedArtifactFor(
     sections:
       templateName === GOLDEN_TEMPLATE
         ? [...TECHNICAL_SOLUTION_SECTIONS]
-        : ["目标与范围", "执行结果", "风险与建议", "Knowledge Citation"],
+        : ["目标与范围", "执行结果", "风险与建议", "知识库引用"],
     knowledgeCitationRequired: true,
   };
 }

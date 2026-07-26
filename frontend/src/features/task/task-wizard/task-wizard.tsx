@@ -91,7 +91,7 @@ const FIELD_LABELS: Record<WizardField, string> = {
   expectedCompletionLocal: "期望完成时间",
   constraintsText: "约束",
   outOfScopeText: "不做事项",
-  includeKnowledge: "Knowledge Version",
+  includeKnowledge: "知识库版本",
   completionCriteriaText: "Completion Criteria",
 };
 
@@ -760,11 +760,11 @@ export function TaskWizard({
       <div>
         <SectionHeading
           title="提供上下文"
-          description="仅绑定当前 Workspace 已授权且版本固定的 Knowledge 引用，不保存 Knowledge 正文或 Secret。"
+          description="仅绑定当前 Workspace 已授权且版本固定的知识库引用，不保存知识正文或 Secret。"
         />
         <fieldset className="mt-6">
           <legend className="text-sm font-semibold">
-            授权 Knowledge Version
+            授权知识库版本
           </legend>
           <label
             className="mt-3 flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4"
@@ -792,15 +792,15 @@ export function TaskWizard({
             </span>
           </label>
           <p className={supportingClass} id="includeKnowledge-help">
-            此引用来自 Knowledge Center 的有效版本。Task
-            仅保存 KnowledgeVersionRef；执行检索时仍需再次进行权限校验。
+            此引用来自知识库的有效版本。Task
+            仅保存知识库版本引用；执行检索时仍需再次进行权限校验。
           </p>
           <FieldError field="includeKnowledge" errors={errors} />
           <Link
             href="/knowledge/knowledge-aios-docs"
             className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
           >
-            在 Knowledge Center 查看固定版本
+            在知识库中查看固定版本
           </Link>
         </fieldset>
         <div className="mt-6 flex items-start gap-3 rounded-lg border border-[var(--aios-control-border)] p-4">
@@ -810,9 +810,9 @@ export function TaskWizard({
             size={19}
           />
           <p className="text-sm leading-6 text-[var(--aios-muted)]">
-            Knowledge Center 负责来源、所有者、敏感等级、发布状态与历史版本；
+            知识库负责来源、所有者、敏感等级、发布状态与历史版本；
             Task 只消费已授权的固定版本，不复制正文，也不能直接修改正式
-            Knowledge。
+            知识。
           </p>
         </div>
       </div>
@@ -857,7 +857,7 @@ export function TaskWizard({
                     "目标与范围",
                     "执行结果",
                     "风险与建议",
-                    "Knowledge Citation",
+                    "知识库引用",
                   ]
               ).map((section) => (
                 <label
@@ -893,8 +893,8 @@ export function TaskWizard({
                   detail: "必须包含所列 Sections，且关键结论完整。",
                 },
                 {
-                  name: "Knowledge Citation 可追溯",
-                  detail: "关键结论必须引用已授权 KnowledgeVersion。",
+                  name: "知识库引用可追溯",
+                  detail: "关键结论必须引用已授权的知识版本。",
                 },
                 {
                   name: "Reviewer 人工验收",
@@ -1045,7 +1045,7 @@ export function TaskWizard({
             {...TECHNICAL_SOLUTION_CAPABILITY_REF}
           />
           <RefSummary
-            label="KnowledgeVersion"
+            label="知识库版本"
             {...AIOS_KNOWLEDGE_REF}
           />
           <RefSummary

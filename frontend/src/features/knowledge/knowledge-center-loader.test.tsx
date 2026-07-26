@@ -87,7 +87,7 @@ describe("KnowledgeCenterLoader", () => {
     render(<KnowledgeCenterLoader />);
 
     expect(
-      await screen.findByRole("heading", { name: "Knowledge Center" }),
+      await screen.findByRole("heading", { name: "知识库" }),
     ).toBeVisible();
     const scope = {
       organizationId: "org-guangwei",
@@ -102,9 +102,9 @@ describe("KnowledgeCenterLoader", () => {
       expect.objectContaining({ page: 1, pageSize: 8 }),
     );
     expect(
-      screen.getByRole("link", { name: "新增 / 导入 Knowledge" }),
+      screen.getByRole("link", { name: "新增 / 导入知识" }),
     ).toBeVisible();
-    expect(screen.getByRole("group", { name: "可见 Knowledge" })).toHaveTextContent(
+    expect(screen.getByRole("group", { name: "可见知识" })).toHaveTextContent(
       "4",
     );
   });
@@ -124,13 +124,13 @@ describe("KnowledgeCenterLoader", () => {
     render(<KnowledgeCenterLoader />);
 
     expect(
-      await screen.findByRole("heading", { name: "Knowledge Center" }),
+      await screen.findByRole("heading", { name: "知识库" }),
     ).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: "新增 / 导入 Knowledge" }),
+      screen.queryByRole("link", { name: "新增 / 导入知识" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText("当前身份仅可查看和使用授权 Knowledge。"),
+      screen.getByText("当前身份仅可查看和使用已授权的知识。"),
     ).toBeVisible();
   });
 });

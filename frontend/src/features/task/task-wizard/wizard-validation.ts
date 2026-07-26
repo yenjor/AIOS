@@ -79,7 +79,7 @@ export function validateStep(
     !values.includeKnowledge
   ) {
     errors.includeKnowledge =
-      "黄金路径必须绑定一个已授权的 Knowledge Version。";
+      "黄金路径必须绑定一个已授权的知识库版本。";
   }
 
   if (step === 4 && isBlank(values.completionCriteriaText)) {

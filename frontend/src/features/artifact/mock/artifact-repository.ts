@@ -74,11 +74,11 @@ const technicalSolutionSectionTitles = [
   "风险",
   "测试建议",
   "回退考虑",
-  "Knowledge Citation",
+  "知识库引用",
 ] as const;
 const validationNames = [
   "Artifact 结构完整性",
-  "Knowledge Citation 可追溯",
+  "知识库引用可追溯",
   "Reviewer 人工验收",
 ] as const;
 
@@ -535,9 +535,9 @@ export function createArtifactRepository(
           },
           {
             id: `${artifactId}-validation-citation`,
-            name: "Knowledge Citation 可追溯",
+            name: "知识库引用可追溯",
             status: "PASSED",
-            summary: "引用固定 KnowledgeVersion 与定位信息。",
+            summary: "引用固定知识库版本与定位信息。",
           },
           {
             id: `${artifactId}-validation-review`,

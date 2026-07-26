@@ -122,7 +122,7 @@ export function KnowledgeCenterLoader() {
           size={21}
           aria-hidden="true"
         />
-        正在加载 Knowledge Center…
+        正在加载知识库…
       </Card>
     );
   }
@@ -137,11 +137,11 @@ export function KnowledgeCenterLoader() {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Knowledge 数据加载失败</h1>
+            <h1 className="font-semibold">知识库数据加载失败</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               {state.reason === "INVALID_STORE"
-                ? "本地 Knowledge 数据未通过完整性校验，已拒绝展示不可信内容。"
-                : "Knowledge Repository 暂时不可用，请重试。"}
+                ? "本地知识库数据未通过完整性校验，已拒绝展示不可信内容。"
+                : "知识库仓储暂时不可用，请重试。"}
             </p>
             <Button
               className="mt-4"

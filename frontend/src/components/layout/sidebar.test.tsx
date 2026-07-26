@@ -23,7 +23,7 @@ describe("Sidebar", () => {
       "审批待办",
       "Artifact",
       "AI 员工",
-      "Knowledge",
+      "知识库",
       "Capability",
       "Workflow",
       "Tool",
@@ -41,7 +41,7 @@ describe("Sidebar", () => {
     expect(within(navigation).getByText("3")).toBeVisible();
   });
 
-  it("enables Workspace, Task and Knowledge while explaining every future item", () => {
+  it("enables Workspace, Task and 知识库 while explaining every future item", () => {
     render(<Sidebar open onClose={vi.fn()} />);
 
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
@@ -53,7 +53,7 @@ describe("Sidebar", () => {
     expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
     expect(enabledLinks[1]).toHaveAccessibleName("Task");
     expect(enabledLinks[1]).toHaveAttribute("href", "/tasks");
-    expect(enabledLinks[2]).toHaveAccessibleName("Knowledge");
+    expect(enabledLinks[2]).toHaveAccessibleName("知识库");
     expect(enabledLinks[2]).toHaveAttribute("href", "/knowledge");
 
     const disabledLabels = [

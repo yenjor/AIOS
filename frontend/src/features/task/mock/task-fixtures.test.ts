@@ -142,7 +142,7 @@ describe("Task fixtures", () => {
       "风险",
       "测试建议",
       "回退考虑",
-      "Knowledge Citation",
+      "知识库引用",
     ]);
     expect(goldenTechnicalSolutionTask.artifactVersionRefs).toEqual([]);
   });

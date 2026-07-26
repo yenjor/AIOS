@@ -212,8 +212,8 @@ export function ExecutionPlan({
           </p>
           <p className="mt-2 text-sm text-[var(--aios-muted)]">
             {expectedArtifact.knowledgeCitationRequired
-              ? "需要 Knowledge Citation"
-              : "未要求 Knowledge Citation"}
+              ? "需要知识库引用"
+              : "未要求知识库引用"}
           </p>
           <h4 className="mt-4 text-sm font-semibold">Required Sections</h4>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">

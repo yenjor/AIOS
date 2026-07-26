@@ -114,7 +114,7 @@ export function KnowledgeVersionCreateLoader({
           <div>
             <h1 className="font-semibold">不能创建新版本</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-              当前身份无管理权限，或该 Knowledge 已存在待处理的 Draft。
+              当前身份无管理权限，或该知识条目已存在待处理的 Draft。
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ export function KnowledgeVersionCreateLoader({
       <Card role="alert" className="mx-auto max-w-xl p-6">
         <h1 className="font-semibold">版本条件校验失败</h1>
         <p className="mt-2 text-sm text-[var(--aios-muted)]">
-          系统未创建 KnowledgeVersion。
+          系统未创建知识版本。
         </p>
       </Card>
     );
@@ -160,7 +160,7 @@ export function KnowledgeVersionCreateLoader({
       setError(
         cause instanceof KnowledgeRepositoryError
           ? cause.message
-          : "KnowledgeVersion 创建失败。",
+          : "知识版本创建失败。",
       );
     }
   }

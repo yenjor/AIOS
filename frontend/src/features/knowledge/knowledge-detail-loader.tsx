@@ -109,7 +109,7 @@ export function KnowledgeDetailLoader({
           size={21}
           aria-hidden="true"
         />
-        正在加载 Knowledge 与固定版本证据…
+        正在加载知识条目与固定版本证据…
       </Card>
     ) : null;
   }
@@ -124,10 +124,10 @@ export function KnowledgeDetailLoader({
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Knowledge 不可用</h1>
+            <h1 className="font-semibold">知识条目不可用</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               当前 Organization、Workspace 或身份不能安全查看该
-              Knowledge。敏感条目不会泄露其存在性。
+              知识条目。敏感条目不会泄露其存在性。
             </p>
           </div>
         </div>
@@ -145,7 +145,7 @@ export function KnowledgeDetailLoader({
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Knowledge 数据加载失败</h1>
+            <h1 className="font-semibold">知识库数据加载失败</h1>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
               本地数据未通过完整性校验，未展示不可信内容。
             </p>
@@ -206,7 +206,7 @@ export function KnowledgeDetailLoader({
         message:
           error instanceof KnowledgeRepositoryError
             ? error.message
-            : "Knowledge 状态变更失败，已保留最后一个有效状态。",
+            : "知识版本状态变更失败，已保留最后一个有效状态。",
       });
     }
   }

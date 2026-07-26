@@ -33,7 +33,7 @@ function plannedTask(): PlannedTaskDetail {
     outOfScope: ["不执行未授权写入"],
     completionCriteria: [
       "技术方案符合结构要求",
-      "关键结论包含 Knowledge Citation",
+      "关键结论包含知识库引用",
       "Artifact 完成人工验收",
     ],
     assignedAgent: {
@@ -174,7 +174,7 @@ function plannedTask(): PlannedTaskDetail {
         "风险",
         "测试建议",
         "回退考虑",
-        "Knowledge Citation",
+        "知识库引用",
       ],
       knowledgeCitationRequired: true,
     },
@@ -337,8 +337,8 @@ describe("TaskDetailScreen", () => {
     const artifact = screen.getByRole("region", { name: "Artifact" });
     expect(within(artifact).getByText("技术方案")).toBeVisible();
     expect(within(artifact).getByText("尚未生成")).toBeVisible();
-    expect(within(artifact).getByText("Knowledge Citation")).toBeVisible();
-    expect(within(artifact).getByText("需要 Knowledge Citation")).toBeVisible();
+    expect(within(artifact).getByText("知识库引用")).toBeVisible();
+    expect(within(artifact).getByText("需要知识库引用")).toBeVisible();
 
     expect(within(plan).getByText("计划确认")).toBeVisible();
     expect(within(plan).getByText("Artifact验收")).toBeVisible();

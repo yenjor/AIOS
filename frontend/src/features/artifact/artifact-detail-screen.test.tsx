@@ -12,7 +12,7 @@ const sectionTitles = [
   "风险",
   "测试建议",
   "回退考虑",
-  "Knowledge Citation",
+  "知识库引用",
 ] as const;
 
 function artifact(): TechnicalSolutionArtifact {
@@ -44,7 +44,7 @@ function artifact(): TechnicalSolutionArtifact {
       },
       {
         id: "validation-citation",
-        name: "Knowledge Citation 可追溯",
+        name: "知识库引用可追溯",
         status: "PASSED",
         summary: "引用可追溯。",
       },

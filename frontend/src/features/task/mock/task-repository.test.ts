@@ -118,13 +118,13 @@ const technicalSolutionDraft: TaskDraft & {
       "风险",
       "测试建议",
       "回退考虑",
-      "Knowledge Citation",
+      "知识库引用",
     ],
     knowledgeCitationRequired: true,
   },
   completionCriteria: [
     "技术方案包含约定的全部章节",
-    "关键判断包含 Knowledge Citation",
+    "关键判断包含知识库引用",
     "由人类 Reviewer 完成 Artifact 验收",
   ],
 };

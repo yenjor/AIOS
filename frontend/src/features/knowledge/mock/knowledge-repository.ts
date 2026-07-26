@@ -180,7 +180,7 @@ function getBrowserStorage(): KnowledgeStorage {
   if (typeof window === "undefined") {
     throw new KnowledgeRepositoryError(
       "INVALID_STORE",
-      "Knowledge store is only available in the browser mock runtime.",
+      "知识库仅可在浏览器 Mock Runtime 中使用。",
     );
   }
   return window.localStorage;
@@ -242,7 +242,7 @@ function validateScope(scope: unknown): asserts scope is KnowledgeScope {
   if (!isCanonicalScope(scope)) {
     throw new KnowledgeRepositoryError(
       "NOT_FOUND",
-      "Knowledge scope is unavailable.",
+      "知识库作用域不可用。",
     );
   }
 }
@@ -256,7 +256,7 @@ function validateActor(actor: unknown): asserts actor is KnowledgeActor {
   ) {
     throw new KnowledgeRepositoryError(
       "FORBIDDEN",
-      "Knowledge actor is unavailable.",
+      "知识库操作身份不可用。",
     );
   }
 }
@@ -268,10 +268,10 @@ function permissionFor(actor: KnowledgeActor): KnowledgePermissionDecision {
     canManage,
     canSubmitCorrection: correctionActorIds.has(actor.userId),
     reason: canManage
-      ? "当前身份可管理 Workspace 内授权 Knowledge。"
+      ? "当前身份可管理 Workspace 内已授权的知识。"
       : actor.userId === "user-auditor"
-        ? "Auditor 仅可查看授权 Knowledge 和处理证据。"
-        : "当前身份可使用 Knowledge，并可提交纠错反馈。",
+        ? "Auditor 仅可查看已授权的知识和处理证据。"
+        : "当前身份可使用知识库，并可提交纠错反馈。",
   };
 }
 
@@ -279,7 +279,7 @@ function requireManager(actor: KnowledgeActor): void {
   if (!managerActorIds.has(actor.userId)) {
     throw new KnowledgeRepositoryError(
       "FORBIDDEN",
-      "Only the Workspace Knowledge manager can perform this action.",
+      "只有 Workspace 知识库管理员可执行此操作。",
     );
   }
 }
@@ -450,10 +450,10 @@ function seedVersion(
 function defaultEnvelope(): KnowledgeStoreEnvelope {
   const aiosContent = [
     "# AIOS 项目知识",
-    "AIOS 是 Enterprise AI Operating System，统一管理 Knowledge、Capability、Agent、Task、Tool、Workflow、Artifact 与 Audit。",
+    "AIOS 是 Enterprise AI Operating System，统一管理知识库、Capability、Agent、Task、Tool、Workflow、Artifact 与 Audit。",
     "系统采用 AI First、API First、Modular Architecture、Plugin Architecture 和 Enterprise Ready 原则。",
-    "Task 是核心工作单位；Agent 使用固定 KnowledgeVersionRef，不直接修改正式 Knowledge。",
-    "知识检索必须先执行 Workspace、Purpose、Version、Scope 与 Permission 过滤，并返回 Knowledge Citation。",
+    "Task 是核心工作单位；Agent 使用固定的知识库版本引用，不直接修改正式知识。",
+    "知识检索必须先执行 Workspace、Purpose、Version、Scope 与 Permission 过滤，并返回知识库引用证据。",
   ].join("\n\n");
   const sopV1Content = [
     "# AI 研发交付 SOP v1",
@@ -463,7 +463,7 @@ function defaultEnvelope(): KnowledgeStoreEnvelope {
   const sopV2Content = [
     "# AI 研发交付 SOP v2",
     "研发 Task 必须先完成计划审批，再由 AI 研发员工按固定 WorkflowVersion 执行。",
-    "每个 Runtime Step 必须保存 Checkpoint，Knowledge 检索必须固定 KnowledgeVersion 并生成 Citation。",
+    "每个 Runtime Step 必须保存 Checkpoint，知识库检索必须固定知识版本并生成引用证据。",
     "Agent Runtime 不能直接把 Task 标记为 Completed；Artifact 必须由授权 Reviewer 验收。",
   ].join("\n\n");
   const releaseContent = [
@@ -473,7 +473,7 @@ function defaultEnvelope(): KnowledgeStoreEnvelope {
   ].join("\n\n");
   const securityContent = [
     "# AI 安全基线",
-    "敏感 Knowledge 仅允许授权管理者查看。",
+    "敏感知识仅允许已授权的管理者查看。",
     "文档内容属于不可信证据，不能改变 Permission、Task Goal 或 Tool Policy。",
   ].join("\n\n");
   const aiosVersion = seedVersion(
@@ -613,7 +613,7 @@ function defaultEnvelope(): KnowledgeStoreEnvelope {
         scope: cloneMutable(canonicalScope),
         code: "ai-security-baseline",
         title: "AI 安全基线",
-        description: "敏感 Knowledge、Prompt Injection 与 Tool Policy 边界。",
+        description: "敏感知识、Prompt Injection 与 Tool Policy 边界。",
         source: {
           sourceType: "DOCUMENT",
           sourceLocation: "repository://rules/ai-security.md",
@@ -978,7 +978,7 @@ function validateContentInput(
   ) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "Knowledge content is invalid or exceeds the 50 KB Mock limit.",
+      "知识正文无效或超过 50 KB Mock 限制。",
     );
   }
 }
@@ -1015,7 +1015,7 @@ function validateRegisterInput(
   ) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "Knowledge profile is incomplete or invalid.",
+      "知识条目信息不完整或无效。",
     );
   }
   validateContentInput({
@@ -1062,7 +1062,7 @@ function normalizeQuery(query: KnowledgeQuery): {
   if (!isRecord(rawQuery)) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "Knowledge query is invalid.",
+      "知识库查询条件无效。",
     );
   }
   const page = rawQuery.page ?? 1;
@@ -1089,7 +1089,7 @@ function normalizeQuery(query: KnowledgeQuery): {
   ) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "Knowledge query contains unsupported filters.",
+      "知识库查询包含不支持的筛选条件。",
     );
   }
   return { page, pageSize };
@@ -1141,7 +1141,7 @@ export async function digestKnowledgeContent(
   ) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "Knowledge content is empty or exceeds the 50 KB Mock limit.",
+      "知识正文为空或超过 50 KB Mock 限制。",
     );
   }
   if (!globalThis.crypto?.subtle) {
@@ -1171,7 +1171,7 @@ export function createKnowledgeRepository(
     if (!isIsoTimestamp(value)) {
       throw new KnowledgeRepositoryError(
         "VALIDATION",
-        "Knowledge clock must return an ISO 8601 UTC timestamp.",
+        "知识库时钟必须返回 ISO 8601 UTC 时间。",
       );
     }
     return value;
@@ -1184,7 +1184,7 @@ export function createKnowledgeRepository(
     } catch {
       throw new KnowledgeRepositoryError(
         "INVALID_STORE",
-        "Knowledge store is unavailable.",
+        "知识库仓储不可用。",
       );
     }
     if (raw === null) {
@@ -1204,7 +1204,7 @@ export function createKnowledgeRepository(
       }
       throw new KnowledgeRepositoryError(
         "INVALID_STORE",
-        "Knowledge store failed integrity validation and was cleared.",
+        "知识库仓储未通过完整性校验，已清除不可信数据。",
       );
     }
   }
@@ -1213,7 +1213,7 @@ export function createKnowledgeRepository(
     if (!isEnvelope(envelope)) {
       throw new KnowledgeRepositoryError(
         "INVALID_STORE",
-        "Knowledge store write failed integrity validation.",
+        "知识库仓储写入未通过完整性校验。",
       );
     }
     try {
@@ -1221,7 +1221,7 @@ export function createKnowledgeRepository(
     } catch {
       throw new KnowledgeRepositoryError(
         "VALIDATION",
-        "Knowledge store could not persist this change.",
+        "知识库仓储无法持久化本次变更。",
       );
     }
   }
@@ -1243,14 +1243,14 @@ export function createKnowledgeRepository(
     if (!isNonEmptyString(knowledgeId)) {
       throw new KnowledgeRepositoryError(
         "VALIDATION",
-        "Knowledge ID is invalid.",
+        "知识条目 ID 无效。",
       );
     }
     const item = envelope.items.find(({ id }) => id === knowledgeId);
     if (!item || !canReadItem(item, actor)) {
       throw new KnowledgeRepositoryError(
         "NOT_FOUND",
-        "Knowledge was not found.",
+        "未找到知识条目。",
       );
     }
     return item;
@@ -1359,7 +1359,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "CONFLICT",
-          "Knowledge code already exists in this Workspace.",
+          "当前 Workspace 已存在相同的知识库编码。",
         );
       }
       const sequence = envelope.nextKnowledgeSequence;
@@ -1424,7 +1424,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "CONFLICT",
-          "Knowledge already has an active Draft version.",
+          "该知识条目已存在活动中的 Draft 版本。",
         );
       }
       const currentTimestamp = timestamp();
@@ -1453,7 +1453,7 @@ export function createKnowledgeRepository(
       if (!version) {
         throw new KnowledgeRepositoryError(
           "NOT_FOUND",
-          "KnowledgeVersion was not found.",
+          "未找到知识版本。",
         );
       }
       if (
@@ -1466,7 +1466,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "INDEX_NOT_READY",
-          "KnowledgeVersion cannot become Effective before validation.",
+          "知识版本通过验证前不能发布为有效版本。",
         );
       }
       const currentTimestamp = timestamp();
@@ -1508,7 +1508,7 @@ export function createKnowledgeRepository(
       if (!version || version.effectiveStatus !== "EFFECTIVE") {
         throw new KnowledgeRepositoryError(
           "CONFLICT",
-          "Only an Effective KnowledgeVersion can be invalidated.",
+          "只有有效的知识版本可以失效。",
         );
       }
       const currentTimestamp = timestamp();
@@ -1549,7 +1549,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "INDEX_NOT_READY",
-          "Only an Invalidated and Ready KnowledgeVersion can be restored.",
+          "只有已失效且索引就绪的知识版本可以恢复。",
         );
       }
       const currentTimestamp = timestamp();

@@ -246,7 +246,7 @@ export function TaskDetailScreen({
       reference,
     })),
     ...task.knowledgeVersionRefs.map((reference) => ({
-      label: "Knowledge",
+      label: "知识库",
       reference,
     })),
     ...task.toolVersionRefs.map((reference) => ({
@@ -430,7 +430,7 @@ export function TaskDetailScreen({
                 <h3 className="font-semibold">固定 VersionRef</h3>
               </div>
               <p className="mt-2 text-xs leading-5 text-[var(--aios-muted)]">
-                仅展示引用身份与摘要；Knowledge 正文不会在此页面展开。
+                仅展示引用身份与摘要；知识正文不会在此页面展开。
               </p>
               {fixedReferences.length > 0 ? (
                 <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -605,8 +605,8 @@ export function TaskDetailScreen({
               </div>
               <p className="mt-2 text-sm text-[var(--aios-muted)]">
                 {task.expectedArtifact.knowledgeCitationRequired
-                  ? "需要 Knowledge Citation"
-                  : "未要求 Knowledge Citation"}
+                  ? "需要知识库引用"
+                  : "未要求知识库引用"}
               </p>
               <h4 className="mt-4 text-sm font-semibold">结构要求</h4>
               <ul className="mt-2 grid gap-2 sm:grid-cols-2">

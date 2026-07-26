@@ -25,7 +25,7 @@ export interface ArtifactSection {
     | "风险"
     | "测试建议"
     | "回退考虑"
-    | "Knowledge Citation";
+    | "知识库引用";
   paragraphs: string[];
 }
 
@@ -33,7 +33,7 @@ export interface ArtifactValidationResult {
   id: string;
   name:
     | "Artifact 结构完整性"
-    | "Knowledge Citation 可追溯"
+    | "知识库引用可追溯"
     | "Reviewer 人工验收";
   status: "PASSED" | "PENDING";
   summary: string;

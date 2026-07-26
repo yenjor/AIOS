@@ -186,7 +186,7 @@ function ContentFields({
 
       <div>
         <label className={labelClass} htmlFor="knowledge-content">
-          Knowledge 正文
+          知识正文
         </label>
         <textarea
           required
@@ -239,10 +239,10 @@ export function KnowledgeRegistrationForm({
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            KnowledgeItem Command
+            知识条目命令
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            新增 Knowledge
+            新增知识
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
             注册来源、所有者、敏感等级和适用范围，并创建首个不可变版本。
@@ -253,7 +253,7 @@ export function KnowledgeRegistrationForm({
           href="/knowledge"
           className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
         >
-          返回 Knowledge Center
+          返回知识库
         </Link>
       </header>
 
@@ -261,7 +261,7 @@ export function KnowledgeRegistrationForm({
         <div className="grid gap-5 lg:grid-cols-2">
           <div>
             <label className={labelClass} htmlFor="knowledge-code">
-              Knowledge Code
+              知识库编码
             </label>
             <input
               required
@@ -417,7 +417,7 @@ export function KnowledgeRegistrationForm({
             className="text-[var(--aios-primary)]"
             aria-hidden="true"
           />
-          <h2 className="text-xl font-semibold">首个 KnowledgeVersion</h2>
+          <h2 className="text-xl font-semibold">首个知识版本</h2>
         </div>
         <ContentFields
           values={values}
@@ -450,7 +450,7 @@ export function KnowledgeRegistrationForm({
               aria-hidden="true"
             />
           ) : null}
-          {busy ? "正在注册并处理…" : "注册 Knowledge"}
+          {busy ? "正在注册并处理…" : "注册知识"}
         </Button>
       </div>
     </form>
@@ -483,7 +483,7 @@ export function KnowledgeVersionForm({
     <form onSubmit={(event) => void submit(event)}>
       <header>
         <p className="text-sm font-semibold text-[var(--aios-primary)]">
-          KnowledgeVersion Command
+          知识版本命令
         </p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">
           创建新版本

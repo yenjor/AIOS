@@ -74,7 +74,7 @@ function KnowledgeLink({ item }: { item: KnowledgeListItem }) {
   return (
     <Link
       href={`/knowledge/${item.id}`}
-      aria-label={`查看 Knowledge ${item.id}`}
+      aria-label={`查看知识条目 ${item.id}`}
       className="font-semibold underline-offset-4 hover:text-[var(--aios-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
     >
       {item.title}
@@ -192,10 +192,10 @@ export function KnowledgeCenterScreen({
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Workspace Knowledge Read Model
+            Workspace 知识库视图
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Knowledge Center
+            知识库
           </h1>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--aios-muted)]">
             <span className="flex items-center gap-2">
@@ -208,8 +208,8 @@ export function KnowledgeCenterScreen({
             </span>
           </div>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-            管理 KnowledgeItem、固定 KnowledgeVersion、来源、范围、敏感等级和处理证据。
-            Document、Chunk、Embedding 与 Index 只作为可重建处理投影展示。
+            管理知识条目、固定知识版本、来源、范围、敏感等级和处理证据。
+            Document、Chunk、Embedding 与 Index 只作为可重建的处理投影展示。
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -226,21 +226,21 @@ export function KnowledgeCenterScreen({
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--aios-primary)] px-4 text-sm font-semibold text-[var(--aios-surface)] hover:bg-[color-mix(in_srgb,var(--aios-primary)_85%,var(--aios-navigation))] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
             >
               <Plus size={17} aria-hidden="true" />
-              新增 / 导入 Knowledge
+              新增 / 导入知识
             </Link>
           ) : (
             <p className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-4 py-3 text-sm text-[var(--aios-muted)]">
-              当前身份仅可查看和使用授权 Knowledge。
+              当前身份仅可查看和使用已授权的知识。
             </p>
           )}
         </div>
       </header>
 
       <section
-        aria-label="Knowledge 摘要"
+        aria-label="知识库摘要"
         className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <SummaryCard label="可见 Knowledge" value={summary.total} icon={Database} />
+        <SummaryCard label="可见知识" value={summary.total} icon={Database} />
         <SummaryCard label="有效且就绪" value={summary.effective} icon={BookOpenCheck} />
         <SummaryCard label="草稿版本" value={summary.draft} icon={FileClock} />
         <SummaryCard label="需要处理" value={summary.attention} icon={AlertTriangle} />
@@ -249,7 +249,7 @@ export function KnowledgeCenterScreen({
       <Card className="mt-5 p-4 sm:p-5">
         <form
           role="search"
-          aria-label="Knowledge 筛选"
+          aria-label="知识库筛选"
           onSubmit={submitSearch}
           className="grid gap-4 xl:grid-cols-[minmax(230px,1.5fr)_repeat(3,minmax(150px,1fr))_auto]"
         >
@@ -263,7 +263,7 @@ export function KnowledgeCenterScreen({
               />
               <input
                 type="search"
-                aria-label="搜索 Knowledge"
+                aria-label="搜索知识库"
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
@@ -345,7 +345,7 @@ export function KnowledgeCenterScreen({
       </Card>
 
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-sm text-[var(--aios-muted)]">
-        <p>共 {page.total} 个 KnowledgeItem</p>
+        <p>共 {page.total} 个知识条目</p>
         <p>
           第 {page.page} / {totalPages} 页
         </p>
@@ -358,7 +358,7 @@ export function KnowledgeCenterScreen({
             size={28}
             aria-hidden="true"
           />
-          <p className="mt-3 font-semibold">没有符合条件的 Knowledge</p>
+          <p className="mt-3 font-semibold">没有符合条件的知识条目</p>
           <p className="mt-1 text-sm text-[var(--aios-muted)]">
             调整关键词、双状态或敏感等级后重试。
           </p>
@@ -368,18 +368,18 @@ export function KnowledgeCenterScreen({
           <Card className="mt-4 hidden overflow-hidden lg:block">
             <div
               role="region"
-              aria-label="Knowledge 表格，可横向滚动"
+              aria-label="知识库表格，可横向滚动"
               tabIndex={0}
               className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
             >
               <table
-                aria-label="Knowledge 列表"
+                aria-label="知识库列表"
                 className="w-full min-w-[1320px] text-left text-sm"
               >
                 <thead className="bg-[var(--aios-canvas)] text-[var(--aios-muted)]">
                   <tr>
                     {[
-                      "Knowledge",
+                      "知识条目",
                       "类型 / 来源",
                       "所有者",
                       "敏感等级",
@@ -467,7 +467,7 @@ export function KnowledgeCenterScreen({
             </div>
           </Card>
 
-          <ul aria-label="Knowledge 移动端列表" className="mt-4 space-y-3 lg:hidden">
+          <ul aria-label="知识库移动端列表" className="mt-4 space-y-3 lg:hidden">
             {page.items.map((item) => (
               <li key={item.id}>
                 <Card className="p-4">
@@ -486,7 +486,7 @@ export function KnowledgeCenterScreen({
       )}
 
       <nav
-        aria-label="Knowledge 分页"
+        aria-label="知识库分页"
         className="mt-5 flex flex-wrap justify-end gap-3"
       >
         <Button

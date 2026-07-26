@@ -180,7 +180,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await page
     .getByLabel("Completion Criteria", { exact: true })
     .fill(
-      "Artifact 章节结构完整\nKnowledge Citation 可追溯到固定版本\n陈明完成人工验收",
+      "Artifact 章节结构完整\n知识库引用可追溯到固定版本\n陈明完成人工验收",
     );
 
   await page.getByRole("button", { name: "下一步", exact: true }).click();
