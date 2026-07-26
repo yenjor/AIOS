@@ -1,8 +1,10 @@
 import { organization, users, workspace } from "@/mock/fixtures";
+import { resolveEnabledAgentVersionForTask } from "@/features/agent/public-contract";
 import { resolveCapabilityVersionForTask } from "@/features/capability/public-contract";
 
 import type {
   AgentAssignment,
+  AgentVersionRef,
   ApprovalPoint,
   ArtifactVersionRef,
   CapabilityVersionRef,
@@ -129,8 +131,9 @@ export interface CreateTaskRepositoryOptions {
 
 interface StoredAgentAssignment {
   agentId: string;
+  agentName?: string;
   agentVersionRef: VersionRef;
-  autonomyLevel: "L1辅助";
+  autonomyLevel: "L0建议" | "L1辅助" | "L2受控执行";
   humanOwnerUserId: string;
 }
 
@@ -403,13 +406,19 @@ function isKnownToolRef(value: unknown): value is ToolVersionRef {
   );
 }
 
-function isKnownAgentRef(value: unknown): boolean {
+function isKnownAgentRef(value: unknown): value is AgentVersionRef {
+  return isVersionRef(value, "AGENT");
+}
+
+function isKnownHumanOwner(value: unknown): boolean {
   return (
-    isVersionRef(value, "AGENT") &&
-    value.objectId === "agent-rd-001" &&
-    value.versionId === "agent-rd-001-v1" &&
-    value.versionNumber === 1 &&
-    value.digest === "sha256:agent-rd-001-v1"
+    isRecord(value) &&
+    hasExactKeys(value, ["userId", "displayName"]) &&
+    isKnownUserId(value.userId) &&
+    value.userId !== "user-auditor" &&
+    users.some(
+      ({ id, name }) => id === value.userId && name === value.displayName,
+    )
   );
 }
 
@@ -433,19 +442,22 @@ function isStoredAgentAssignment(
       "agentVersionRef",
       "autonomyLevel",
       "humanOwnerUserId",
-    ]) &&
-    value.agentId === "agent-rd-001" &&
+    ], ["agentName"]) &&
+    isNonEmptyString(value.agentId) &&
+    (value.agentName === undefined || isNonEmptyString(value.agentName)) &&
     isKnownAgentRef(value.agentVersionRef) &&
-    value.autonomyLevel === "L1辅助" &&
+    value.agentVersionRef.objectId === value.agentId &&
+    isOneOf(
+      value.autonomyLevel,
+      ["L0建议", "L1辅助", "L2受控执行"] as const,
+    ) &&
     isKnownUserId(value.humanOwnerUserId) &&
-    value.humanOwnerUserId === "user-lead"
+    value.humanOwnerUserId !== "user-auditor"
   );
 }
 
 function isAgentAssignment(value: unknown): value is AgentAssignment {
-  const canonicalAssignment = goldenTechnicalSolutionTask.assignedAgent;
   return (
-    canonicalAssignment !== undefined &&
     isRecord(value) &&
     hasExactKeys(value, [
       "agentId",
@@ -454,14 +466,15 @@ function isAgentAssignment(value: unknown): value is AgentAssignment {
       "autonomyLevel",
       "humanOwner",
     ]) &&
-    value.agentId === canonicalAssignment.agentId &&
-    value.agentName === canonicalAssignment.agentName &&
+    isNonEmptyString(value.agentId) &&
+    isNonEmptyString(value.agentName) &&
     isKnownAgentRef(value.agentVersionRef) &&
-    value.autonomyLevel === canonicalAssignment.autonomyLevel &&
-    isRecord(value.humanOwner) &&
-    hasExactKeys(value.humanOwner, ["userId", "displayName"]) &&
-    value.humanOwner.userId === canonicalAssignment.humanOwner.userId &&
-    value.humanOwner.displayName === canonicalAssignment.humanOwner.displayName
+    value.agentVersionRef.objectId === value.agentId &&
+    isOneOf(
+      value.autonomyLevel,
+      ["L0建议", "L1辅助", "L2受控执行"] as const,
+    ) &&
+    isKnownHumanOwner(value.humanOwner)
   );
 }
 
@@ -662,6 +675,7 @@ function isCanonicalApprovalPoints(
   value: unknown,
   taskId: string,
   taskStatus: TaskStatus,
+  reviewerUserId: string,
 ): value is ApprovalPoint[] {
   const expectedStatuses =
     taskStatus === "NEED_APPROVAL"
@@ -684,7 +698,7 @@ function isCanonicalApprovalPoints(
         point.riskLevel === "R1" &&
         point.status === expectedStatuses[index] &&
         point.reviewerUserIds.length === 1 &&
-        point.reviewerUserIds[0] === "user-lead"
+        point.reviewerUserIds[0] === reviewerUserId
       );
     }) &&
     new Set(value.map((point) => point.id)).size === value.length
@@ -696,7 +710,7 @@ function isTaskHistoryActor(value: unknown): value is TaskHistoryActor {
     isRecord(value) &&
     hasExactKeys(value, ["actorType", "actorId"]) &&
     ((value.actorType === "USER" && isKnownUserId(value.actorId)) ||
-      (value.actorType === "AGENT" && value.actorId === "agent-rd-001"))
+      (value.actorType === "AGENT" && isNonEmptyString(value.actorId)))
   );
 }
 
@@ -772,6 +786,8 @@ function isCanonicalSubmittedHistory(
   createdAt: string,
   updatedAt: string,
   status: TaskStatus,
+  agentId: string,
+  humanOwnerUserId: string,
 ): value is TaskHistoryItem[] {
   const expectedLength =
     status === "NEED_APPROVAL"
@@ -803,9 +819,9 @@ function isCanonicalSubmittedHistory(
             item.actor.actorId === initiatorUserId
           : index === 5
             ? item.actor.actorType === "AGENT" &&
-              item.actor.actorId === "agent-rd-001"
+              item.actor.actorId === agentId
             : item.actor.actorType === "USER" &&
-              item.actor.actorId === "user-lead") &&
+              item.actor.actorId === humanOwnerUserId) &&
         item.aggregateVersion === index + 1 &&
         item.occurredAt >= createdAt &&
         item.occurredAt <= updatedAt &&
@@ -922,6 +938,8 @@ function isExecutionRun(
   value: unknown,
   taskId: string,
   taskStatus: TaskStatus,
+  agentVersionId: string,
+  agentId: string,
 ): value is ExecutionRun {
   if (
     !isRecord(value) ||
@@ -954,7 +972,7 @@ function isExecutionRun(
     value.runNumber !== 1 ||
     !isOneOf(value.status, ["RUNNING", "SUCCEEDED"] as const) ||
     value.workflowVersionId !== "workflow-technical-solution-v1" ||
-    value.agentVersionId !== "agent-rd-001-v1" ||
+    value.agentVersionId !== agentVersionId ||
     value.executionPackageDigest !== `sha256:execution-package-${taskId}-v1` ||
     value.idempotencyKey !== `start-${taskId}-plan-v1` ||
     value.workerPool !== "agent-reasoning" ||
@@ -1002,7 +1020,7 @@ function isExecutionRun(
         checkpoint.outputReference === step.outputReference &&
         checkpoint.outputDigest === step.outputDigest &&
         checkpoint.createdAt === step.completedAt &&
-        checkpoint.createdByAgentId === "agent-rd-001"
+        checkpoint.createdByAgentId === agentId
       );
     })
   ) {
@@ -1128,7 +1146,7 @@ function isStoredTaskOwner(value: unknown): value is StoredTaskOwner {
 
   return value.actorType === "USER"
     ? validActorIds.has(value.actorId)
-    : value.actorId === "agent-rd-001";
+    : isNonEmptyString(value.actorId);
 }
 
 const storedTaskRequiredKeys = [
@@ -1226,6 +1244,7 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
       value.approvalPoints,
       taskId,
       value.status as TaskStatus,
+      value.assignedAgent.humanOwnerUserId,
     ) ||
     !isExpectedArtifact(value.expectedArtifact) ||
     value.expectedArtifact.artifactType !== "技术方案" ||
@@ -1240,6 +1259,8 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
         value.executionRun,
         taskId,
         value.status as TaskStatus,
+        value.assignedAgent.agentVersionRef.versionId,
+        value.assignedAgent.agentId,
       )) ||
     !isCanonicalSubmittedHistory(
       value.history,
@@ -1248,6 +1269,8 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
       createdAt,
       updatedAt,
       value.status as TaskStatus,
+      value.assignedAgent.agentId,
+      value.assignedAgent.humanOwnerUserId,
     ) ||
     value.aggregateVersion !== (value.history as TaskHistoryItem[]).length
   ) {
@@ -1264,21 +1287,40 @@ function isStoredTaskRecord(value: unknown): value is StoredTaskRecord {
         value.artifactVersionRefs.length === 0 &&
         value.citationRefs.length === 0
       : value.status === "EXECUTING"
-        ? isExecutionRun(value.executionRun, taskId, "EXECUTING") &&
+        ? isExecutionRun(
+            value.executionRun,
+            taskId,
+            "EXECUTING",
+            value.assignedAgent.agentVersionRef.versionId,
+            value.assignedAgent.agentId,
+          ) &&
           isRecord(value.currentOwner) &&
           value.currentOwner.actorType === "AGENT" &&
-          value.currentOwner.actorId === "agent-rd-001" &&
+          value.currentOwner.actorId === value.assignedAgent.agentId &&
           value.artifactVersionRefs.length === 0 &&
           value.citationRefs.length === 0
         : value.status === "REVIEW"
-          ? isExecutionRun(value.executionRun, taskId, "REVIEW") &&
+          ? isExecutionRun(
+              value.executionRun,
+              taskId,
+              "REVIEW",
+              value.assignedAgent.agentVersionRef.versionId,
+              value.assignedAgent.agentId,
+            ) &&
             isRecord(value.currentOwner) &&
             value.currentOwner.actorType === "USER" &&
-            value.currentOwner.actorId === "user-lead" &&
+            value.currentOwner.actorId ===
+              value.assignedAgent.humanOwnerUserId &&
             value.artifactVersionRefs.length === 1 &&
             value.artifactVersionRefs[0].accepted === false &&
             value.citationRefs.length === 1
-          : isExecutionRun(value.executionRun, taskId, "COMPLETED") &&
+          : isExecutionRun(
+              value.executionRun,
+              taskId,
+              "COMPLETED",
+              value.assignedAgent.agentVersionRef.versionId,
+              value.assignedAgent.agentId,
+            ) &&
             value.currentOwner === undefined &&
             value.artifactVersionRefs.length === 1 &&
             value.artifactVersionRefs[0].accepted === true &&
@@ -1416,7 +1458,7 @@ function materializeAgentAssignment(
 ): AgentAssignment {
   return {
     agentId: assignment.agentId,
-    agentName: "AI研发员工",
+    agentName: assignment.agentName ?? "AI研发员工",
     agentVersionRef: cloneMutable(assignment.agentVersionRef) as AgentAssignment["agentVersionRef"],
     autonomyLevel: assignment.autonomyLevel,
     humanOwner: {
@@ -1431,18 +1473,22 @@ function storeAgentAssignment(
 ): StoredAgentAssignment {
   return {
     agentId: assignment.agentId,
+    agentName: assignment.agentName,
     agentVersionRef: cloneMutable(assignment.agentVersionRef),
     autonomyLevel: assignment.autonomyLevel,
     humanOwnerUserId: assignment.humanOwner.userId,
   };
 }
 
-function materializeTaskOwner(owner: StoredTaskOwner): TaskOwner {
+function materializeTaskOwner(
+  owner: StoredTaskOwner,
+  agentName = "AI研发员工",
+): TaskOwner {
   return owner.actorType === "AGENT"
     ? {
         actorType: "AGENT",
         actorId: owner.actorId,
-        displayName: "AI研发员工",
+        displayName: agentName,
       }
     : {
         actorType: "USER",
@@ -1481,9 +1527,12 @@ function materializeTask(task: StoredTaskRecord): TaskDetail {
   return {
     ...cloneMutable(task),
     currentOwner: task.currentOwner
-      ? materializeTaskOwner(task.currentOwner)
+      ? materializeTaskOwner(
+          task.currentOwner,
+          task.assignedAgent.agentName ?? "AI研发员工",
+        )
       : undefined,
-    assignedAgentName: "AI研发员工",
+    assignedAgentName: task.assignedAgent.agentName ?? "AI研发员工",
     assignedAgent: materializeAgentAssignment(task.assignedAgent),
     workflowVersionRef: cloneMutable(task.workflowVersionRef) as TaskDetail["workflowVersionRef"],
   };
@@ -1908,7 +1957,7 @@ function createTechnicalSolutionTask(
     riskLevel: draft.riskLevel,
     initiator: cloneMutable(actor),
     currentOwner: undefined,
-    assignedAgentName: "AI研发员工",
+    assignedAgentName: draft.assignedAgent.agentName,
     participantUserIds: Array.from(
       new Set([actor.userId, draft.assignedAgent.humanOwner.userId]),
     ),
@@ -1935,6 +1984,7 @@ function createTechnicalSolutionTask(
       id: point.name === "计划确认"
         ? `${taskId}-approval-plan`
         : `${taskId}-approval-artifact`,
+      reviewerUserIds: [draft.assignedAgent.humanOwner.userId],
     })),
     expectedArtifact: cloneMutable(draft.expectedArtifact),
     artifactVersionRefs: [],
@@ -2337,6 +2387,40 @@ export function createTaskRepository(
           "The selected CapabilityVersion reference failed digest validation.",
         );
       }
+      let resolvedAgent;
+      try {
+        resolvedAgent = await resolveEnabledAgentVersionForTask(
+          taskScope,
+          actor,
+          draft.assignedAgent.agentVersionRef.versionId,
+          "GENERATE_TECHNICAL_DESIGN",
+          draft.capabilityVersionRefs[0].versionId,
+        );
+      } catch {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "The selected AgentVersion is not Enabled, Published, assigned to the CapabilityVersion, or authorized.",
+        );
+      }
+      if (
+        draft.assignedAgent.agentId !== resolvedAgent.agentId ||
+        draft.assignedAgent.agentName !== resolvedAgent.agentName ||
+        draft.assignedAgent.autonomyLevel !== resolvedAgent.autonomyLevel ||
+        draft.assignedAgent.humanOwner.userId !==
+          resolvedAgent.humanOwner.userId ||
+        draft.assignedAgent.humanOwner.displayName !==
+          resolvedAgent.humanOwner.displayName ||
+        !matchesVersionRef(
+          draft.assignedAgent.agentVersionRef,
+          resolvedAgent.agentVersionRef,
+          "AGENT",
+        )
+      ) {
+        throw new TaskRepositoryError(
+          "VALIDATION",
+          "The selected AgentVersion assignment failed identity or digest validation.",
+        );
+      }
       if (envelope.nextTaskSequence === Number.MAX_SAFE_INTEGER) {
         throw new TaskRepositoryError(
           "VALIDATION",
@@ -2390,8 +2474,8 @@ export function createTaskRepository(
       task.executionRun = createExecutionRun(task, timestamp);
       task.currentOwner = {
         actorType: "AGENT",
-        actorId: "agent-rd-001",
-        displayName: "AI研发员工",
+        actorId: task.assignedAgent!.agentId,
+        displayName: task.assignedAgent!.agentName,
       };
       appendTransition(
         task,
@@ -2477,7 +2561,7 @@ export function createTaskRepository(
         outputReference: result.outputReference,
         outputDigest: result.outputDigest,
         createdAt: timestamp,
-        createdByAgentId: "agent-rd-001",
+        createdByAgentId: task.assignedAgent!.agentId,
       });
       task.executionRun.currentCheckpointId = checkpointId;
       task.executionRun.checkpointedAt = timestamp;
@@ -2509,14 +2593,17 @@ export function createTaskRepository(
         task.citationRefs = cloneMutable(result.citationRefs);
         task.currentOwner = {
           actorType: "USER",
-          actorId: "user-lead",
-          displayName: "陈明",
+          actorId: task.assignedAgent!.humanOwner.userId,
+          displayName: task.assignedAgent!.humanOwner.displayName,
         };
         appendTransition(
           task,
           "REVIEW",
           "ARTIFACT_SUBMITTED_FOR_REVIEW",
-          { actorType: "AGENT", actorId: "agent-rd-001" },
+          {
+            actorType: "AGENT",
+            actorId: task.assignedAgent!.agentId,
+          },
           timestamp,
         );
       } else {
@@ -2588,7 +2675,7 @@ export function createTaskRepository(
       humanReviewStep.status = "SUCCEEDED";
       humanReviewStep.resultType = "HUMAN_REVIEW";
       humanReviewStep.summary =
-        "陈明（user-lead）已依据 Completion Criteria 验收 Artifact。";
+        `${task.assignedAgent!.humanOwner.displayName}（${task.assignedAgent!.humanOwner.userId}）已依据 Completion Criteria 验收 Artifact。`;
       humanReviewStep.completedAt = timestamp;
       delete task.currentOwner;
       appendTransition(

@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { listEnabledAgentOptions } from "@/features/agent/mock/agent-repository";
+import type { AgentSelectionOption } from "@/features/agent/model";
 import { useSession } from "@/features/session/session-provider";
 import { listPublishedCapabilityOptions } from "@/features/capability/mock/capability-repository";
 import type { CapabilitySelectionOption } from "@/features/capability/model";
@@ -27,6 +29,7 @@ type LoaderState =
       status: "ready";
       requestKey: string;
       draft?: TaskDraft;
+      agentOptions: AgentSelectionOption[];
       capabilityOptions: CapabilitySelectionOption[];
     }
   | { status: "forbidden"; requestKey: string }
@@ -83,9 +86,14 @@ export function TaskWizardLoader() {
           return;
         }
 
-        const [draft, capabilityOptions] = await Promise.all([
+        const [draft, capabilityOptions, agentOptions] = await Promise.all([
           getDraft(scope, actor),
           listPublishedCapabilityOptions(
+            scope,
+            actor,
+            "GENERATE_TECHNICAL_DESIGN",
+          ),
+          listEnabledAgentOptions(
             scope,
             actor,
             "GENERATE_TECHNICAL_DESIGN",
@@ -96,6 +104,7 @@ export function TaskWizardLoader() {
             status: "ready",
             requestKey,
             draft,
+            agentOptions,
             capabilityOptions,
           });
         }
@@ -224,6 +233,7 @@ export function TaskWizardLoader() {
       key={requestKey}
       actor={{ userId: user.id }}
       initialDraft={state.draft}
+      agentOptions={state.agentOptions}
       capabilityOptions={state.capabilityOptions}
       scope={{
         organizationId: organization.id,

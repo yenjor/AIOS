@@ -1,4 +1,5 @@
 import type {
+  AgentAssignment,
   CapabilityVersionRef,
   TaskDraft,
   TaskWizardStep,
@@ -18,6 +19,7 @@ import {
 
 export interface TaskWizardValues {
   templateName?: TaskTemplateName;
+  agentVersionId: string;
   capabilityVersionId: string;
   title: string;
   goal: string;
@@ -39,6 +41,7 @@ export interface TaskWizardState {
 
 export function createInitialWizardValues(): TaskWizardValues {
   return {
+    agentVersionId: AGENT_ASSIGNMENT.agentVersionRef.versionId,
     capabilityVersionId: TECHNICAL_SOLUTION_CAPABILITY_REF.versionId,
     title: "",
     goal: "",
@@ -109,6 +112,9 @@ export function draftToWizardState(
     values: {
       ...defaults,
       templateName: draft.templateName,
+      agentVersionId:
+        draft.assignedAgent?.agentVersionRef.versionId ??
+        defaults.agentVersionId,
       capabilityVersionId:
         draft.capabilityVersionRefs?.[0]?.versionId ??
         defaults.capabilityVersionId,
@@ -134,6 +140,7 @@ export function wizardStateToDraft(
   values: TaskWizardValues,
   wizardStep: TaskWizardStep = 5,
   capabilityVersionRef?: CapabilityVersionRef,
+  assignedAgent: AgentAssignment = AGENT_ASSIGNMENT,
 ): TaskDraft {
   const expectedCompletionAt = localDateTimeToIso(
     values.expectedCompletionLocal,
@@ -168,7 +175,7 @@ export function wizardStateToDraft(
             { ...capabilityVersionRef },
           ],
           toolVersionRefs: [{ ...READ_ONLY_TOOL_REF }],
-          assignedAgent: structuredClone(AGENT_ASSIGNMENT),
+          assignedAgent: structuredClone(assignedAgent),
         }
       : {}),
     ...(values.templateName

@@ -80,7 +80,7 @@ export type TaskHistoryActor =
     }
   | {
       actorType: "AGENT";
-      actorId: "agent-rd-001";
+      actorId: string;
     };
 
 export interface HumanOwnerRef {
@@ -90,9 +90,9 @@ export interface HumanOwnerRef {
 
 export interface AgentAssignment {
   agentId: string;
-  agentName: "AI研发员工";
+  agentName: string;
   agentVersionRef: AgentVersionRef;
-  autonomyLevel: "L1辅助";
+  autonomyLevel: "L0建议" | "L1辅助" | "L2受控执行";
   humanOwner: HumanOwnerRef;
 }
 
@@ -226,7 +226,7 @@ export interface WorkflowCheckpoint {
   outputReference: string;
   outputDigest: string;
   createdAt: string;
-  createdByAgentId: "agent-rd-001";
+  createdByAgentId: string;
 }
 
 export interface ExecutionRun {

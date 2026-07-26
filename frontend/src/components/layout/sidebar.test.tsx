@@ -43,27 +43,28 @@ describe("Sidebar", () => {
     expect(within(navigation).getByText("3")).toBeVisible();
   });
 
-  it("enables Workspace, Task, 知识库 and 能力中心 while explaining future items", () => {
+  it("enables Workspace, Task, AI 员工, 知识库 and 能力中心 while explaining future items", () => {
     render(<Sidebar open onClose={vi.fn()} />);
 
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
     const enabledLinks = navigation.querySelectorAll("a[href]");
 
-    expect(enabledLinks).toHaveLength(4);
+    expect(enabledLinks).toHaveLength(5);
     expect(enabledLinks[0]).toHaveAccessibleName("工作台");
     expect(enabledLinks[0]).toHaveAttribute("href", "/workspace");
     expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
     expect(enabledLinks[1]).toHaveAccessibleName("Task");
     expect(enabledLinks[1]).toHaveAttribute("href", "/tasks");
-    expect(enabledLinks[2]).toHaveAccessibleName("知识库");
-    expect(enabledLinks[2]).toHaveAttribute("href", "/knowledge");
-    expect(enabledLinks[3]).toHaveAccessibleName("能力中心");
-    expect(enabledLinks[3]).toHaveAttribute("href", "/capabilities");
+    expect(enabledLinks[2]).toHaveAccessibleName("AI 员工");
+    expect(enabledLinks[2]).toHaveAttribute("href", "/agents");
+    expect(enabledLinks[3]).toHaveAccessibleName("知识库");
+    expect(enabledLinks[3]).toHaveAttribute("href", "/knowledge");
+    expect(enabledLinks[4]).toHaveAccessibleName("能力中心");
+    expect(enabledLinks[4]).toHaveAttribute("href", "/capabilities");
 
     const disabledLabels = [
       "审批待办，3 项待处理",
       "Artifact",
-      "AI 员工",
       "Workflow",
       "Tool",
       "MCP 连接",

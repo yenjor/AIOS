@@ -11,6 +11,7 @@ import {
 
 export type WizardField =
   | "templateName"
+  | "agentVersionId"
   | "capabilityVersionId"
   | "title"
   | "goal"
@@ -84,6 +85,14 @@ export function validateStep(
   ) {
     errors.includeKnowledge =
       "黄金路径必须绑定一个已授权的知识库版本。";
+  }
+  if (
+    step === 3 &&
+    values.templateName === GOLDEN_TEMPLATE &&
+    !values.agentVersionId
+  ) {
+    errors.agentVersionId =
+      "请选择一个当前 Workspace 已启用的 Published AgentVersion。";
   }
   if (
     step === 3 &&

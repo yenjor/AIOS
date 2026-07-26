@@ -106,6 +106,29 @@ test("Capability Builder 完成 Draft、评测、Review、发布并供 Task 选�
     fullPage: true,
   });
 
+  await page.goto("/agents/new");
+  await page
+    .getByLabel("Agent Code", { exact: true })
+    .fill("AI_RESEARCH_ENGINEER");
+  await page
+    .getByLabel("AI 员工名称", { exact: true })
+    .fill("AI 技术调研员工");
+  await page
+    .getByLabel("Job Title", { exact: true })
+    .fill("AI 技术调研员工");
+  await page
+    .getByLabel("Role Description", { exact: true })
+    .fill("使用已绑定的 Published CapabilityVersion 生成技术调研方案。");
+  await page.getByRole("button", { name: "创建 Draft", exact: true }).click();
+  await page
+    .getByRole("button", { name: "运行确定性测试", exact: true })
+    .click();
+  await expect(page.getByText("PASSED", { exact: true }).first()).toBeVisible();
+  await page
+    .getByRole("button", { name: "发布并启用", exact: true })
+    .click();
+  await expect(page.getByText("ENABLED", { exact: true }).first()).toBeVisible();
+
   await page.goto("/tasks/new");
   await page.getByRole("radio", { name: /生成技术方案/ }).check();
   await page.getByRole("button", { name: "下一步", exact: true }).click();
@@ -117,6 +140,9 @@ test("Capability Builder 完成 Draft、评测、Review、发布并供 Task 选�
   await page.getByLabel("约束", { exact: true }).fill("仅使用 Published 版本");
   await page.getByLabel("期望完成时间", { exact: true }).fill("2026-08-01T18:00");
   await page.getByRole("button", { name: "下一步", exact: true }).click();
+  await page
+    .getByRole("radio", { name: /AI 技术调研员工 · v1/ })
+    .check();
   await expect(
     page.getByRole("radio", { name: /技术调研 · v1/ }),
   ).toBeVisible();

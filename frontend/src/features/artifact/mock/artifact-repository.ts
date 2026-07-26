@@ -40,7 +40,7 @@ export interface ArtifactRepository {
     artifactId: string,
   ): Promise<TechnicalSolutionArtifact>;
   submitTechnicalSolution(
-    producerAgentId: "agent-rd-001",
+    producerAgentId: string,
     draft: TechnicalSolutionArtifactDraft,
   ): Promise<TechnicalSolutionArtifact>;
   acceptArtifact(
@@ -250,7 +250,8 @@ function isArtifact(value: unknown): value is TechnicalSolutionArtifact {
     !value.citations.every(isCitation) ||
     !Array.isArray(value.reviewerUserIds) ||
     value.reviewerUserIds.length !== 1 ||
-    value.reviewerUserIds[0] !== "user-lead" ||
+    !validActorIds.has(value.reviewerUserIds[0]) ||
+    value.reviewerUserIds[0] === "user-auditor" ||
     !isIsoTimestamp(value.createdAt) ||
     !isIsoTimestamp(value.updatedAt) ||
     value.updatedAt < value.createdAt
@@ -291,11 +292,10 @@ function isArtifact(value: unknown): value is TechnicalSolutionArtifact {
     !isNonEmptyString(provenance.taskId) ||
     value.id !== `artifact-${provenance.taskId}` ||
     !isNonEmptyString(provenance.runId) ||
-    provenance.agentVersionId !== "agent-rd-001-v1" ||
+    !isNonEmptyString(provenance.agentVersionId) ||
     !Array.isArray(provenance.capabilityVersionIds) ||
     provenance.capabilityVersionIds.length !== 1 ||
-    provenance.capabilityVersionIds[0] !==
-      "capability-technical-solution-v1" ||
+    !isNonEmptyString(provenance.capabilityVersionIds[0]) ||
     !Array.isArray(provenance.knowledgeVersionIds) ||
     provenance.knowledgeVersionIds.length !== 1 ||
     provenance.knowledgeVersionIds[0] !== "knowledge-aios-docs-v1" ||
@@ -315,7 +315,7 @@ function isArtifact(value: unknown): value is TechnicalSolutionArtifact {
 
   if (value.status === "ACCEPTED") {
     return (
-      value.acceptedByUserId === "user-lead" &&
+      value.acceptedByUserId === value.reviewerUserIds[0] &&
       isIsoTimestamp(value.acceptedAt) &&
       value.validationResults.every(({ status }) => status === "PASSED")
     );
@@ -377,11 +377,10 @@ function validateDraft(
     !Array.isArray(draft.citations) ||
     draft.citations.length !== 1 ||
     !draft.citations.every(isCitation) ||
-    draft.agentVersionId !== "agent-rd-001-v1" ||
+    !isNonEmptyString(draft.agentVersionId) ||
     !Array.isArray(draft.capabilityVersionIds) ||
     draft.capabilityVersionIds.length !== 1 ||
-    draft.capabilityVersionIds[0] !==
-      "capability-technical-solution-v1" ||
+    !isNonEmptyString(draft.capabilityVersionIds[0]) ||
     !Array.isArray(draft.knowledgeVersionIds) ||
     draft.knowledgeVersionIds.length !== 1 ||
     draft.knowledgeVersionIds[0] !== "knowledge-aios-docs-v1" ||
@@ -391,7 +390,8 @@ function validateDraft(
     draft.toolVersionIds[0] !== "tool-codegraph-read-v1" ||
     !Array.isArray(draft.reviewerUserIds) ||
     draft.reviewerUserIds.length !== 1 ||
-    draft.reviewerUserIds[0] !== "user-lead" ||
+    !validActorIds.has(draft.reviewerUserIds[0]) ||
+    draft.reviewerUserIds[0] === "user-auditor" ||
     draft.runId !== `run-${draft.taskId}-01` ||
     draft.contentDigest !== `sha256:artifact-${draft.taskId}-v1:content`
   ) {
@@ -497,7 +497,10 @@ export function createArtifactRepository(
 
     async submitTechnicalSolution(producerAgentId, draft) {
       await delay();
-      if (producerAgentId !== "agent-rd-001") {
+      if (
+        !isNonEmptyString(producerAgentId) ||
+        !draft.agentVersionId.startsWith(`${producerAgentId}-v`)
+      ) {
         throw new ArtifactRepositoryError(
           "FORBIDDEN",
           "Artifact producer is not authorized.",
@@ -543,7 +546,10 @@ export function createArtifactRepository(
             id: `${artifactId}-validation-review`,
             name: "Reviewer 人工验收",
             status: "PENDING",
-            summary: "等待陈明（user-lead）验收。",
+            summary: `等待 ${
+              users.find(({ id }) => id === draft.reviewerUserIds[0])?.name ??
+              draft.reviewerUserIds[0]
+            }（${draft.reviewerUserIds[0]}）验收。`,
           },
         ],
         citations: cloneMutable(draft.citations),
@@ -603,7 +609,10 @@ export function createArtifactRepository(
           ? {
               ...result,
               status: "PASSED",
-              summary: "陈明（user-lead）已验收该版本。",
+              summary: `${
+                users.find(({ id }) => id === actor.userId)?.name ??
+                actor.userId
+              }（${actor.userId}）已验收该版本。`,
             }
           : result,
       );
@@ -626,7 +635,7 @@ export async function getArtifact(
 }
 
 export async function submitTechnicalSolution(
-  producerAgentId: "agent-rd-001",
+  producerAgentId: string,
   draft: TechnicalSolutionArtifactDraft,
 ): Promise<TechnicalSolutionArtifact> {
   return defaultRepository().submitTechnicalSolution(

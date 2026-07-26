@@ -31,7 +31,7 @@ export async function advanceFirstAiEmployee(
 
   if (runtimeOutput.artifactDraft) {
     const artifact = await submitTechnicalSolution(
-      "agent-rd-001",
+      task.assignedAgent!.agentId,
       runtimeOutput.artifactDraft,
     );
     const knowledgeVersionRef = task.knowledgeVersionRefs.find(

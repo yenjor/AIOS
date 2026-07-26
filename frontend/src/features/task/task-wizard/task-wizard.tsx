@@ -22,6 +22,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import type { AgentSelectionOption } from "@/features/agent/model";
 import type { CapabilitySelectionOption } from "@/features/capability/model";
 import { cn } from "@/lib/cn";
 
@@ -31,12 +32,14 @@ import {
   submitTechnicalSolutionTask,
 } from "../mock/task-repository";
 import type {
+  AgentAssignment,
   TaskActor,
   TaskDraft,
   TaskScope,
   TaskWizardStep,
 } from "../model";
 import {
+  AGENT_ASSIGNMENT,
   APPROVAL_POINT_SUMMARIES,
   AIOS_KNOWLEDGE_REF,
   GOLDEN_TEMPLATE,
@@ -78,6 +81,7 @@ const FIELD_STEPS: Record<WizardField, TaskWizardStep> = {
   constraintsText: 2,
   outOfScopeText: 2,
   includeKnowledge: 3,
+  agentVersionId: 3,
   capabilityVersionId: 3,
   completionCriteriaText: 4,
 };
@@ -94,6 +98,7 @@ const FIELD_LABELS: Record<WizardField, string> = {
   constraintsText: "约束",
   outOfScopeText: "不做事项",
   includeKnowledge: "知识库版本",
+  agentVersionId: "AgentVersion",
   capabilityVersionId: "CapabilityVersion",
   completionCriteriaText: "Completion Criteria",
 };
@@ -102,6 +107,7 @@ export interface TaskWizardProps {
   scope: TaskScope;
   actor: TaskActor;
   initialDraft?: TaskDraft;
+  agentOptions?: AgentSelectionOption[];
   capabilityOptions?: CapabilitySelectionOption[];
   scopeLabels: {
     organizationName: string;
@@ -223,6 +229,21 @@ export function TaskWizard({
   scope,
   actor,
   initialDraft,
+  agentOptions = [
+    {
+      agentId: AGENT_ASSIGNMENT.agentId,
+      agentName: AGENT_ASSIGNMENT.agentName,
+      roleDescription:
+        "理解研发任务，读取授权知识和代码上下文，生成可验收的研发 Artifact。",
+      humanOwner: AGENT_ASSIGNMENT.humanOwner,
+      autonomyLevel: AGENT_ASSIGNMENT.autonomyLevel,
+      agentVersionRef: AGENT_ASSIGNMENT.agentVersionRef,
+      capabilityVersionRefs: [TECHNICAL_SOLUTION_CAPABILITY_REF],
+      acceptedTaskTypes: ["GENERATE_TECHNICAL_DESIGN"],
+      knowledgeScopeCount: 1,
+      toolActions: ["codegraph.context"],
+    },
+  ],
   capabilityOptions = [
     {
       capabilityId: TECHNICAL_SOLUTION_CAPABILITY_REF.objectId,
@@ -241,6 +262,27 @@ export function TaskWizard({
 }: TaskWizardProps) {
   const router = useRouter();
   const restored = draftToWizardState(initialDraft);
+  const restoredAgent =
+    agentOptions.find(
+      ({ agentVersionRef }) =>
+        agentVersionRef.versionId === restored.values.agentVersionId,
+    ) ?? agentOptions[0];
+  if (restoredAgent) {
+    restored.values.agentVersionId =
+      restoredAgent.agentVersionRef.versionId;
+    if (
+      !restoredAgent.capabilityVersionRefs.some(
+        ({ versionId }) =>
+          versionId === restored.values.capabilityVersionId,
+      )
+    ) {
+      restored.values.capabilityVersionId =
+        restoredAgent.capabilityVersionRefs[0]?.versionId ?? "";
+    }
+  } else {
+    restored.values.agentVersionId = "";
+    restored.values.capabilityVersionId = "";
+  }
   const restoredProgress = resolveWizardProgress(
     restored.currentStep,
     restored.values,
@@ -264,7 +306,16 @@ export function TaskWizard({
 
   const isGolden = values.templateName === GOLDEN_TEMPLATE;
   const isBusy = operation.status === "saving";
-  const selectedCapability = capabilityOptions.find(
+  const selectedAgent = agentOptions.find(
+    ({ agentVersionRef }) =>
+      agentVersionRef.versionId === values.agentVersionId,
+  );
+  const availableCapabilityOptions = capabilityOptions.filter((option) =>
+    selectedAgent?.capabilityVersionRefs.some(
+      ({ versionId }) => versionId === option.versionRef.versionId,
+    ),
+  );
+  const selectedCapability = availableCapabilityOptions.find(
     ({ versionRef }) =>
       versionRef.versionId === values.capabilityVersionId,
   );
@@ -309,6 +360,35 @@ export function TaskWizard({
     }
   }
 
+  function selectAgent(option: AgentSelectionOption) {
+    updateValue("agentVersionId", option.agentVersionRef.versionId);
+    const capabilityStillAssigned = option.capabilityVersionRefs.some(
+      ({ versionId }) =>
+        versionId === valuesRef.current.capabilityVersionId,
+    );
+    if (!capabilityStillAssigned) {
+      updateValue(
+        "capabilityVersionId",
+        option.capabilityVersionRefs[0]?.versionId ?? "",
+      );
+    }
+  }
+
+  function toTaskAgentAssignment(
+    option: AgentSelectionOption | undefined,
+  ): AgentAssignment {
+    if (!option) {
+      return AGENT_ASSIGNMENT;
+    }
+    return {
+      agentId: option.agentId,
+      agentName: option.agentName,
+      agentVersionRef: { ...option.agentVersionRef },
+      autonomyLevel: option.autonomyLevel,
+      humanOwner: { ...option.humanOwner },
+    };
+  }
+
   function focusField(field: WizardField) {
     const step = FIELD_STEPS[field];
     setCurrentStep(step);
@@ -334,6 +414,10 @@ export function TaskWizard({
     operationLockRef.current = true;
     const requestRevision = ++requestRevisionRef.current;
     const editRevision = editRevisionRef.current;
+    const agent = agentOptions.find(
+      ({ agentVersionRef }) =>
+        agentVersionRef.versionId === valuesRef.current.agentVersionId,
+    );
     const capability = capabilityOptions.find(
       ({ versionRef }) =>
         versionRef.versionId === valuesRef.current.capabilityVersionId,
@@ -342,6 +426,7 @@ export function TaskWizard({
       valuesRef.current,
       step,
       capability?.versionRef,
+      toTaskAgentAssignment(agent),
     );
     setOperation({ status: "saving" });
     try {
@@ -437,6 +522,11 @@ export function TaskWizard({
         return;
       }
       const resetValues = createInitialWizardValues();
+      const resetAgent = agentOptions[0];
+      resetValues.agentVersionId =
+        resetAgent?.agentVersionRef.versionId ?? "";
+      resetValues.capabilityVersionId =
+        resetAgent?.capabilityVersionRefs[0]?.versionId ?? "";
       valuesRef.current = resetValues;
       editRevisionRef.current += 1;
       setValues(resetValues);
@@ -484,10 +574,28 @@ export function TaskWizard({
       operationLockRef.current = false;
       return;
     }
+    const agent = agentOptions.find(
+      ({ agentVersionRef }) =>
+        agentVersionRef.versionId === valuesRef.current.agentVersionId,
+    );
+    if (
+      !agent ||
+      !agent.capabilityVersionRefs.some(
+        ({ versionId }) => versionId === capability.versionRef.versionId,
+      )
+    ) {
+      showErrors({
+        agentVersionId:
+          "请选择一个已启用且绑定当前 CapabilityVersion 的 AI 员工。",
+      });
+      operationLockRef.current = false;
+      return;
+    }
     const snapshot = wizardStateToDraft(
       valuesRef.current,
       5,
       capability.versionRef,
+      toTaskAgentAssignment(agent),
     );
     setOperation({ status: "saving" });
     try {
@@ -806,15 +914,97 @@ export function TaskWizard({
       <div>
         <SectionHeading
           title="提供上下文"
-          description="选择当前 Workspace 已发布的能力版本，并绑定已授权、版本固定的知识库引用。"
+          description="选择当前 Workspace 已启用的 AI 员工、其已绑定的 Published CapabilityVersion，以及已授权的知识库版本。"
         />
         <fieldset className="mt-6">
           <legend className="text-sm font-semibold">
-            Published CapabilityVersion
+            Enabled Agent / Published AgentVersion
           </legend>
-          {capabilityOptions.length > 0 ? (
+          {agentOptions.length > 0 ? (
             <div className="mt-3 grid gap-3">
-              {capabilityOptions.map((option, index) => (
+              {agentOptions.map((option, index) => (
+                <label
+                  key={option.agentVersionRef.versionId}
+                  className={cn(
+                    "cursor-pointer rounded-lg border p-4 focus-within:outline-2 focus-within:outline-[var(--aios-primary)]",
+                    values.agentVersionId ===
+                      option.agentVersionRef.versionId
+                      ? "border-[var(--aios-primary)] bg-[color-mix(in_srgb,var(--aios-primary)_7%,var(--aios-surface))]"
+                      : "border-[var(--aios-control-border)] bg-[var(--aios-surface)]",
+                  )}
+                >
+                  <span className="flex items-start gap-3">
+                    <input
+                      aria-describedby={describedBy(
+                        "agentVersionId",
+                        errors,
+                      )}
+                      checked={
+                        values.agentVersionId ===
+                        option.agentVersionRef.versionId
+                      }
+                      className="mt-1 accent-[var(--aios-primary)]"
+                      id={
+                        index === 0
+                          ? "agentVersionId"
+                          : `agent-${index + 1}`
+                      }
+                      name="agentVersion"
+                      type="radio"
+                      onChange={() => selectAgent(option)}
+                    />
+                    <span className="min-w-0">
+                      <span className="block font-semibold">
+                        {option.agentName} · v
+                        {option.agentVersionRef.versionNumber}
+                      </span>
+                      <span className="mt-1 block text-sm leading-6 text-[var(--aios-muted)]">
+                        {option.roleDescription}
+                      </span>
+                      <span className="mt-2 block break-all font-mono text-xs text-[var(--aios-muted)]">
+                        {option.agentVersionRef.versionId}
+                      </span>
+                      <span className="mt-1 block text-xs text-[var(--aios-muted)]">
+                        {option.autonomyLevel} · Human Owner：
+                        {option.humanOwner.displayName}（
+                        {option.humanOwner.userId}）· Capability{" "}
+                        {option.capabilityVersionRefs.length}
+                      </span>
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--aios-warning)_35%,var(--aios-surface))] p-4 text-sm text-[var(--aios-warning-foreground)]"
+              role="alert"
+            >
+              当前身份没有可用于“生成技术方案”的 Enabled Agent。请由 Agent
+              Builder 完成测试、发布与启用后再提交 Task。
+            </div>
+          )}
+          <p className={supportingClass} id="agentVersionId-help">
+            Task 固定 AgentVersionRef 与 Digest；Draft、Testing、Suspended 或
+            Disabled Agent 不会出现在选择列表中。
+          </p>
+          <FieldError field="agentVersionId" errors={errors} />
+          {selectedAgent ? (
+            <Link
+              href={`/agents/${selectedAgent.agentId}`}
+              className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
+            >
+              查看 AI 员工配置与测试证据
+            </Link>
+          ) : null}
+        </fieldset>
+        <fieldset className="mt-6">
+          <legend className="text-sm font-semibold">
+            Assigned Published CapabilityVersion
+          </legend>
+          {availableCapabilityOptions.length > 0 ? (
+            <div className="mt-3 grid gap-3">
+              {availableCapabilityOptions.map((option, index) => (
                 <label
                   key={option.versionRef.versionId}
                   className={cn(
@@ -875,9 +1065,8 @@ export function TaskWizard({
               className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--aios-warning)_35%,var(--aios-surface))] p-4 text-sm text-[var(--aios-warning-foreground)]"
               role="alert"
             >
-              当前身份没有可用于“生成技术方案”的 Published
-              CapabilityVersion。请由 Capability Builder
-              完成评测与发布后再提交 Task。
+              当前 AI 员工没有可解析的 Published CapabilityVersion。请检查
+              Capability Assignment、知识范围与 Tool Grant 的交集。
             </div>
           )}
           <p
@@ -974,7 +1163,10 @@ export function TaskWizard({
               {artifact.artifactType}
             </p>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
-              Reviewer：陈明（user-lead）
+              Reviewer：
+              {selectedAgent
+                ? `${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
+                : "尚未选择 Human Owner"}
             </p>
           </Card>
           <Card className="p-5">
@@ -1161,10 +1353,14 @@ export function TaskWizard({
               执行身份
             </p>
             <p className="mt-2 font-semibold">
-              AI研发员工（agent-rd-001）
+              {selectedAgent
+                ? `${selectedAgent.agentName}（${selectedAgent.agentId}）`
+                : "尚未选择 Enabled Agent"}
             </p>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
-              L1辅助 · Human Owner / Reviewer：陈明（user-lead）
+              {selectedAgent
+                ? `${selectedAgent.autonomyLevel} · Human Owner / Reviewer：${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
+                : "Task 提交前必须固定 AgentVersionRef"}
             </p>
           </Card>
           <Card className="p-5">
@@ -1186,6 +1382,16 @@ export function TaskWizard({
           ) : (
             <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm text-[var(--aios-muted)]">
               尚未选择 Published CapabilityVersion
+            </div>
+          )}
+          {selectedAgent ? (
+            <RefSummary
+              label="AgentVersion"
+              {...selectedAgent.agentVersionRef}
+            />
+          ) : (
+            <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm text-[var(--aios-muted)]">
+              尚未选择 Published AgentVersion
             </div>
           )}
           <RefSummary
@@ -1233,7 +1439,9 @@ export function TaskWizard({
                     {point.requiredFor} · {point.riskLevel}
                   </p>
                   <p className="mt-1 text-xs text-[var(--aios-muted)]">
-                    {point.reviewer}
+                    {selectedAgent
+                      ? `Human Owner / Reviewer：${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
+                      : point.reviewer}
                   </p>
                 </div>
               ))}

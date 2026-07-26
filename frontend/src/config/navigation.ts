@@ -48,7 +48,7 @@ export const navigation: NavigationGroup[] = [
   {
     label: "AI 资源",
     items: [
-      { label: "AI 员工", href: "/agents", enabled: false, icon: Bot },
+      { label: "AI 员工", href: "/agents", enabled: true, icon: Bot },
       { label: "知识库", href: "/knowledge", enabled: true, icon: BrainCircuit },
       { label: "能力中心", href: "/capabilities", enabled: true, icon: Boxes },
       { label: "Workflow", href: "/workflows", enabled: false, icon: Workflow },
