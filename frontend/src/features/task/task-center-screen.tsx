@@ -46,7 +46,7 @@ const OWNERSHIP_OPTIONS: readonly {
   value: TaskOwnershipFilter;
   label: string;
 }[] = [
-  { value: "all", label: "全部 Task" },
+  { value: "all", label: "全部任务" },
   { value: "mine", label: "我的任务" },
   { value: "participating", label: "我参与的" },
   { value: "pendingApproval", label: "待我审批" },
@@ -77,14 +77,14 @@ function userName(userId: string): string {
 }
 
 function normalizeAgentName(name?: string): string {
-  return name?.replace("AI研发员工", "AI 研发员工") ?? "尚未分配";
+  return name?.replace("AI 研发员工", "AI 研发员工") ?? "尚未分配";
 }
 
 function TaskLink({ task }: { task: TaskListItem }) {
   return (
     <Link
       href={`/tasks/${task.id}`}
-      aria-label={`查看 Task ${task.id}`}
+      aria-label={`查看任务 ${task.id}`}
       className="break-words font-semibold text-[var(--aios-text)] underline-offset-4 hover:text-[var(--aios-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
     >
       {task.title}
@@ -160,7 +160,7 @@ function TaskFacts({ task }: { task: TaskListItem }) {
         </dd>
       </div>
       <div>
-        <dt className="text-xs text-[var(--aios-muted)]">预期 Artifact</dt>
+        <dt className="text-xs text-[var(--aios-muted)]">预期成果</dt>
         <dd className="mt-1 break-words text-sm">
           {task.expectedArtifactType}
         </dd>
@@ -218,22 +218,22 @@ export function TaskCenterScreen({
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Workspace Task Read Model
+            工作空间任务只读视图
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Task Center
+            任务中心
           </h1>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--aios-muted)]">
             <span className="flex min-w-0 items-center gap-2">
               <Building2 size={16} aria-hidden="true" />
               <span className="break-words">
-                Organization：{scopeLabels.organizationName}
+                组织：{scopeLabels.organizationName}
               </span>
             </span>
             <span className="flex min-w-0 items-center gap-2">
               <ListTodo size={16} aria-hidden="true" />
               <span className="break-words">
-                Workspace：{scopeLabels.workspaceName}
+                工作空间：{scopeLabels.workspaceName}
               </span>
             </span>
           </div>
@@ -244,17 +244,17 @@ export function TaskCenterScreen({
             className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--aios-primary)] px-4 text-sm font-semibold text-[var(--aios-surface)] transition hover:bg-[color-mix(in_srgb,var(--aios-primary)_85%,var(--aios-navigation))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--aios-primary)]"
           >
             <Plus size={17} aria-hidden="true" />
-            创建 Task
+            创建任务
           </Link>
         ) : (
           <p className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-4 py-3 text-sm text-[var(--aios-muted)]">
-            当前身份可查看 Task，但不能创建。
+            当前身份可查看任务，但不能创建。
           </p>
         )}
       </header>
 
       <section
-        aria-label="Task 摘要"
+        aria-label="任务摘要"
         className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         <SummaryCard label="我的任务" value={summaries.mine} icon={ListTodo} />
@@ -278,7 +278,7 @@ export function TaskCenterScreen({
       <Card className="mt-5 p-4 sm:p-5">
         <form
           role="search"
-          aria-label="Task 筛选"
+          aria-label="任务筛选"
           onSubmit={submitSearch}
           className="grid gap-4 xl:grid-cols-[minmax(220px,1.5fr)_repeat(4,minmax(140px,1fr))_auto]"
         >
@@ -292,7 +292,7 @@ export function TaskCenterScreen({
               />
               <input
                 type="search"
-                aria-label="搜索 Task"
+                aria-label="搜索任务"
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
@@ -406,7 +406,7 @@ export function TaskCenterScreen({
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-[var(--aios-muted)]">
-          共 {page.total} 个 Task
+          共 {page.total} 个任务
         </p>
         <p className="text-sm text-[var(--aios-muted)]">
           第 {page.page} / {totalPages} 页
@@ -420,7 +420,7 @@ export function TaskCenterScreen({
             size={28}
             aria-hidden="true"
           />
-          <p className="mt-3 font-semibold">没有符合当前筛选条件的 Task</p>
+          <p className="mt-3 font-semibold">没有符合当前筛选条件的任务</p>
           <p className="mt-1 text-sm text-[var(--aios-muted)]">
             可调整关键词、状态、模板、风险或任务归属。
           </p>
@@ -430,18 +430,18 @@ export function TaskCenterScreen({
           <Card className="mt-4 hidden overflow-hidden lg:block">
             <div
               role="region"
-              aria-label="Task 表格，可横向滚动"
+              aria-label="任务表格，可横向滚动"
               tabIndex={0}
               className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--aios-primary)]"
             >
               <table
-                aria-label="Task 列表"
+                aria-label="任务列表"
                 className="w-full min-w-[1320px] text-left text-sm"
               >
                 <thead className="bg-[var(--aios-canvas)] text-[var(--aios-muted)]">
                   <tr>
                     {[
-                      "Task",
+                      "任务",
                       "模板",
                       "状态",
                       "优先级",
@@ -449,7 +449,7 @@ export function TaskCenterScreen({
                       "发起人",
                       "AI 员工",
                       "当前负责人",
-                      "预期 Artifact",
+                      "预期成果",
                       "更新时间",
                     ].map((heading) => (
                       <th key={heading} scope="col" className="px-4 py-3 font-medium">
@@ -509,7 +509,7 @@ export function TaskCenterScreen({
             </div>
           </Card>
 
-          <ul aria-label="Task 移动端列表" className="mt-4 space-y-3 lg:hidden">
+          <ul aria-label="任务移动端列表" className="mt-4 space-y-3 lg:hidden">
             {page.items.map((task) => (
               <li key={task.id}>
                 <Card className="min-w-0 p-4">
@@ -528,7 +528,7 @@ export function TaskCenterScreen({
       )}
 
       <nav
-        aria-label="Task 分页"
+        aria-label="任务分页"
         className="mt-5 flex flex-wrap items-center justify-end gap-3"
       >
         <Button

@@ -94,7 +94,7 @@ export function ArtifactDetailLoader({ artifactId }: { artifactId: string }) {
           size={21}
           aria-hidden="true"
         />
-        正在加载 Artifact 只读详情…
+        正在加载成果只读详情…
       </Card>
     );
   }
@@ -109,9 +109,9 @@ export function ArtifactDetailLoader({ artifactId }: { artifactId: string }) {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Artifact 不可用</h1>
+            <h1 className="font-semibold">成果不可用</h1>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
-              当前 Organization、Workspace 或身份无法安全查看该 Artifact。
+              当前组织、工作空间或身份无法安全查看该成果。
             </p>
           </div>
         </div>
@@ -129,7 +129,7 @@ export function ArtifactDetailLoader({ artifactId }: { artifactId: string }) {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Artifact 数据加载失败</h1>
+            <h1 className="font-semibold">成果数据加载失败</h1>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
               本地数据未通过完整性校验，未展示不可信内容。
             </p>

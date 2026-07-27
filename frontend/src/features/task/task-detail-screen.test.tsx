@@ -11,7 +11,7 @@ function plannedTask(): PlannedTaskDetail {
   return {
     id: "task-golden-technical-solution",
     scope: { organizationId: "org-guangwei", workspaceId: "ws-ai" },
-    title: "生成 AIOS Task Center 技术方案",
+    title: "生成 AIOS 任务中心技术方案",
     goalSummary: "形成可供研发团队评审并实施的方案",
     templateName: "生成技术方案",
     expectedArtifactType: "技术方案",
@@ -22,25 +22,25 @@ function plannedTask(): PlannedTaskDetail {
     currentOwner: {
       actorType: "AGENT",
       actorId: "agent-rd-001",
-      displayName: "AI研发员工",
+      displayName: "AI 研发员工",
     },
-    assignedAgentName: "AI研发员工",
+    assignedAgentName: "AI 研发员工",
     participantUserIds: ["user-pm", "user-lead", "user-dev"],
     approverUserIds: ["user-lead"],
     reviewerUserIds: ["user-lead"],
     createdAt: "2026-07-25T08:00:00.000Z",
     updatedAt: "2026-07-26T07:50:00.000Z",
-    goal: "形成可供研发团队评审并实施的 Task Center 技术方案",
-    constraints: ["遵循现有 AIOS 架构", "固定 VersionRef 后执行"],
+    goal: "形成可供研发团队评审并实施的任务中心技术方案",
+    constraints: ["遵循现有 AIOS 架构", "固定版本引用后执行"],
     outOfScope: ["不执行未授权写入"],
     completionCriteria: [
       "技术方案符合结构要求",
       "关键结论包含知识库引用",
-      "Artifact 完成人工验收",
+      "成果完成人工验收",
     ],
     assignedAgent: {
       agentId: "agent-rd-001",
-      agentName: "AI研发员工",
+      agentName: "AI 研发员工",
       autonomyLevel: "L1辅助",
       humanOwner: { userId: "user-lead", displayName: "陈明" },
       agentVersionRef: {
@@ -96,7 +96,7 @@ function plannedTask(): PlannedTaskDetail {
         digest: "sha256:plan-task-golden-technical-solution-v1",
       },
       goalInterpretation: "在现有 AIOS 架构边界内形成可评审、可实施的技术方案。",
-      assumptions: ["现有文档为 Single Source of Truth"],
+      assumptions: ["现有文档为唯一可信来源"],
       missingInformation: [],
       scopeDigest: "sha256:scope-task-golden-technical-solution",
       steps: [
@@ -106,7 +106,7 @@ function plannedTask(): PlannedTaskDetail {
           name: "需求理解与约束确认",
           description: "明确目标与边界。",
           stepType: "AGENT",
-          responsibility: "AI研发员工",
+          responsibility: "AI 研发员工",
           riskLevel: "R0",
         },
         {
@@ -115,7 +115,7 @@ function plannedTask(): PlannedTaskDetail {
           name: "代码与模块影响分析",
           description: "只读识别影响模块。",
           stepType: "KNOWLEDGE_RETRIEVAL",
-          responsibility: "AI研发员工",
+          responsibility: "AI 研发员工",
           riskLevel: "R0",
         },
         {
@@ -124,7 +124,7 @@ function plannedTask(): PlannedTaskDetail {
           name: "形成技术方案草稿",
           description: "形成结构化草稿。",
           stepType: "AGENT",
-          responsibility: "AI研发员工",
+          responsibility: "AI 研发员工",
           riskLevel: "R1",
         },
         {
@@ -133,16 +133,16 @@ function plannedTask(): PlannedTaskDetail {
           name: "方案结构和引用检查",
           description: "检查结构与引用。",
           stepType: "VALIDATION",
-          responsibility: "Validation",
+          responsibility: "验证",
           riskLevel: "R1",
         },
         {
           id: "step-05",
           sequence: 5,
-          name: "Artifact人工验收",
-          description: "由 Reviewer 验收。",
+          name: "成果人工验收",
+          description: "由验收人验收。",
           stepType: "HUMAN_REVIEW",
-          responsibility: "Reviewer",
+          responsibility: "验收人",
           riskLevel: "R1",
         },
       ],
@@ -158,7 +158,7 @@ function plannedTask(): PlannedTaskDetail {
       },
       {
         id: "approval-artifact",
-        name: "Artifact验收",
+        name: "成果验收",
         requiredFor: "ARTIFACT_ACCEPTANCE",
         riskLevel: "R1",
         status: "PENDING",
@@ -251,7 +251,7 @@ const invocation: ToolInvocationResult = {
   inputDigest: "sha256:input",
   outputDigest: "sha256:output",
   resultReference: "mcp://codegraph/invocation-task-golden-step-02",
-  resultExcerpt: "TaskDetailLoader -> Tool Broker -> CodeGraph MCP",
+  resultExcerpt: "TaskDetailLoader -> 工具代理 -> CodeGraph MCP",
   summary: "CodeGraph MCP 返回受控代码上下文。",
   requestedAt: "2026-07-27T08:00:00.000Z",
   completedAt: "2026-07-27T08:00:01.000Z",
@@ -264,7 +264,7 @@ const invocation: ToolInvocationResult = {
       sequence: 1,
       eventType: "TOOL_INVOCATION_REQUESTED",
       occurredAt: "2026-07-27T08:00:00.000Z",
-      summary: "Tool Invocation 已创建。",
+      summary: "工具调用已创建。",
     },
     {
       sequence: 2,
@@ -288,24 +288,24 @@ const invocation: ToolInvocationResult = {
 };
 
 describe("TaskDetailScreen", () => {
-  it("shows the governed Task identity and complete active scope", () => {
+  it("shows the governed 任务 identity and complete active scope", () => {
     render(
       <TaskDetailScreen
         task={plannedTask()}
         scopeLabels={scopeLabels}
-        viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
+        viewer={{ userId: "user-auditor", name: "赵岚", role: "审计员" }}
       />,
     );
 
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "生成 AIOS Task Center 技术方案",
+        name: "生成 AIOS 任务中心技术方案",
       }),
     ).toBeVisible();
     expect(screen.getByText("task-golden-technical-solution")).toBeVisible();
-    expect(screen.getByText("待审批")).toBeVisible();
-    expect(screen.getByText("Priority 50")).toBeVisible();
+    expect(screen.getByLabelText("任务状态：待审批")).toBeVisible();
+    expect(screen.getByText("优先级 50")).toBeVisible();
     expect(screen.getAllByText("R1").length).toBeGreaterThan(0);
     expect(screen.getByText("光位科技")).toBeVisible();
     expect(screen.getByText("org-guangwei")).toBeVisible();
@@ -327,16 +327,16 @@ describe("TaskDetailScreen", () => {
     );
 
     const navigation = screen.getByRole("navigation", {
-      name: "Task 详情导航",
+      name: "任务详情导航",
     });
     const links = within(navigation).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
       "概览",
       "计划",
       "执行",
-      "Artifact",
+      "成果",
       "协作",
-      "Audit",
+      "审计",
     ]);
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "#task-overview",
@@ -350,14 +350,14 @@ describe("TaskDetailScreen", () => {
     await interaction.tab();
     expect(links).toContain(document.activeElement);
 
-    for (const heading of ["概览", "计划", "执行", "Artifact", "协作", "Audit"]) {
+    for (const heading of ["概览", "计划", "执行", "成果", "协作", "审计"]) {
       expect(
         screen.getByRole("heading", { level: 2, name: heading }),
       ).toBeVisible();
     }
   });
 
-  it("renders the five-step plan, immutable references, expected Artifact and approvals", () => {
+  it("renders the five-step plan, immutable references, expected 成果 and approvals", () => {
     render(
       <TaskDetailScreen
         task={plannedTask()}
@@ -373,7 +373,7 @@ describe("TaskDetailScreen", () => {
       "代码与模块影响分析",
       "形成技术方案草稿",
       "方案结构和引用检查",
-      "Artifact人工验收",
+      "成果人工验收",
     ]) {
       expect(within(plan).getByText(stepName)).toBeVisible();
     }
@@ -389,20 +389,20 @@ describe("TaskDetailScreen", () => {
       "tool-codegraph-read-v1",
       "workflow-technical-solution-v1",
       "codegraph.context",
-      "READ · 只读",
+      "读取 · 只读",
     ]) {
       expect(within(overview).getByText(reference)).toBeVisible();
     }
 
-    const artifact = screen.getByRole("region", { name: "Artifact" });
+    const artifact = screen.getByRole("region", { name: "成果" });
     expect(within(artifact).getByText("技术方案")).toBeVisible();
     expect(within(artifact).getByText("尚未生成")).toBeVisible();
     expect(within(artifact).getByText("知识库引用")).toBeVisible();
     expect(within(artifact).getByText("需要知识库引用")).toBeVisible();
 
     expect(within(plan).getByText("计划确认")).toBeVisible();
-    expect(within(plan).getByText("Artifact验收")).toBeVisible();
-    expect(within(plan).getAllByText("PENDING")).toHaveLength(2);
+    expect(within(plan).getByText("成果验收")).toBeVisible();
+    expect(within(plan).getAllByText("待审批")).toHaveLength(2);
   });
 
   it("keeps execution and all future actions visibly controlled and disabled", () => {
@@ -418,7 +418,7 @@ describe("TaskDetailScreen", () => {
       screen.getByRole("region", { name: "执行" }),
     ).toHaveTextContent("尚未开始");
     expect(
-      screen.getByText(/当前 Task 停止在计划确认审批点/),
+      screen.getByText(/当前任务停止在计划确认审批点/),
     ).toBeVisible();
     expect(
       screen.getByText(/当前增量开放“计划批准/),
@@ -434,16 +434,16 @@ describe("TaskDetailScreen", () => {
       "恢复",
       "取消",
       "人工接管",
-      "调用 Tool",
-      "接受 Artifact",
-      "驳回 Artifact",
-      "要求 Artifact 返工",
+      "调用工具",
+      "接受成果",
+      "驳回成果",
+      "要求成果返工",
     ];
     for (const actionName of controlledActions) {
       const action = screen.getByRole("button", { name: actionName });
       expect(action).toBeDisabled();
       expect(action).toHaveAccessibleDescription(
-        "当前增量开放“计划批准 → 真实只读 MCP Tool Invocation → LiteLLM 受控推理 → 结构化 Artifact 校验 → 人工验收”的首个 AI 员工闭环。",
+        "当前增量开放“计划批准 → 真实只读 MCP 工具调用 → LiteLLM 受控推理 → 结构化成果校验 → 人工验收”的首个 AI 员工闭环。",
       );
     }
     expect(
@@ -451,7 +451,7 @@ describe("TaskDetailScreen", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("allows only the fixed Reviewer to approve a submitted mutable Task", async () => {
+  it("allows only the fixed 验收人 to approve a submitted mutable 任务", async () => {
     const interaction = userEvent.setup();
     const task = plannedTask();
     task.id = "task-mock-0001";
@@ -470,7 +470,7 @@ describe("TaskDetailScreen", () => {
     expect(approve).toBeEnabled();
     expect(screen.getByRole("button", { name: "开始执行" })).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "接受 Artifact" }),
+      screen.getByRole("button", { name: "接受成果" }),
     ).toBeDisabled();
 
     await interaction.click(approve);
@@ -482,7 +482,7 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={plannedTask()}
         scopeLabels={scopeLabels}
-        viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
+        viewer={{ userId: "user-auditor", name: "赵岚", role: "审计员" }}
       />,
     );
 
@@ -492,15 +492,15 @@ describe("TaskDetailScreen", () => {
     expect(collaboration).toHaveTextContent("user-dev");
     expect(collaboration).toHaveTextContent("只读");
 
-    const audit = screen.getByRole("region", { name: "Audit" });
+    const audit = screen.getByRole("region", { name: "审计" });
     expect(within(audit).getAllByRole("listitem")).toHaveLength(4);
-    expect(audit).toHaveTextContent("TASK_CREATED");
-    expect(audit).toHaveTextContent("DRAFT");
-    expect(audit).toHaveTextContent("NEED_APPROVAL");
+    expect(audit).toHaveTextContent("初始状态 → 草稿");
+    expect(audit).toHaveTextContent("草稿 → 已就绪");
+    expect(audit).toHaveTextContent("规划中 → 待审批");
     expect(audit).not.toHaveTextContent("已批准");
   });
 
-  it("renders persisted MCP result and Tool Broker audit evidence", () => {
+  it("renders persisted MCP result and 工具代理 audit evidence", () => {
     const task = plannedTask();
     task.status = "EXECUTING";
     task.executionRun = {
@@ -541,12 +541,12 @@ describe("TaskDetailScreen", () => {
     expect(execution).toHaveTextContent("真实 MCP 调用证据");
     expect(execution).toHaveTextContent("codegraph.context");
     expect(execution).toHaveTextContent("sha256:output");
-    const audit = screen.getByRole("region", { name: "Audit" });
-    expect(audit).toHaveTextContent("MCP_SESSION_INITIALIZED");
-    expect(audit).toHaveTextContent("TOOL_INVOCATION_SUCCEEDED");
+    const audit = screen.getByRole("region", { name: "审计" });
+    expect(audit).toHaveTextContent("MCP 会话已初始化");
+    expect(audit).toHaveTextContent("工具调用成功");
   });
 
-  it("supports an unplanned seed without fabricating plan or Artifact content", () => {
+  it("supports an unplanned seed without fabricating plan or 成果 content", () => {
     const unplanned = plannedTask();
     const compatibleTask = {
       ...unplanned,
@@ -575,13 +575,13 @@ describe("TaskDetailScreen", () => {
     expect(screen.getByRole("region", { name: "计划" })).toHaveTextContent(
       "计划尚未生成",
     );
-    expect(screen.getByRole("region", { name: "Artifact" })).toHaveTextContent(
+    expect(screen.getByRole("region", { name: "成果" })).toHaveTextContent(
       "尚未生成",
     );
     expect(screen.queryByText("capability-technical-solution-v1")).not.toBeInTheDocument();
   });
 
-  it("shows an accepted ArtifactVersionRef for a completed Task without inventing content", () => {
+  it("shows an accepted 成果版本引用 for a completed 任务 without inventing content", () => {
     const completedTask = plannedTask();
     completedTask.status = "COMPLETED";
     completedTask.artifactVersionRefs = [
@@ -600,11 +600,11 @@ describe("TaskDetailScreen", () => {
       <TaskDetailScreen
         task={completedTask}
         scopeLabels={scopeLabels}
-        viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
+        viewer={{ userId: "user-auditor", name: "赵岚", role: "审计员" }}
       />,
     );
 
-    const artifact = screen.getByRole("region", { name: "Artifact" });
+    const artifact = screen.getByRole("region", { name: "成果" });
     expect(within(artifact).getByText("技术方案 · 已接受")).toBeVisible();
     expect(
       within(artifact).getByText("artifact-deliverable-task-completed-v1"),
@@ -616,12 +616,12 @@ describe("TaskDetailScreen", () => {
     ).toBeVisible();
     expect(within(artifact).queryByText("尚未生成")).not.toBeInTheDocument();
     expect(artifact).toHaveTextContent(
-      "Artifact 正文由独立 Read Model 提供；此处保留版本引用和验收状态。",
+      "成果正文由独立只读视图提供；此处保留版本引用和验收状态。",
     );
   });
 
   it.each(["FAILED", "CANCELLED"] as const)(
-    "shows the required execution summary evidence for a %s Task",
+    "shows the required execution summary evidence for a %s 任务",
     (status) => {
       const terminalTask = plannedTask();
       terminalTask.status = status;
@@ -641,11 +641,11 @@ describe("TaskDetailScreen", () => {
         <TaskDetailScreen
           task={terminalTask}
           scopeLabels={scopeLabels}
-          viewer={{ userId: "user-auditor", name: "赵岚", role: "Auditor" }}
+          viewer={{ userId: "user-auditor", name: "赵岚", role: "审计员" }}
         />,
       );
 
-      const artifact = screen.getByRole("region", { name: "Artifact" });
+      const artifact = screen.getByRole("region", { name: "成果" });
       expect(within(artifact).getByText("执行摘要 · 未接受")).toBeVisible();
       expect(
         within(artifact).getByText(
@@ -654,7 +654,7 @@ describe("TaskDetailScreen", () => {
       ).toBeVisible();
       expect(within(artifact).queryByText("尚未生成")).not.toBeInTheDocument();
       expect(artifact).toHaveTextContent(
-        "Artifact 正文由独立 Read Model 提供；此处保留版本引用和验收状态。",
+        "成果正文由独立只读视图提供；此处保留版本引用和验收状态。",
       );
     },
   );

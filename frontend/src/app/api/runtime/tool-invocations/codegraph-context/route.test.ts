@@ -23,7 +23,7 @@ function request(
   );
 }
 
-describe("CodeGraph Tool Invocation route boundary", () => {
+describe("CodeGraph 工具调用 route boundary", () => {
   it("rejects cross-origin requests before parsing an invocation", async () => {
     const response = await POST(
       request("{}", { Origin: "https://untrusted.example" }),

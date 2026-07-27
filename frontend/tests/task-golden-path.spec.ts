@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { join } from "node:path";
 
 const SCREENSHOT_DIRECTORY = join(process.cwd(), "test-results");
-const GOLDEN_TITLE = "为 AIOS Task Center 生成技术方案";
+const GOLDEN_TITLE = "为 AIOS 任务中心生成技术方案";
 const CONTROLLED_ACTIONS = [
   "补充信息",
   "批准计划",
@@ -13,17 +13,17 @@ const CONTROLLED_ACTIONS = [
   "恢复",
   "取消",
   "人工接管",
-  "调用 Tool",
-  "接受 Artifact",
-  "驳回 Artifact",
-  "要求 Artifact 返工",
+  "调用工具",
+  "接受成果",
+  "驳回成果",
+  "要求成果返工",
 ] as const;
 
 async function enterWorkspace(
   page: Page,
   identityButtonName:
-    | "使用 林悦（产品经理）身份"
-    | "使用 赵岚（Auditor）身份",
+    | "使用林悦（产品经理）身份"
+    | "使用赵岚（审计员）身份",
 ) {
   await page.goto("/");
   await page.getByRole("link", { name: "进入 AIOS", exact: true }).click();
@@ -31,18 +31,18 @@ async function enterWorkspace(
     .getByRole("button", { name: identityButtonName, exact: true })
     .click();
   await page
-    .getByRole("button", { name: "选择组织 光位科技", exact: true })
+    .getByRole("button", { name: "选择组织光位科技", exact: true })
     .click();
   await page
     .getByRole("button", {
-      name: "选择 Workspace AI 智能业务线",
+      name: "选择工作空间 AI 智能业务线",
       exact: true,
     })
     .click();
 
   await expect(page).toHaveURL(/\/workspace$/, { timeout: 30_000 });
   await expect(
-    page.getByRole("heading", { name: "Workspace 工作台", exact: true }),
+    page.getByRole("heading", { name: "工作空间工作台", exact: true }),
   ).toBeVisible({ timeout: 30_000 });
 }
 
@@ -75,14 +75,14 @@ async function installLiteLlmContractFixture(page: Page) {
       const requestedAt = "2026-07-27T10:00:00.000Z";
       const completedAt = "2026-07-27T10:00:01.000Z";
       const sectionParagraphs: Record<string, string> = {
-        目标理解: "根据当前 Task 的目标与约束生成可供 Reviewer 验收的技术方案。",
+        目标理解: "根据当前任务的目标与约束生成可供验收人验收的技术方案。",
         范围与不做事项: "范围限定在 AIOS 现有模块，不执行外部写入，不绕过人工验收。",
-        影响模块与文件: "CodeGraph 上下文表明本次改动涉及 Task Runtime、Artifact 和测试入口。",
-        技术决策: "Tool Broker 已固定只读 ToolVersion；模型输出必须通过结构校验后才能提交 Artifact。",
+        影响模块与文件: "CodeGraph 上下文表明本次改动涉及任务运行时、成果和测试入口。",
+        技术决策: "工具代理已固定只读工具版本；模型输出必须通过结构校验后才能提交成果。",
         风险: "主要风险是模型输出越界、结构不完整或网关结果未知，均应停止自动推进。",
         测试建议: "验证模型版本固定、八章节结构、失败状态、审计证据与人工验收路径。",
-        回退考虑: "模型调用不产生业务写入副作用，失败时保留证据并停留在当前 Workflow Step。",
-        知识库引用: "只使用执行包固定的知识库版本，最终定位信息由 Runtime 进行确定性校验。",
+        回退考虑: "模型调用不产生业务写入副作用，失败时保留证据并停留在当前工作流步骤。",
+        知识库引用: "只使用执行包固定的知识库版本，最终定位信息由运行时进行确定性校验。",
       };
       const sections = Object.entries(sectionParagraphs).map(
         ([title, paragraph]) => ({ title, paragraphs: [paragraph] }),
@@ -143,23 +143,23 @@ async function installLiteLlmContractFixture(page: Page) {
   );
 }
 
-test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持证据", async ({
+test("产品经理完成任务黄金路径并在刷新与列表检索后保持证据", async ({
   page,
 }) => {
   test.setTimeout(120_000);
 
   await installLiteLlmContractFixture(page);
 
-  await enterWorkspace(page, "使用 林悦（产品经理）身份");
+  await enterWorkspace(page, "使用林悦（产品经理）身份");
 
   const navigation = page.getByRole("navigation", { name: "主要导航" });
-  await navigation.getByRole("link", { name: "Task", exact: true }).click();
+  await navigation.getByRole("link", { name: "任务", exact: true }).click();
   await expect(page).toHaveURL(/\/tasks$/);
   await expect(
-    page.getByRole("heading", { name: "Task Center", exact: true }),
+    page.getByRole("heading", { name: "任务中心", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("region", { name: "Task 摘要" })).toBeVisible();
-  await expect(page.getByRole("search", { name: "Task 筛选" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "任务摘要" })).toBeVisible();
+  await expect(page.getByRole("search", { name: "任务筛选" })).toBeVisible();
   await page.screenshot({
     path: join(SCREENSHOT_DIRECTORY, "task-center.png"),
     fullPage: true,
@@ -167,11 +167,11 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
 
   await page
     .getByRole("main")
-    .getByRole("link", { name: "创建 Task", exact: true })
+    .getByRole("link", { name: "创建任务", exact: true })
     .click();
   await expect(page).toHaveURL(/\/tasks\/new$/);
   await expect(
-    page.getByRole("heading", { name: "创建 Task", exact: true }),
+    page.getByRole("heading", { name: "创建任务", exact: true }),
   ).toBeVisible();
   await expectCurrentWizardStep(page, 1, "选择模板");
 
@@ -179,40 +179,40 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await page.getByRole("button", { name: "下一步", exact: true }).click();
   await expectCurrentWizardStep(page, 2, "定义工作");
 
-  await page.getByLabel("Task 标题", { exact: true }).fill(GOLDEN_TITLE);
+  await page.getByLabel("任务标题", { exact: true }).fill(GOLDEN_TITLE);
   await page
-    .getByLabel("Goal", { exact: true })
-    .fill("形成可评审、可实施、可追溯的 Task Center 技术方案");
+    .getByLabel("目标", { exact: true })
+    .fill("形成可评审、可实施、可追溯的任务中心技术方案");
   await page
     .getByLabel("当前问题", { exact: true })
-    .fill("Task Center 已具备页面骨架，但需要通过受控 Task 闭环验证研发工作定义。");
+    .fill("任务中心已具备页面骨架，但需要通过受控任务闭环验证研发工作定义。");
   await page
     .getByLabel("任务范围", { exact: true })
-    .fill("Task Center、Task 创建向导、Task 详情与固定 VersionRef 证据");
+    .fill("任务中心、任务创建向导、任务详情与固定版本引用证据");
   await page
     .getByLabel("不做事项", { exact: true })
-    .fill("不调用写入型 Tool\n不修改生产系统\n不跳过人工验收");
+    .fill("不调用写入型工具\n不修改生产系统\n不跳过人工验收");
   await page
     .getByLabel("约束", { exact: true })
-    .fill("遵循现有 Modular Monolith 架构\n保持 Workspace 权限边界\n仅使用固定版本引用");
-  await page.getByLabel("Priority", { exact: true }).fill("50");
-  await page.getByLabel("Risk", { exact: true }).selectOption("R1");
+    .fill("遵循现有 Modular Monolith 架构\n保持工作空间权限边界\n仅使用固定版本引用");
+  await page.getByLabel("优先级", { exact: true }).fill("50");
+  await page.getByLabel("风险", { exact: true }).selectOption("R1");
   await page
     .getByLabel("期望完成时间", { exact: true })
     .fill("2026-08-01T18:00");
 
   await page.getByRole("button", { name: "保存草稿", exact: true }).click();
   await expect(
-    page.getByText("草稿已保存到当前 actor 与 Workspace 的隔离空间。", {
+    page.getByText("草稿已保存到当前执行主体与工作空间的隔离空间。", {
       exact: true,
     }),
   ).toBeVisible();
   await page.reload();
   await expectCurrentWizardStep(page, 2, "定义工作");
-  await expect(page.getByLabel("Task 标题", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("任务标题", { exact: true })).toHaveValue(
     GOLDEN_TITLE,
   );
-  await expect(page.getByLabel("Risk", { exact: true })).toHaveValue("R1");
+  await expect(page.getByLabel("风险", { exact: true })).toHaveValue("R1");
 
   await page.getByRole("button", { name: "下一步", exact: true }).click();
   await expectCurrentWizardStep(page, 3, "提供上下文");
@@ -222,7 +222,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   }
   await page.getByRole("button", { name: "保存草稿", exact: true }).click();
   await expect(
-    page.getByText("草稿已保存到当前 actor 与 Workspace 的隔离空间。", {
+    page.getByText("草稿已保存到当前执行主体与工作空间的隔离空间。", {
       exact: true,
     }),
   ).toBeVisible();
@@ -250,15 +250,15 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await expectCurrentWizardStep(page, 4, "定义成果");
   await expect(page.getByText("技术方案", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Reviewer：陈明（user-lead）", { exact: true }),
+    page.getByText("验收人：陈明（user-lead）", { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "必须通过的检查", exact: true }),
   ).toBeVisible();
   await page
-    .getByLabel("Completion Criteria", { exact: true })
+    .getByLabel("完成标准", { exact: true })
     .fill(
-      "Artifact 章节结构完整\n知识库引用可追溯到固定版本\n陈明完成人工验收",
+      "成果章节结构完整\n知识库引用可追溯到固定版本\n陈明完成人工验收",
     );
 
   await page.getByRole("button", { name: "下一步", exact: true }).click();
@@ -267,33 +267,33 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await expect(page.getByText("workflow-technical-solution-v1", { exact: true })).toBeVisible();
   await expect(page.getByText("tool-codegraph-read", { exact: true })).toBeVisible();
   await expect(page.getByText("codegraph.context", { exact: true })).toBeVisible();
-  await expect(page.getByText("READ", { exact: true })).toBeVisible();
+  await expect(page.getByText("读取", { exact: true })).toBeVisible();
   await expect(page.getByText("L1辅助", { exact: false })).toBeVisible();
   await expect(page.getByText("计划确认", { exact: true })).toBeVisible();
-  await expect(page.getByText("Artifact验收", { exact: true })).toBeVisible();
+  await expect(page.getByText("成果验收", { exact: true })).toBeVisible();
   await page.screenshot({
     path: join(SCREENSHOT_DIRECTORY, "task-wizard.png"),
     fullPage: true,
   });
 
-  await page.getByRole("button", { name: "提交 Task", exact: true }).click();
+  await page.getByRole("button", { name: "提交任务", exact: true }).click();
   await expect(page).toHaveURL(/\/tasks\/task-mock-0001$/, {
     timeout: 30_000,
   });
   await expect(
     page.getByRole("heading", { name: GOLDEN_TITLE, exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("待审批", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("任务状态：待审批")).toBeVisible();
   await expect(
-    page.getByRole("navigation", { name: "Task 详情导航" }).getByRole("link"),
+    page.getByRole("navigation", { name: "任务详情导航" }).getByRole("link"),
   ).toHaveCount(6);
 
   const plan = page.getByRole("region", { name: "计划", exact: true });
   await expect(plan.getByLabel(/^步骤 \d+：/)).toHaveCount(5);
   await expect(plan.getByText("计划确认", { exact: true })).toBeVisible();
-  await expect(plan.getByText("Artifact验收", { exact: true })).toBeVisible();
+  await expect(plan.getByText("成果验收", { exact: true })).toBeVisible();
   const artifact = page.getByRole("region", {
-    name: "Artifact",
+    name: "成果",
     exact: true,
   });
   await expect(artifact.getByText("尚未生成", { exact: true })).toBeVisible();
@@ -316,12 +316,12 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
 
   await page.goto("/tasks");
   await expect(
-    page.getByRole("heading", { name: "Task Center", exact: true }),
+    page.getByRole("heading", { name: "任务中心", exact: true }),
   ).toBeVisible();
-  await page.getByRole("searchbox", { name: "搜索 Task" }).fill(GOLDEN_TITLE);
+  await page.getByRole("searchbox", { name: "搜索任务" }).fill(GOLDEN_TITLE);
   await page.getByRole("button", { name: "搜索", exact: true }).click();
   const createdTaskLink = page.getByRole("link", {
-    name: "查看 Task task-mock-0001",
+    name: "查看任务 task-mock-0001",
     exact: true,
   });
   await expect(createdTaskLink).toBeVisible();
@@ -352,10 +352,10 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await approvePlan.click();
   await expect(page.locator('[data-task-status="EXECUTING"]')).toBeVisible();
   await expect(
-    page.getByText("ExecutionRun · AI Employee Runtime", { exact: true }),
+    page.getByText("执行记录 · AI 员工运行时", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("已完成 0 / 4 个 Runtime Step", { exact: true }),
+    page.getByText("已完成 0 / 4 个运行时步骤", { exact: true }),
   ).toBeVisible();
 
   const advanceRuntime = page.getByRole("button", {
@@ -367,7 +367,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
     await advanceRuntime.click();
     if (completed < 4) {
       await expect(
-        page.getByText(`已完成 ${completed} / 4 个 Runtime Step`, {
+        page.getByText(`已完成 ${completed} / 4 个运行时步骤`, {
           exact: true,
         }),
       ).toBeVisible({ timeout: completed === 2 ? 20_000 : 5_000 });
@@ -375,18 +375,18 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
     if (completed === 2) {
       await expect(
         page.getByRole("heading", {
-          name: "Tool Invocation · 真实 MCP 调用证据",
+          name: "工具调用 · 真实 MCP 调用证据",
           exact: true,
         }),
       ).toBeVisible();
       await expect(
-        page.getByText("codegraph.context · READ/R0", { exact: true }),
+        page.getByText("codegraph.context · 读取/R0", { exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByText("SUCCEEDED", { exact: true }).last(),
+        page.getByText("调用成功", { exact: true }).last(),
       ).toBeVisible();
       await expect(
-        page.getByText("MCP_SESSION_INITIALIZED", { exact: true }),
+        page.getByText("MCP 会话已初始化", { exact: true }),
       ).toBeVisible();
       await page.screenshot({
         path: join(SCREENSHOT_DIRECTORY, "real-tool-invocation-mvp.png"),
@@ -396,7 +396,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
     if (completed === 3) {
       await expect(
         page.getByRole("heading", {
-          name: "Model Invocation · LiteLLM 推理证据",
+          name: "模型调用 · LiteLLM 推理证据",
           exact: true,
         }),
       ).toBeVisible();
@@ -407,7 +407,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
         ),
       ).toBeVisible();
       await expect(
-        page.getByText("MODEL_OUTPUT_VALIDATED", { exact: true }),
+        page.getByText("模型输出已验证", { exact: true }),
       ).toBeVisible();
       await page.screenshot({
         path: join(SCREENSHOT_DIRECTORY, "real-model-gateway-contract.png"),
@@ -421,13 +421,13 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
     page.getByText("4 个持久化检查点", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("第 5 步是 Human Review，不由 Agent Runtime 自动完成。", {
+    page.getByText("第 5 步是人工验收，不由 AI 员工运行时自动完成。", {
       exact: true,
     }),
   ).toBeVisible();
 
   const artifactLink = page.getByRole("link", {
-    name: "查看 Artifact artifact-task-mock-0001",
+    name: "查看成果 artifact-task-mock-0001",
     exact: true,
   });
   await expect(artifactLink).toBeVisible();
@@ -442,11 +442,11 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByText("PENDING_REVIEW", { exact: true })).toBeVisible();
+  await expect(page.getByText("待验收", { exact: true })).toBeVisible();
   await expect(
     page.getByText("README.md#5-系统整体架构", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/Tool Broker 已固定/)).toBeVisible();
+  await expect(page.getByText(/工具代理已固定/)).toBeVisible();
   await expect(
     page.getByText("prompt-technical-solution-v1", { exact: true }),
   ).toBeVisible();
@@ -454,13 +454,13 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
     page.getByText("model-invocation-abcdef0123456789", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Artifact 等待 Reviewer 验收", { exact: true }),
+    page.getByText("成果等待验收人验收", { exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "返回所属 Task", exact: true }).click();
+  await page.getByRole("link", { name: "返回所属任务", exact: true }).click();
   await expect(page).toHaveURL(/\/tasks\/task-mock-0001$/);
   const acceptArtifact = page.getByRole("button", {
-    name: "接受 Artifact",
+    name: "接受成果",
     exact: true,
   });
   await expect(acceptArtifact).toBeEnabled();
@@ -470,62 +470,62 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
 
   await page
     .getByRole("link", {
-      name: "查看 Artifact artifact-task-mock-0001",
+      name: "查看成果 artifact-task-mock-0001",
       exact: true,
     })
     .click();
-  await expect(page.getByText("ACCEPTED", { exact: true })).toBeVisible();
+  await expect(page.getByText("已接受", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Artifact 已由 Reviewer 验收", { exact: true }),
+    page.getByText("成果已由验收人验收", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/Accepted by user-lead/)).toBeVisible();
+  await expect(page.getByText(/验收人：user-lead/)).toBeVisible();
   await page.screenshot({
     path: join(SCREENSHOT_DIRECTORY, "ai-employee-completed.png"),
     fullPage: true,
   });
 });
 
-test("Auditor 只能读取 Task 且所有创建入口与直达向导均被拒绝", async ({
+test("审计员只能读取任务且所有创建入口与直达向导均被拒绝", async ({
   page,
 }) => {
-  await enterWorkspace(page, "使用 赵岚（Auditor）身份");
+  await enterWorkspace(page, "使用赵岚（审计员）身份");
 
   await expect(page.locator('a[href="/tasks/new"]')).toHaveCount(0);
   await expect(page.getByRole("region", { name: "快速创建" })).toHaveCount(0);
   await expect(
-    page.getByText("当前身份可查看 Task，但不能创建。", { exact: true }),
+    page.getByText("当前身份可查看任务，但不能创建。", { exact: true }),
   ).toBeVisible();
 
   await page
     .getByRole("navigation", { name: "主要导航" })
-    .getByRole("link", { name: "Task", exact: true })
+    .getByRole("link", { name: "任务", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Task Center", exact: true }),
+    page.getByRole("heading", { name: "任务中心", exact: true }),
   ).toBeVisible();
   await expect(page.locator('a[href="/tasks/new"]')).toHaveCount(0);
   await expect(
-    page.getByText("当前身份可查看 Task，但不能创建。", { exact: true }),
+    page.getByText("当前身份可查看任务，但不能创建。", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /^查看 Task / }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /^查看任务 / }).first()).toBeVisible();
 
   await page.goto("/tasks/new");
   const denial = page.getByRole("alert");
   await expect(
     denial.getByRole("heading", {
-      name: "当前身份不能创建 Task",
+      name: "当前身份不能创建任务",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
     denial.getByText(
-      "当前身份在此 Organization 与 Workspace 中只有 Task 只读权限。系统未读取或写入任何个人草稿。",
+      "当前身份在此组织与工作空间中只有任务只读权限。系统未读取或写入任何个人草稿。",
       { exact: true },
     ),
   ).toBeVisible();
 });
 
-test("fresh Task responses never serialize protected Task fixtures", async ({
+test("新任务响应不会序列化受保护的任务测试数据", async ({
   request,
 }) => {
   const routes = [
@@ -536,7 +536,7 @@ test("fresh Task responses never serialize protected Task fixtures", async ({
   ];
   const protectedNeedles = [
     "task-seed-",
-    "生成 AIOS Task Center 技术方案",
+    "生成 AIOS 任务中心技术方案",
     "plan-task-golden-technical-solution-v1",
     "knowledge-aios-docs-v1",
     "capability-technical-solution-v1",
@@ -557,38 +557,38 @@ test("fresh Task responses never serialize protected Task fixtures", async ({
   }
 });
 
-test.describe("Task 路由响应式布局", () => {
+test.describe("任务路由响应式布局", () => {
   test.describe("移动端", () => {
     test.use({ viewport: { width: 390, height: 844 } });
 
-    test("Task Center、创建向导与详情均不产生页面级横向溢出", async ({
+    test("任务中心、创建向导与详情均不产生页面级横向溢出", async ({
       page,
     }) => {
       test.setTimeout(90_000);
-      await enterWorkspace(page, "使用 林悦（产品经理）身份");
+      await enterWorkspace(page, "使用林悦（产品经理）身份");
 
       await page.goto("/tasks");
       await expect(
-        page.getByRole("heading", { name: "Task Center", exact: true }),
+        page.getByRole("heading", { name: "任务中心", exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByRole("list", { name: "Task 移动端列表" }),
+        page.getByRole("list", { name: "任务移动端列表" }),
       ).toBeVisible();
       await expect(
-        page.getByRole("region", { name: "Task 表格，可横向滚动" }),
+        page.getByRole("region", { name: "任务表格，可横向滚动" }),
       ).toBeHidden();
       await expectNoPageOverflow(page);
 
       await page.goto("/tasks/new");
       await expect(
-        page.getByRole("heading", { name: "创建 Task", exact: true }),
+        page.getByRole("heading", { name: "创建任务", exact: true }),
       ).toBeVisible();
       await expectNoPageOverflow(page);
 
       await page.goto("/tasks/task-golden-technical-solution");
       await expect(
         page.getByRole("heading", {
-          name: "生成 AIOS Task Center 技术方案",
+          name: "生成 AIOS 任务中心技术方案",
           exact: true,
         }),
       ).toBeVisible();
@@ -599,31 +599,31 @@ test.describe("Task 路由响应式布局", () => {
   test.describe("平板端", () => {
     test.use({ viewport: { width: 1024, height: 768 } });
 
-    test("宽表内部滚动且 Task 三个路由不产生页面级横向溢出", async ({
+    test("宽表内部滚动且任务三个路由不产生页面级横向溢出", async ({
       page,
     }) => {
       test.setTimeout(90_000);
-      await enterWorkspace(page, "使用 林悦（产品经理）身份");
+      await enterWorkspace(page, "使用林悦（产品经理）身份");
 
       await page.goto("/tasks");
       await expect(
-        page.getByRole("heading", { name: "Task Center", exact: true }),
+        page.getByRole("heading", { name: "任务中心", exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByRole("region", { name: "Task 表格，可横向滚动" }),
+        page.getByRole("region", { name: "任务表格，可横向滚动" }),
       ).toBeVisible();
       await expectNoPageOverflow(page);
 
       await page.goto("/tasks/new");
       await expect(
-        page.getByRole("heading", { name: "创建 Task", exact: true }),
+        page.getByRole("heading", { name: "创建任务", exact: true }),
       ).toBeVisible();
       await expectNoPageOverflow(page);
 
       await page.goto("/tasks/task-golden-technical-solution");
       await expect(
         page.getByRole("heading", {
-          name: "生成 AIOS Task Center 技术方案",
+          name: "生成 AIOS 任务中心技术方案",
           exact: true,
         }),
       ).toBeVisible();

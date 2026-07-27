@@ -52,8 +52,8 @@ export function Topbar({
         <div className="flex min-w-0 items-center gap-2">
           <Link
             href="/organizations"
-            aria-label={`重新选择 Organization：${organization.name}`}
-            title={`Organization：${organization.name}`}
+            aria-label={`重新选择组织：${organization.name}`}
+            title={`组织：${organization.name}`}
             className="flex min-h-10 min-w-0 items-center gap-2 rounded-lg border border-[var(--aios-control-border)] px-2.5 text-sm font-medium text-[var(--aios-text)] transition hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)] sm:px-3"
           >
             <Building2 className="size-4 shrink-0" aria-hidden="true" />
@@ -62,8 +62,8 @@ export function Topbar({
           </Link>
           <Link
             href="/workspaces"
-            aria-label={`重新选择 Workspace：${workspace.name}`}
-            title={`Workspace：${workspace.name}`}
+            aria-label={`重新选择工作空间：${workspace.name}`}
+            title={`工作空间：${workspace.name}`}
             className="flex min-h-10 min-w-0 items-center gap-2 rounded-lg border border-[var(--aios-control-border)] px-2.5 text-sm font-medium text-[var(--aios-text)] transition hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)] sm:px-3"
           >
             <PanelsTopLeft className="size-4 shrink-0" aria-hidden="true" />
@@ -75,11 +75,11 @@ export function Topbar({
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <span className="hidden text-xs font-medium text-[var(--aios-muted)] lg:inline">
-          Mock Repository · Workspace 隔离
+          本地演示数据 · 工作空间隔离
         </span>
         <TaskCreateLink className="hidden xl:inline-flex">
           <Plus size={17} aria-hidden="true" />
-          创建 Task
+          创建任务
         </TaskCreateLink>
 
         <span id={notificationsDescriptionId} className="sr-only">

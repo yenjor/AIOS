@@ -101,7 +101,7 @@ export function McpCreateLoader() {
           aria-hidden="true"
         />
         <div>
-          <h1 className="font-semibold">当前身份不能注册 MCP Server</h1>
+          <h1 className="font-semibold">当前身份不能注册 MCP 服务</h1>
           <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
             {state.permission.reason}
           </p>
@@ -150,7 +150,7 @@ export function McpCreateLoader() {
       setError(
         caught instanceof ToolRepositoryError
           ? caught.message
-          : "MCP Server 注册失败，未写入不完整配置。",
+          : "MCP 服务注册失败，未写入不完整配置。",
       );
       setSaving(false);
     }
@@ -167,12 +167,12 @@ export function McpCreateLoader() {
       </Link>
       <header className="mt-3">
         <p className="text-sm font-semibold text-[var(--aios-primary)]">
-          MCP Registration
+          MCP 注册信息
         </p>
-        <h1 className="mt-1 text-3xl font-semibold">注册 MCP Server</h1>
+        <h1 className="mt-1 text-3xl font-semibold">注册 MCP 服务</h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-          注册只创建 Server Registration 和本地 Draft ToolVersion candidate；
-          连接测试与人工发布前，不会出现在 Agent 可绑定 Tool Action 中。
+          注册只创建服务注册信息和本地草稿工具版本候选版本；
+          连接测试与人工发布前，不会出现在 AI 员工可绑定工具动作中。
         </p>
       </header>
 
@@ -191,11 +191,11 @@ export function McpCreateLoader() {
         <Card className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Server size={19} aria-hidden="true" />
-            Server Identity 与 Transport
+            服务身份与传输方式
           </h2>
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="text-sm font-semibold">
-              Server Identity
+              服务身份
               <input
                 required
                 name="serverIdentity"
@@ -209,12 +209,12 @@ export function McpCreateLoader() {
               <input
                 required
                 name="displayName"
-                placeholder="需求文档 MCP Server"
+                placeholder="需求文档 MCP 服务"
                 className={inputClass}
               />
             </label>
             <label className="text-sm font-semibold">
-              Publisher
+              发布者
               <input
                 required
                 name="publisher"
@@ -223,7 +223,7 @@ export function McpCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold">
-              Server Version
+              服务版本
               <input
                 required
                 name="serverVersion"
@@ -232,13 +232,13 @@ export function McpCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold">
-              Transport
+              传输方式
               <select disabled value="STDIO" className={inputClass}>
-                <option value="STDIO">STDIO · MVP 受控 Runtime</option>
+                <option value="STDIO">STDIO · MVP 受控运行时</option>
               </select>
             </label>
             <label className="text-sm font-semibold">
-              Endpoint Reference
+              端点引用
               <input
                 required
                 name="endpointReference"
@@ -253,11 +253,11 @@ export function McpCreateLoader() {
         <Card className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Wrench size={19} aria-hidden="true" />
-            本地 Draft ToolVersion
+            本地草稿工具版本
           </h2>
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="text-sm font-semibold">
-              Tool Code
+              工具编码
               <input
                 required
                 name="toolCode"
@@ -267,7 +267,7 @@ export function McpCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold">
-              Tool 名称
+              工具名称
               <input
                 required
                 name="toolName"
@@ -276,7 +276,7 @@ export function McpCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold md:col-span-2">
-              Tool 描述
+              工具描述
               <textarea
                 required
                 name="toolDescription"
@@ -286,7 +286,7 @@ export function McpCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold">
-              Action Name
+              动作名称
               <input
                 required
                 name="actionName"
@@ -296,14 +296,14 @@ export function McpCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold">
-              RiskLevel
+              风险等级
               <select name="riskLevel" defaultValue="R0" className={inputClass}>
                 <option value="R0">R0 · 只读无敏感副作用</option>
                 <option value="R1">R1 · 只读但需要额外范围控制</option>
               </select>
             </label>
             <label className="text-sm font-semibold md:col-span-2">
-              Action 描述
+              动作描述
               <textarea
                 required
                 name="actionDescription"
@@ -318,10 +318,10 @@ export function McpCreateLoader() {
         <Card className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <KeyRound size={19} aria-hidden="true" />
-            Authentication 与 Secret
+            身份认证与密钥
           </h2>
           <label className="mt-4 block text-sm font-semibold">
-            SecretReference（可选）
+            密钥引用（可选）
             <input
               name="credentialReference"
               pattern="secret://.+"
@@ -331,8 +331,7 @@ export function McpCreateLoader() {
           </label>
           <p className="mt-3 flex items-start gap-2 text-sm leading-6 text-[var(--aios-muted)]">
             <ShieldCheck className="mt-0.5 shrink-0" size={17} aria-hidden="true" />
-            页面不接受 Token、Password 或 Secret Value。Runtime 只在授权调用时解析精确
-            SecretReference，并且不会把 Credential 传给 Agent、Model、Log 或 Artifact。
+            页面不接受访问令牌、密码或密钥值。运行时只在授权调用时解析精确密钥引用，并且不会把凭据传给 AI 员工、模型、日志或成果。
           </p>
         </Card>
 
@@ -344,7 +343,7 @@ export function McpCreateLoader() {
             取消
           </Link>
           <Button type="submit" disabled={saving}>
-            {saving ? "正在注册…" : "创建 Draft Connection"}
+            {saving ? "正在注册…" : "创建草稿连接"}
           </Button>
         </div>
       </form>

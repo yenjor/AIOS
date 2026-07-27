@@ -40,7 +40,7 @@ describe("resolvePlaywrightTarget", () => {
 });
 
 describe("resolvePlaywrightWorkers", () => {
-  it("limits local cold-start runs to two workers", () => {
+  it("limits local cold-start 次运行 to two workers", () => {
     expect(resolvePlaywrightWorkers({})).toBe(2);
   });
 

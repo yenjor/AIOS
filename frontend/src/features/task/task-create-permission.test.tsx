@@ -36,10 +36,10 @@ describe("TaskCreateLink", () => {
   it("does not expose an enabled action before hydration and scope recovery", () => {
     useSession.mockReturnValue({ ...completeSession, hydrated: false });
 
-    render(<TaskCreateLink>创建 Task</TaskCreateLink>);
+    render(<TaskCreateLink>创建任务</TaskCreateLink>);
 
     expect(getTaskPermission).not.toHaveBeenCalled();
-    expect(screen.queryByRole("link", { name: "创建 Task" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "创建任务" })).not.toBeInTheDocument();
   });
 
   it("renders the real creation route only after the repository allows it", async () => {
@@ -47,12 +47,12 @@ describe("TaskCreateLink", () => {
     getTaskPermission.mockResolvedValue({
       allowed: true,
       code: "ALLOWED",
-      reason: "Task creation is allowed.",
+      reason: "任务 creation is allowed.",
     });
 
-    render(<TaskCreateLink>创建 Task</TaskCreateLink>);
+    render(<TaskCreateLink>创建任务</TaskCreateLink>);
 
-    const link = await screen.findByRole("link", { name: "创建 Task" });
+    const link = await screen.findByRole("link", { name: "创建任务" });
     expect(link).toHaveAttribute("href", "/tasks/new");
     expect(getTaskPermission).toHaveBeenCalledWith(
       { organizationId: "org-guangwei", workspaceId: "ws-ai" },
@@ -60,21 +60,21 @@ describe("TaskCreateLink", () => {
     );
   });
 
-  it("keeps Auditor creation absent without hard-coding the role in the UI", async () => {
+  it("keeps 审计员 creation absent without hard-coding the role in the UI", async () => {
     useSession.mockReturnValue({
       ...completeSession,
-      user: { id: "user-auditor", name: "赵岚", role: "Auditor" },
+      user: { id: "user-auditor", name: "赵岚", role: "审计员" },
     });
     getTaskPermission.mockResolvedValue({
       allowed: false,
       code: "FORBIDDEN",
-      reason: "Task creation is not allowed.",
+      reason: "任务 creation is not allowed.",
     });
 
-    render(<TaskCreateLink>创建 Task</TaskCreateLink>);
+    render(<TaskCreateLink>创建任务</TaskCreateLink>);
 
     await waitFor(() => expect(getTaskPermission).toHaveBeenCalledOnce());
-    expect(screen.queryByRole("link", { name: "创建 Task" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "创建任务" })).not.toBeInTheDocument();
   });
 
   it("ignores a stale permission response after the active actor changes", async () => {
@@ -96,12 +96,12 @@ describe("TaskCreateLink", () => {
       });
     useSession.mockReturnValue(completeSession);
 
-    const view = render(<TaskCreateLink>创建 Task</TaskCreateLink>);
+    const view = render(<TaskCreateLink>创建任务</TaskCreateLink>);
     useSession.mockReturnValue({
       ...completeSession,
-      user: { id: "user-auditor", name: "赵岚", role: "Auditor" },
+      user: { id: "user-auditor", name: "赵岚", role: "审计员" },
     });
-    view.rerender(<TaskCreateLink>创建 Task</TaskCreateLink>);
+    view.rerender(<TaskCreateLink>创建任务</TaskCreateLink>);
 
     await waitFor(() => expect(getTaskPermission).toHaveBeenCalledTimes(2));
     resolveOld({
@@ -111,7 +111,7 @@ describe("TaskCreateLink", () => {
     });
     await waitFor(() =>
       expect(
-        screen.queryByRole("link", { name: "创建 Task" }),
+        screen.queryByRole("link", { name: "创建任务" }),
       ).not.toBeInTheDocument(),
     );
   });

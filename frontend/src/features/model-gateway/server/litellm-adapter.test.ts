@@ -14,7 +14,7 @@ describe("LiteLLM adapter", () => {
     const fetchImpl = vi.fn(async (_url: URL | RequestInfo, init?: RequestInit) => {
       expect(init?.headers).toMatchObject({
         Authorization: "Bearer secret-key",
-        "X-AIOS-Model-Policy": "reasoning-structured-output",
+        "X-AIOS-模型-Policy": "reasoning-structured-output",
       });
       expect(JSON.parse(String(init?.body))).toMatchObject({
         model: "aios-technical-design",
@@ -71,7 +71,7 @@ describe("LiteLLM adapter", () => {
       adapter.complete({ messages: [], jsonSchema: {} }),
     ).rejects.toMatchObject({
       code: "RATE_LIMITED",
-      message: "LiteLLM rejected the completion with HTTP 429.",
+      message: "LiteLLM 拒绝了补全请求，HTTP 状态码为 429。",
     });
   });
 

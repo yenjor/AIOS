@@ -87,20 +87,20 @@ const FIELD_STEPS: Record<WizardField, TaskWizardStep> = {
 };
 
 const FIELD_LABELS: Record<WizardField, string> = {
-  templateName: "Task 模板",
-  title: "Task 标题",
-  goal: "Goal",
+  templateName: "任务模板",
+  title: "任务标题",
+  goal: "目标",
   currentProblem: "当前问题",
   workScope: "任务范围",
-  priority: "Priority",
-  riskLevel: "Risk",
+  priority: "优先级",
+  riskLevel: "风险",
   expectedCompletionLocal: "期望完成时间",
   constraintsText: "约束",
   outOfScopeText: "不做事项",
   includeKnowledge: "知识库版本",
-  agentVersionId: "AgentVersion",
-  capabilityVersionId: "CapabilityVersion",
-  completionCriteriaText: "Completion Criteria",
+  agentVersionId: "AI 员工版本",
+  capabilityVersionId: "能力版本",
+  completionCriteriaText: "完成标准",
 };
 
 export interface TaskWizardProps {
@@ -234,7 +234,7 @@ export function TaskWizard({
       agentId: AGENT_ASSIGNMENT.agentId,
       agentName: AGENT_ASSIGNMENT.agentName,
       roleDescription:
-        "理解研发任务，读取授权知识和代码上下文，生成可验收的研发 Artifact。",
+        "理解研发任务，读取授权知识和代码上下文，生成可验收的研发成果。",
       humanOwner: AGENT_ASSIGNMENT.humanOwner,
       autonomyLevel: AGENT_ASSIGNMENT.autonomyLevel,
       agentVersionRef: AGENT_ASSIGNMENT.agentVersionRef,
@@ -249,7 +249,7 @@ export function TaskWizard({
       capabilityId: TECHNICAL_SOLUTION_CAPABILITY_REF.objectId,
       capabilityName: "技术方案生成",
       purpose:
-        "根据 Task 目标、约束和授权知识生成可验收的技术方案 Artifact。",
+        "根据任务目标、约束和授权知识生成可验收的技术方案成果。",
       taskType: "GENERATE_TECHNICAL_DESIGN",
       versionRef: TECHNICAL_SOLUTION_CAPABILITY_REF,
       modelProfile: "reasoning-structured-output",
@@ -505,7 +505,7 @@ export function TaskWizard({
 
   async function handleDiscard() {
     const confirmed = window.confirm(
-      "确认丢弃当前身份在此 Workspace 中的 Task 草稿？此操作无法撤销。",
+      "确认丢弃当前身份在此工作空间中的任务草稿？此操作无法撤销。",
     );
     if (!confirmed || operationLockRef.current) {
       return;
@@ -569,7 +569,7 @@ export function TaskWizard({
     if (!capability) {
       showErrors({
         capabilityVersionId:
-          "请选择一个当前 Workspace 可用的 Published 能力版本。",
+          "请选择一个当前工作空间可用的已发布能力版本。",
       });
       operationLockRef.current = false;
       return;
@@ -586,7 +586,7 @@ export function TaskWizard({
     ) {
       showErrors({
         agentVersionId:
-          "请选择一个已启用且绑定当前 CapabilityVersion 的 AI 员工。",
+          "请选择一个已启用且绑定当前能力版本的 AI 员工。",
       });
       operationLockRef.current = false;
       return;
@@ -638,10 +638,10 @@ export function TaskWizard({
   if (currentStep === 1) {
     stepContent = (
       <fieldset>
-        <legend className="sr-only">选择 Task 模板</legend>
+        <legend className="sr-only">选择任务模板</legend>
         <SectionHeading
           title="选择模板"
-          description="模板定义预期 Artifact。当前迭代仅开放“生成技术方案”的提交闭环，其余模板可以完整保存为草稿。"
+          description="模板定义预期成果。当前迭代仅开放“生成技术方案”的提交闭环，其余模板可以完整保存为草稿。"
         />
         <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {TASK_WIZARD_TEMPLATES.map((template, index) => (
@@ -670,7 +670,7 @@ export function TaskWizard({
               />
               <span className="font-semibold">{template.name}</span>
               <span className="mt-2 block text-sm text-[var(--aios-muted)]">
-                预期 Artifact：{template.artifactType}
+                预期成果：{template.artifactType}
               </span>
               {!template.submittable ? (
                 <span className="mt-2 block text-xs text-[var(--aios-warning-foreground)]">
@@ -685,7 +685,7 @@ export function TaskWizard({
           ))}
         </div>
         <p className={supportingClass} id="templateName-help">
-          选择不会启动 Agent、Workflow 或模型调用。
+          选择不会启动 AI 员工、工作流或模型调用。
         </p>
         <FieldError field="templateName" errors={errors} />
       </fieldset>
@@ -695,12 +695,12 @@ export function TaskWizard({
       <div>
         <SectionHeading
           title="定义工作"
-          description="把当前问题、目标、边界与时间约束写成可审查的 Task 定义。"
+          description="把当前问题、目标、边界与时间约束写成可审查的任务定义。"
         />
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           <div className="lg:col-span-2">
             <label className={labelClass} htmlFor="title">
-              Task 标题
+              任务标题
             </label>
             <input
               aria-describedby={describedBy("title", errors)}
@@ -718,7 +718,7 @@ export function TaskWizard({
           </div>
           <div>
             <label className={labelClass} htmlFor="goal">
-              Goal
+              目标
             </label>
             <textarea
               aria-describedby={describedBy("goal", errors)}
@@ -812,7 +812,7 @@ export function TaskWizard({
           <div className="grid gap-5 sm:grid-cols-3">
             <div>
               <label className={labelClass} htmlFor="priority">
-                Priority
+                优先级
               </label>
               <input
                 aria-describedby={describedBy("priority", errors)}
@@ -835,7 +835,7 @@ export function TaskWizard({
             </div>
             <div>
               <label className={labelClass} htmlFor="riskLevel">
-                Risk
+                风险
               </label>
               <select
                 aria-describedby={describedBy("riskLevel", errors)}
@@ -914,11 +914,11 @@ export function TaskWizard({
       <div>
         <SectionHeading
           title="提供上下文"
-          description="选择当前 Workspace 已启用的 AI 员工、其已绑定的 Published CapabilityVersion，以及已授权的知识库版本。"
+          description="选择当前工作空间已启用的 AI 员工、其已绑定的已发布能力版本，以及已授权的知识库版本。"
         />
         <fieldset className="mt-6">
           <legend className="text-sm font-semibold">
-            Enabled Agent / Published AgentVersion
+            已启用 AI 员工 / 已发布 AI 员工版本
           </legend>
           {agentOptions.length > 0 ? (
             <div className="mt-3 grid gap-3">
@@ -965,9 +965,9 @@ export function TaskWizard({
                         {option.agentVersionRef.versionId}
                       </span>
                       <span className="mt-1 block text-xs text-[var(--aios-muted)]">
-                        {option.autonomyLevel} · Human Owner：
+                        {option.autonomyLevel} · 人工负责人：
                         {option.humanOwner.displayName}（
-                        {option.humanOwner.userId}）· Capability{" "}
+                        {option.humanOwner.userId}）· 能力{" "}
                         {option.capabilityVersionRefs.length}
                       </span>
                     </span>
@@ -980,13 +980,12 @@ export function TaskWizard({
               className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--aios-warning)_35%,var(--aios-surface))] p-4 text-sm text-[var(--aios-warning-foreground)]"
               role="alert"
             >
-              当前身份没有可用于“生成技术方案”的 Enabled Agent。请由 Agent
-              Builder 完成测试、发布与启用后再提交 Task。
+              当前身份没有可用于“生成技术方案”的已启用 AI 员工。请由 AI 员工
+              构建者完成测试、发布与启用后再提交任务。
             </div>
           )}
           <p className={supportingClass} id="agentVersionId-help">
-            Task 固定 AgentVersionRef 与 Digest；Draft、Testing、Suspended 或
-            Disabled Agent 不会出现在选择列表中。
+            任务固定 AI 员工版本引用与摘要；草稿、测试中、已暂停或已停用 AI 员工不会出现在选择列表中。
           </p>
           <FieldError field="agentVersionId" errors={errors} />
           {selectedAgent ? (
@@ -1000,7 +999,7 @@ export function TaskWizard({
         </fieldset>
         <fieldset className="mt-6">
           <legend className="text-sm font-semibold">
-            Assigned Published CapabilityVersion
+            已分配的已发布能力版本
           </legend>
           {availableCapabilityOptions.length > 0 ? (
             <div className="mt-3 grid gap-3">
@@ -1052,7 +1051,7 @@ export function TaskWizard({
                         {option.versionRef.versionId}
                       </span>
                       <span className="mt-1 block text-xs text-[var(--aios-muted)]">
-                        ModelPolicy：{option.modelProfile} · Workflow：
+                        模型策略：{option.modelProfile} · 工作流：
                         {option.workflowVersionId}
                       </span>
                     </span>
@@ -1065,16 +1064,14 @@ export function TaskWizard({
               className="mt-3 rounded-lg border border-[color-mix(in_srgb,var(--aios-warning)_35%,var(--aios-surface))] p-4 text-sm text-[var(--aios-warning-foreground)]"
               role="alert"
             >
-              当前 AI 员工没有可解析的 Published CapabilityVersion。请检查
-              Capability Assignment、知识范围与 Tool Grant 的交集。
+              当前 AI 员工没有可解析的已发布能力版本。请检查能力分配、知识范围与工具授权的交集。
             </div>
           )}
           <p
             className={supportingClass}
             id="capabilityVersionId-help"
           >
-            Task 保存固定 VersionRef 与 Digest；Suspended、Deprecated
-            或 Retired 版本不会出现在选择列表中。
+            任务保存固定版本引用与摘要；已暂停、已弃用或已退役版本不会出现在选择列表中。
           </p>
           <FieldError
             field="capabilityVersionId"
@@ -1119,8 +1116,7 @@ export function TaskWizard({
             </span>
           </label>
           <p className={supportingClass} id="includeKnowledge-help">
-            此引用来自知识库的有效版本。Task
-            仅保存知识库版本引用；执行检索时仍需再次进行权限校验。
+            此引用来自知识库的有效版本。任务仅保存知识库版本引用；执行检索时仍需再次进行权限校验。
           </p>
           <FieldError field="includeKnowledge" errors={errors} />
           <Link
@@ -1138,8 +1134,7 @@ export function TaskWizard({
           />
           <p className="text-sm leading-6 text-[var(--aios-muted)]">
             知识库负责来源、所有者、敏感等级、发布状态与历史版本；
-            Task 只消费已授权的固定版本，不复制正文，也不能直接修改正式
-            知识。
+            任务只消费已授权的固定版本，不复制正文，也不能直接修改正式知识。
           </p>
         </div>
       </div>
@@ -1154,23 +1149,23 @@ export function TaskWizard({
       <div>
         <SectionHeading
           title="定义成果"
-          description="确认预期 Artifact 的类型、必备章节、检查条件与人工 Reviewer。"
+          description="确认预期成果的类型、必备章节、检查条件与人工验收人。"
         />
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           <Card className="p-5">
-            <p className="text-sm text-[var(--aios-muted)]">Artifact 类型</p>
+            <p className="text-sm text-[var(--aios-muted)]">成果类型</p>
             <p className="mt-2 text-lg font-semibold">
               {artifact.artifactType}
             </p>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
-              Reviewer：
+              验收人：
               {selectedAgent
                 ? `${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
-                : "尚未选择 Human Owner"}
+                : "尚未选择人工负责人"}
             </p>
           </Card>
           <Card className="p-5">
-            <p className="text-sm font-semibold">可接受 Risk</p>
+            <p className="text-sm font-semibold">可接受风险</p>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
               当前黄金路径限定 R0 / R1；任务默认 R1。R2 / R3
               不在本次试点提交范围。
@@ -1178,7 +1173,7 @@ export function TaskWizard({
           </Card>
           <fieldset className="lg:col-span-2">
             <legend className="text-sm font-semibold">
-              Must include / Sections
+              必须包含的章节
             </legend>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {(isGolden
@@ -1219,16 +1214,16 @@ export function TaskWizard({
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               {[
                 {
-                  name: "Artifact 结构完整性",
-                  detail: "必须包含所列 Sections，且关键结论完整。",
+                  name: "成果结构完整性",
+                  detail: "必须包含所列章节，且关键结论完整。",
                 },
                 {
                   name: "知识库引用可追溯",
                   detail: "关键结论必须引用已授权的知识版本。",
                 },
                 {
-                  name: "Reviewer 人工验收",
-                  detail: "陈明（user-lead）验收后方可完成 Task。",
+                  name: "验收人人工验收",
+                  detail: "陈明（user-lead）验收后方可完成任务。",
                 },
               ].map((check) => (
                 <div
@@ -1251,7 +1246,7 @@ export function TaskWizard({
               className={labelClass}
               htmlFor="completionCriteriaText"
             >
-              Completion Criteria
+              完成标准
             </label>
             <textarea
               aria-describedby={describedBy(
@@ -1288,19 +1283,19 @@ export function TaskWizard({
       <div>
         <SectionHeading
           title="确认执行"
-          description="以下内容是提交后用于生成 Execution Plan 的固定、只读版本引用。此页面不会启动执行。"
+          description="以下内容是提交后用于生成执行计划的固定、只读版本引用。此页面不会启动执行。"
         />
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <Card className="min-w-0 p-5 lg:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">
-              Task 定义
+              任务定义
             </p>
             <h3 className="mt-2 break-words text-lg font-semibold">
               {values.title || "尚未填写标题"}
             </h3>
             <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-[var(--aios-muted)]">Goal</dt>
+                <dt className="text-[var(--aios-muted)]">目标</dt>
                 <dd className="mt-1 whitespace-pre-wrap break-words">
                   {values.goal || "—"}
                 </dd>
@@ -1319,7 +1314,7 @@ export function TaskWizard({
               </div>
               <div>
                 <dt className="text-[var(--aios-muted)]">
-                  Priority / Risk / 期望完成时间
+                  优先级 / 风险 / 期望完成时间
                 </dt>
                 <dd className="mt-1 break-words">
                   {values.priority} / {values.riskLevel} /{" "}
@@ -1340,7 +1335,7 @@ export function TaskWizard({
               </div>
               <div className="sm:col-span-2">
                 <dt className="text-[var(--aios-muted)]">
-                  Completion Criteria
+                  完成标准
                 </dt>
                 <dd className="mt-1 whitespace-pre-wrap break-words">
                   {values.completionCriteriaText || "—"}
@@ -1355,43 +1350,43 @@ export function TaskWizard({
             <p className="mt-2 font-semibold">
               {selectedAgent
                 ? `${selectedAgent.agentName}（${selectedAgent.agentId}）`
-                : "尚未选择 Enabled Agent"}
+                : "尚未选择已启用 AI 员工"}
             </p>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
               {selectedAgent
-                ? `${selectedAgent.autonomyLevel} · Human Owner / Reviewer：${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
-                : "Task 提交前必须固定 AgentVersionRef"}
+                ? `${selectedAgent.autonomyLevel} · 人工负责人 / 验收人：${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
+                : "任务提交前必须固定 AI 员工版本引用"}
             </p>
           </Card>
           <Card className="p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">
-              Scope / Visibility
+              范围 / 可见范围
             </p>
             <p className="mt-2 break-words font-semibold">
               {scopeLabels.organizationName} / {scopeLabels.workspaceName}
             </p>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
-              Workspace 成员可见；草稿按 actor 隔离。
+              工作空间成员可见；草稿按执行主体隔离。
             </p>
           </Card>
           {selectedCapability ? (
             <RefSummary
-              label="CapabilityVersion"
+              label="能力版本"
               {...selectedCapability.versionRef}
             />
           ) : (
             <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm text-[var(--aios-muted)]">
-              尚未选择 Published CapabilityVersion
+              尚未选择已发布能力版本
             </div>
           )}
           {selectedAgent ? (
             <RefSummary
-              label="AgentVersion"
+              label="AI 员工版本"
               {...selectedAgent.agentVersionRef}
             />
           ) : (
             <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm text-[var(--aios-muted)]">
-              尚未选择 Published AgentVersion
+              尚未选择已发布 AI 员工版本
             </div>
           )}
           <RefSummary
@@ -1399,22 +1394,22 @@ export function TaskWizard({
             {...AIOS_KNOWLEDGE_REF}
           />
           <RefSummary
-            label="WorkflowVersion"
+            label="工作流版本"
             {...TECHNICAL_SOLUTION_WORKFLOW_REF}
           />
           <div className="min-w-0 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">
-              PlanVersion
+              计划版本
             </p>
             <p className="mt-2 text-sm font-semibold">尚未生成</p>
             <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
-              提交后由 Task Engine 根据固定 Workflow 生成并锁定
-              PlanVersionRef；当前页面不预造对象 ID 或摘要。
+              提交后由任务引擎根据固定工作流生成并锁定
+              计划版本引用；当前页面不预造对象标识或摘要。
             </p>
           </div>
           <div className="min-w-0 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 lg:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">
-              ToolVersion / 最小权限
+              工具版本 / 最小权限
             </p>
             <p className="mt-2 break-words text-sm font-semibold">
               {READ_ONLY_TOOL_REF.objectId}
@@ -1423,11 +1418,11 @@ export function TaskWizard({
               {READ_ONLY_TOOL_REF.actionId}
             </p>
             <span className="mt-3 inline-flex rounded-full border border-[var(--aios-control-border)] px-3 py-1 text-xs font-semibold">
-              {READ_ONLY_TOOL_REF.operationType}
+              读取
             </span>
           </div>
           <Card className="p-5 lg:col-span-2">
-            <p className="text-sm font-semibold">Approval Points</p>
+            <p className="text-sm font-semibold">审批点</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {APPROVAL_POINT_SUMMARIES.map((point) => (
                 <div
@@ -1436,11 +1431,11 @@ export function TaskWizard({
                 >
                   <p className="font-semibold">{point.name}</p>
                   <p className="mt-1 text-xs text-[var(--aios-muted)]">
-                    {point.requiredFor} · {point.riskLevel}
+                    {point.requiredFor === "PLAN_EXECUTION" ? "计划执行" : "成果验收"} · {point.riskLevel}
                   </p>
                   <p className="mt-1 text-xs text-[var(--aios-muted)]">
                     {selectedAgent
-                      ? `Human Owner / Reviewer：${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
+                      ? `人工负责人 / 验收人：${selectedAgent.humanOwner.displayName}（${selectedAgent.humanOwner.userId}）`
                       : point.reviewer}
                   </p>
                 </div>
@@ -1454,7 +1449,7 @@ export function TaskWizard({
             id="submit-disabled-reason"
           >
             当前版本仅支持保存草稿。“生成技术方案”是唯一可提交的黄金路径；
-            本模板不会伪造 Agent、Workflow 或 Artifact 执行结果。
+            本模板不会伪造 AI 员工、工作流或成果执行结果。
           </div>
         ) : null}
       </div>
@@ -1466,7 +1461,7 @@ export function TaskWizard({
       ? {
           save: "草稿保存失败。输入仍保留，可以重试保存。",
           discard: "草稿丢弃失败。现有草稿与输入均未被清除。",
-          submit: "Task 提交失败。草稿与输入仍保留，可以重试提交。",
+          submit: "任务提交失败。草稿与输入仍保留，可以重试提交。",
           stale:
             "检测到保存期间内容发生变化，未将旧快照标记为已保存。请保存最新内容后继续。",
         }[operation.kind]
@@ -1477,14 +1472,13 @@ export function TaskWizard({
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Task Center / Create
+            任务中心 / 创建
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-            创建 Task
+            创建任务
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-            将研发工作定义成可追踪、可审批、可恢复的 Task。提交只创建
-            Task 与待确认计划，不直接执行 AI 行为。
+            将研发工作定义成可追踪、可审批、可恢复的任务。提交只创建任务与待确认计划，不直接执行 AI 行为。
           </p>
         </div>
         <div className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-4 py-3 text-sm">
@@ -1495,7 +1489,7 @@ export function TaskWizard({
         </div>
       </header>
 
-      <nav aria-label="Task 创建步骤" className="mt-6">
+      <nav aria-label="任务创建步骤" className="mt-6">
         <ol className="grid gap-2 sm:grid-cols-5">
           {TASK_WIZARD_STEPS.map(({ step, label }) => (
             <li
@@ -1579,7 +1573,7 @@ export function TaskWizard({
             className="text-sm text-[var(--aios-success-foreground)]"
             role="status"
           >
-            草稿已保存到当前 actor 与 Workspace 的隔离空间。
+            草稿已保存到当前执行主体与工作空间的隔离空间。
           </p>
         ) : null}
       </div>
@@ -1643,7 +1637,7 @@ export function TaskWizard({
               onClick={() => void handleSubmit()}
             >
               <Send aria-hidden="true" size={17} />
-              提交 Task
+              提交任务
             </Button>
           )}
         </div>

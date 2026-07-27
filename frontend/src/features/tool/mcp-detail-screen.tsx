@@ -26,6 +26,10 @@ import type {
   ToolPermissionDecision,
 } from "./model";
 import { ToolHealthBadge, ToolStatusBadge } from "./tool-status-badge";
+import {
+  CONNECTION_TEST_RESULT_LABELS,
+  MCP_TRANSPORT_LABELS,
+} from "./tool-display";
 
 export function McpDetailScreen({
   server,
@@ -48,7 +52,7 @@ export function McpDetailScreen({
 
   function suspend() {
     const reason = window.prompt(
-      "请输入暂停原因（至少 8 个字符）。暂停后 Agent 与新 Task 将无法解析该 Action。",
+      "请输入暂停原因（至少 8 个字符）。暂停后 AI 员工与新任务将无法解析该动作。",
     );
     if (reason?.trim()) void onAction("SUSPEND", reason.trim());
   }
@@ -65,7 +69,7 @@ export function McpDetailScreen({
       <header className="mt-3 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Registered MCP Server
+            已注册 MCP 服务
           </p>
           <h1 className="mt-1 text-3xl font-semibold">{server.displayName}</h1>
           <p className="mt-2 break-all font-mono text-xs text-[var(--aios-muted)]">
@@ -121,7 +125,7 @@ export function McpDetailScreen({
             size={18}
             aria-hidden="true"
           />
-          正在执行 {actionState.action}，写入前会验证状态、Health 与测试证据…
+          正在执行 {actionState.action}，写入前会验证状态、健康状态与测试证据…
         </Card>
       ) : actionState.status === "error" ? (
         <Card role="alert" className="mt-5 flex items-start gap-3 p-4">
@@ -139,7 +143,7 @@ export function McpDetailScreen({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h2 className="flex items-center gap-2 font-semibold">
               <Server size={18} aria-hidden="true" />
-              Server Registration
+              服务注册信息
             </h2>
             <div className="flex gap-2">
               <ToolStatusBadge status={server.status} />
@@ -149,33 +153,33 @@ export function McpDetailScreen({
           <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                Publisher / Version
+                发布者 / 版本
               </dt>
               <dd className="mt-1">
                 {server.publisher} · {server.serverVersion}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--aios-muted)]">Transport</dt>
+              <dt className="text-xs text-[var(--aios-muted)]">传输方式</dt>
               <dd className="mt-1">
-                <Badge tone="info">{server.transport}</Badge>
+                <Badge tone="info">{MCP_TRANSPORT_LABELS[server.transport]}</Badge>
               </dd>
             </div>
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                Endpoint Reference
+                端点引用
               </dt>
               <dd className="mt-1 break-all font-mono">
                 {server.endpointReference}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-[var(--aios-muted)]">Compatibility</dt>
+              <dt className="text-xs text-[var(--aios-muted)]">兼容性</dt>
               <dd className="mt-1">{server.compatibility}</dd>
             </div>
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                Discovery Snapshot Digest
+                发现快照摘要
               </dt>
               <dd className="mt-1 break-all font-mono text-xs">
                 {server.discoverySnapshotDigest}
@@ -184,10 +188,10 @@ export function McpDetailScreen({
             <div>
               <dt className="flex items-center gap-2 text-xs text-[var(--aios-muted)]">
                 <KeyRound size={14} aria-hidden="true" />
-                CredentialReference
+                凭据引用
               </dt>
               <dd className="mt-1 break-all font-mono">
-                {server.credentialReference ?? "不需要 Credential"}
+                {server.credentialReference ?? "不需要凭据"}
               </dd>
             </div>
           </dl>
@@ -196,7 +200,7 @@ export function McpDetailScreen({
         <Card className="p-5">
           <h2 className="flex items-center gap-2 font-semibold">
             <Wrench size={18} aria-hidden="true" />
-            Local ToolVersion
+            本地工具版本
           </h2>
           <p className="mt-3 font-semibold">{tool.name}</p>
           <p className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">
@@ -211,7 +215,7 @@ export function McpDetailScreen({
             href={`/tools/${tool.id}`}
             className="mt-4 inline-flex min-h-11 items-center font-semibold text-[var(--aios-primary)] underline-offset-4 hover:underline"
           >
-            查看 Action Contract
+            查看动作契约
           </Link>
         </Card>
       </section>
@@ -219,23 +223,23 @@ export function McpDetailScreen({
       <Card className="mt-5 p-5">
         <h2 className="flex items-center gap-2 font-semibold">
           <CheckCircle2 size={18} aria-hidden="true" />
-          Connection Test Gate
+          连接测试门禁
         </h2>
         {test ? (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Badge tone="success">{test.result}</Badge>
+              <Badge tone="success">{CONNECTION_TEST_RESULT_LABELS[test.result]}</Badge>
               <span className="break-all font-mono text-xs text-[var(--aios-muted)]">
                 {test.evidenceReference}
               </span>
             </div>
             <ul className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
               {[
-                ["Identity", test.identityVerified],
-                ["Schema", test.schemaVerified],
-                ["Permission Negative", test.permissionNegativePassed],
-                ["Result Validation", test.resultValidationPassed],
-                ["Secret Isolation", test.secretIsolationPassed],
+                ["身份", test.identityVerified],
+                ["结构规范", test.schemaVerified],
+                ["权限负向测试", test.permissionNegativePassed],
+                ["结果验证", test.resultValidationPassed],
+                ["密钥隔离", test.secretIsolationPassed],
               ].map(([label, passed]) => (
                 <li
                   key={String(label)}
@@ -243,7 +247,7 @@ export function McpDetailScreen({
                 >
                   <strong>{label}</strong>
                   <span className="mt-1 block text-[var(--aios-success-foreground)]">
-                    {passed ? "PASSED" : "FAILED"}
+                    {passed ? "已通过" : "未通过"}
                   </span>
                 </li>
               ))}
@@ -251,7 +255,7 @@ export function McpDetailScreen({
           </>
         ) : (
           <p className="mt-3 text-sm text-[var(--aios-muted)]">
-            尚未测试。Draft Connection 不可启用，也不会进入 Agent Builder。
+            尚未测试。草稿连接不可启用，也不会进入 AI 员工构建器。
           </p>
         )}
       </Card>
@@ -263,9 +267,9 @@ export function McpDetailScreen({
           aria-hidden="true"
         />
         <p>
-          MCP Server 与返回结果均是不可信外部执行面。当前 Mock 测试验证身份、Schema、
-          Permission 负向用例、结果边界与 Secret 隔离；真实 Runtime 还需执行 Sandbox、
-          Timeout、DLP、Egress 和 Audit。
+          MCP 服务与返回结果均是不可信外部执行面。当前模拟测试验证身份、结构规范、
+          权限负向用例、结果边界与密钥隔离；真实运行时还需执行沙箱、
+          超时、DLP、出站访问和审计。
         </p>
       </Card>
     </div>

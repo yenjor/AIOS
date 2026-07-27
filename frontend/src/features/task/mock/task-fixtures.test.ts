@@ -53,7 +53,7 @@ function expectNoSecrets(value: unknown): void {
   }
 }
 
-describe("Task fixtures", () => {
+describe("任务 fixtures", () => {
   it("are deeply readonly by type and recursively frozen at runtime", () => {
     expectTypeOf(taskFixtures).toEqualTypeOf<
       readonly DeepReadonly<TaskDetail>[]
@@ -69,7 +69,7 @@ describe("Task fixtures", () => {
     expectTreeFrozen(readOnlyCodeToolVersionRef);
   });
 
-  it("contains a representative Task for each canonical status", () => {
+  it("contains a representative 任务 for each canonical status", () => {
     expect(taskFixtures).toHaveLength(12);
     expect(new Set(taskFixtures.map(({ status }) => status))).toEqual(
       new Set(TASK_STATUSES),
@@ -79,7 +79,7 @@ describe("Task fixtures", () => {
     expect(new Set(taskFixtures.map(({ id }) => id)).size).toBe(12);
   });
 
-  it("defines the approved golden technical-solution Task without a fake Artifact", () => {
+  it("defines the approved golden technical-solution 任务 without a fake 成果", () => {
     expect(goldenTechnicalSolutionTask).toMatchObject({
       id: GOLDEN_TECHNICAL_SOLUTION_TASK_ID,
       templateName: "生成技术方案",
@@ -88,7 +88,7 @@ describe("Task fixtures", () => {
       riskLevel: "R1",
       assignedAgent: {
         agentId: "agent-rd-001",
-        agentName: "AI研发员工",
+        agentName: "AI 研发员工",
         autonomyLevel: "L1辅助",
         humanOwner: {
           userId: "user-lead",
@@ -121,18 +121,18 @@ describe("Task fixtures", () => {
       expect.objectContaining({
         sequence: 4,
         name: "方案结构和引用检查",
-        responsibility: "Validation",
+        responsibility: "验证",
         riskLevel: "R1",
       }),
       expect.objectContaining({
         sequence: 5,
-        name: "Artifact人工验收",
-        responsibility: "Reviewer",
+        name: "成果人工验收",
+        responsibility: "验收人",
       }),
     ]);
     expect(goldenTechnicalSolutionTask.approvalPoints.map(({ name }) => name)).toEqual([
       "计划确认",
-      "Artifact验收",
+      "成果验收",
     ]);
     expect(goldenTechnicalSolutionTask.expectedArtifact.sections).toEqual([
       "目标理解",
@@ -147,7 +147,7 @@ describe("Task fixtures", () => {
     expect(goldenTechnicalSolutionTask.artifactVersionRefs).toEqual([]);
   });
 
-  it("uses fixed Capability, Knowledge, and read-only Tool version references", () => {
+  it("使用固定的能力、知识库和只读工具版本引用", () => {
     expect(goldenTechnicalSolutionTask.capabilityVersionRefs).toHaveLength(1);
     expect(goldenTechnicalSolutionTask.knowledgeVersionRefs).toHaveLength(1);
     expect(goldenTechnicalSolutionTask.toolVersionRefs).toEqual([
@@ -158,7 +158,7 @@ describe("Task fixtures", () => {
     ]);
   });
 
-  it("records only the four Task transitions that really occurred", () => {
+  it("records only the four 任务 transitions that really occurred", () => {
     expect(goldenTechnicalSolutionTask.history.map(({ toStatus }) => toStatus)).toEqual([
       "DRAFT",
       "READY",
@@ -167,7 +167,7 @@ describe("Task fixtures", () => {
     ]);
   });
 
-  it("associates required Artifact evidence with terminal Task fixtures", () => {
+  it("associates required 成果 evidence with terminal 任务 fixtures", () => {
     const failed = taskFixtures.find(({ status }) => status === "FAILED");
     const cancelled = taskFixtures.find(({ status }) => status === "CANCELLED");
     const completed = taskFixtures.find(({ status }) => status === "COMPLETED");

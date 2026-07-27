@@ -6,8 +6,8 @@ import type {
 } from "./model";
 
 /**
- * Public application contract consumed by Task. It returns an immutable,
- * permission-filtered snapshot and never exposes the Capability aggregate.
+ * 供任务模块使用的公共应用契约。返回不可变且经过权限过滤的快照，
+ * 绝不暴露能力聚合。
  */
 export async function resolveCapabilityVersionForTask(
   scope: CapabilityScope,

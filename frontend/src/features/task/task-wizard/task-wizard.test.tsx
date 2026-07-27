@@ -72,13 +72,13 @@ async function goToDefinition(interaction: ReturnType<typeof userEvent.setup>) {
 }
 
 async function fillDefinition(interaction: ReturnType<typeof userEvent.setup>) {
-  await interaction.type(screen.getByLabelText("Task 标题"), "生成技术方案");
-  await interaction.type(screen.getByLabelText("Goal"), "形成可评审方案");
+  await interaction.type(screen.getByLabelText("任务标题"), "生成技术方案");
+  await interaction.type(screen.getByLabelText("目标"), "形成可评审方案");
   await interaction.type(
     screen.getByLabelText("当前问题"),
     "缺少统一执行定义",
   );
-  await interaction.type(screen.getByLabelText("任务范围"), "Task Center");
+  await interaction.type(screen.getByLabelText("任务范围"), "任务中心");
   fireEvent.change(screen.getByLabelText("期望完成时间"), {
     target: { value: "2026-08-01T18:00" },
   });
@@ -101,7 +101,7 @@ describe("TaskWizard", () => {
       wizardStep: 2,
       templateName: "生成技术方案",
       title: "恢复中的方案",
-      goal: "恢复 Goal",
+      goal: "恢复目标",
       currentProblem: "恢复当前问题",
       workScope: "恢复任务范围",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
@@ -114,10 +114,10 @@ describe("TaskWizard", () => {
     expect(
       screen.getByRole("button", { name: "第 2 步：定义工作" }),
     ).toHaveAttribute("aria-current", "step");
-    expect(screen.getByLabelText("Task 标题")).toHaveValue("恢复中的方案");
+    expect(screen.getByLabelText("任务标题")).toHaveValue("恢复中的方案");
     expect(screen.getByLabelText("当前问题")).toHaveValue("恢复当前问题");
     expect(screen.getByLabelText("任务范围")).toHaveValue("恢复任务范围");
-    expect(screen.getByLabelText("Priority")).toHaveValue(25);
+    expect(screen.getByLabelText("优先级")).toHaveValue(25);
     expect(screen.getByLabelText("期望完成时间")).not.toHaveValue("");
   });
 
@@ -139,7 +139,7 @@ describe("TaskWizard", () => {
       screen.getByRole("button", { name: "第 3 步：提供上下文" }),
     ).toBeDisabled();
     expect(
-      screen.queryByRole("button", { name: "提交 Task" }),
+      screen.queryByRole("button", { name: "提交任务" }),
     ).not.toBeInTheDocument();
   });
 
@@ -151,8 +151,8 @@ describe("TaskWizard", () => {
     await interaction.click(screen.getByRole("button", { name: "下一步" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent("请修正");
-    expect(screen.getByLabelText("Task 标题")).toHaveFocus();
-    expect(screen.getByLabelText("Task 标题")).toHaveAttribute(
+    expect(screen.getByLabelText("任务标题")).toHaveFocus();
+    expect(screen.getByLabelText("任务标题")).toHaveAttribute(
       "aria-describedby",
       expect.stringContaining("error"),
     );
@@ -201,7 +201,7 @@ describe("TaskWizard", () => {
     await interaction.click(screen.getByRole("button", { name: "下一步" }));
     await interaction.click(screen.getByRole("button", { name: "上一步" }));
 
-    expect(screen.getByLabelText("Task 标题")).toHaveValue("生成技术方案");
+    expect(screen.getByLabelText("任务标题")).toHaveValue("生成技术方案");
     expect(repository.saveDraft).toHaveBeenCalledWith(
       scope,
       actor,
@@ -210,7 +210,7 @@ describe("TaskWizard", () => {
         priority: 50,
         wizardStep: 3,
         currentProblem: "缺少统一执行定义",
-        workScope: "Task Center",
+        workScope: "任务中心",
         expectedCompletionAt: expect.stringMatching(
           /^2026-08-01T\d{2}:00:00\.000Z$/,
         ),
@@ -228,7 +228,7 @@ describe("TaskWizard", () => {
       title: "保存前标题",
       goal: "形成方案",
       currentProblem: "缺少方案",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["遵循架构"],
       outOfScope: ["不改后端"],
@@ -239,9 +239,9 @@ describe("TaskWizard", () => {
     await interaction.click(screen.getByRole("button", { name: "保存草稿" }));
     await waitFor(() => expect(repository.saveDraft).toHaveBeenCalledTimes(1));
 
-    const title = screen.getByLabelText("Task 标题");
+    const title = screen.getByLabelText("任务标题");
     expect(title).toBeDisabled();
-    expect(screen.getByLabelText("Risk")).toBeDisabled();
+    expect(screen.getByLabelText("风险")).toBeDisabled();
     expect(screen.getByRole("button", { name: "下一步" })).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "第 1 步：选择模板" }),
@@ -265,7 +265,7 @@ describe("TaskWizard", () => {
       title: "严格模式标题",
       goal: "形成方案",
       currentProblem: "缺少方案",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["遵循架构"],
       outOfScope: ["不改后端"],
@@ -279,7 +279,7 @@ describe("TaskWizard", () => {
     pendingSave.resolve(savedSnapshot);
 
     expect(await screen.findByRole("status")).toHaveTextContent("草稿已保存");
-    expect(screen.getByLabelText("Task 标题")).toBeEnabled();
+    expect(screen.getByLabelText("任务标题")).toBeEnabled();
     expect(screen.getByRole("button", { name: "下一步" })).toBeEnabled();
 
     await interaction.click(screen.getByRole("button", { name: "下一步" }));
@@ -302,7 +302,7 @@ describe("TaskWizard", () => {
       title: "提交快照",
       goal: "形成方案",
       currentProblem: "缺少方案",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["遵循架构"],
       outOfScope: ["不改后端"],
@@ -320,11 +320,11 @@ describe("TaskWizard", () => {
       completionCriteria: ["结构完整"],
     });
 
-    await interaction.click(screen.getByRole("button", { name: "提交 Task" }));
+    await interaction.click(screen.getByRole("button", { name: "提交任务" }));
     await waitFor(() =>
       expect(repository.submitTechnicalSolutionTask).toHaveBeenCalledTimes(1),
     );
-    expect(screen.getByRole("button", { name: "提交 Task" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "提交任务" })).toBeDisabled();
     const stepTwo = screen.getByRole("button", {
       name: "第 2 步：定义工作",
     });
@@ -359,7 +359,7 @@ describe("TaskWizard", () => {
       title: "卸载前提交",
       goal: "形成方案",
       currentProblem: "缺少方案",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["遵循架构"],
       outOfScope: ["不改后端"],
@@ -377,7 +377,7 @@ describe("TaskWizard", () => {
       completionCriteria: ["结构完整"],
     });
 
-    await interaction.click(screen.getByRole("button", { name: "提交 Task" }));
+    await interaction.click(screen.getByRole("button", { name: "提交任务" }));
     await waitFor(() =>
       expect(repository.submitTechnicalSolutionTask).toHaveBeenCalledTimes(1),
     );
@@ -410,7 +410,7 @@ describe("TaskWizard", () => {
       riskLevel: "R1",
     });
 
-    fireEvent.change(screen.getByLabelText("Task 标题"), {
+    fireEvent.change(screen.getByLabelText("任务标题"), {
       target: { value: "" },
     });
     await interaction.click(screen.getByRole("button", { name: "保存草稿" }));
@@ -419,7 +419,7 @@ describe("TaskWizard", () => {
 
     view.unmount();
     renderWizard(savedSnapshot);
-    expect(screen.getByLabelText("Task 标题")).toHaveValue("");
+    expect(screen.getByLabelText("任务标题")).toHaveValue("");
   });
 
   it("replaces golden-only refs when switching to a draft-only template", async () => {
@@ -514,7 +514,7 @@ describe("TaskWizard", () => {
       },
     });
 
-    expect(screen.getByRole("button", { name: "提交 Task" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "提交任务" })).toBeDisabled();
     expect(screen.getByText(/当前版本仅支持保存草稿/)).toBeVisible();
   });
 
@@ -528,7 +528,7 @@ describe("TaskWizard", () => {
         title: "高风险旧草稿",
         goal: "形成方案",
         currentProblem: "缺少方案",
-        workScope: "Task Center",
+        workScope: "任务中心",
         expectedCompletionAt: "2026-08-01T10:00:00.000Z",
         constraints: ["遵循架构"],
         outOfScope: ["不改后端"],
@@ -555,7 +555,7 @@ describe("TaskWizard", () => {
       await interaction.click(screen.getByRole("button", { name: "下一步" }));
 
       expect(screen.getByRole("alert")).toHaveTextContent("R0 或 R1");
-      expect(screen.getByLabelText("Risk")).toHaveFocus();
+      expect(screen.getByLabelText("风险")).toHaveFocus();
       expect(screen.getByRole("option", { name: "R0" })).toBeVisible();
       expect(screen.getByRole("option", { name: "R1" })).toBeVisible();
       expect(screen.queryByRole("option", { name: riskLevel })).not.toBeInTheDocument();
@@ -564,14 +564,14 @@ describe("TaskWizard", () => {
     },
   );
 
-  it("shows the required read-only checks on the Artifact step", () => {
+  it("shows the required read-only checks on the 成果 step", () => {
     renderWizard({
       wizardStep: 4,
       templateName: "生成技术方案",
       title: "技术方案",
       goal: "形成方案",
       currentProblem: "缺少方案",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["遵循架构"],
       outOfScope: ["不改后端"],
@@ -591,9 +591,9 @@ describe("TaskWizard", () => {
     expect(
       screen.getByRole("heading", { name: "必须通过的检查" }),
     ).toBeVisible();
-    expect(screen.getByText("Artifact 结构完整性")).toBeVisible();
+    expect(screen.getByText("成果结构完整性")).toBeVisible();
     expect(screen.getByText("知识库引用可追溯")).toBeVisible();
-    expect(screen.getByText("Reviewer 人工验收")).toBeVisible();
+    expect(screen.getByText("验收人人工验收")).toBeVisible();
   });
 
   it("submits a complete golden draft once and routes to its detail", async () => {
@@ -607,7 +607,7 @@ describe("TaskWizard", () => {
       title: "生成技术方案",
       goal: "形成可评审方案",
       currentProblem: "缺少统一定义",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["遵循现有架构"],
       outOfScope: ["不改后端"],
@@ -644,7 +644,7 @@ describe("TaskWizard", () => {
       ],
       assignedAgent: {
         agentId: "agent-rd-001",
-        agentName: "AI研发员工",
+        agentName: "AI 研发员工",
         agentVersionRef: {
           kind: "AGENT",
           objectId: "agent-rd-001",
@@ -674,11 +674,11 @@ describe("TaskWizard", () => {
     });
 
     expect(screen.getByText("codegraph.context")).toBeVisible();
-    expect(screen.getByText("READ")).toBeVisible();
+    expect(screen.getByText("读取")).toBeVisible();
     expect(screen.getByText("计划确认")).toBeVisible();
-    expect(screen.getByText("Artifact验收")).toBeVisible();
+    expect(screen.getByText("成果验收")).toBeVisible();
 
-    const submit = screen.getByRole("button", { name: "提交 Task" });
+    const submit = screen.getByRole("button", { name: "提交任务" });
     await Promise.all([interaction.click(submit), interaction.click(submit)]);
 
     await waitFor(() =>
@@ -698,13 +698,13 @@ describe("TaskWizard", () => {
     });
 
     expect(
-      screen.queryByRole("button", { name: "提交 Task" }),
+      screen.queryByRole("button", { name: "提交任务" }),
     ).not.toBeInTheDocument();
 
     await interaction.click(screen.getByRole("button", { name: "下一步" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent("请修正");
-    expect(screen.getByLabelText("Task 标题")).toHaveFocus();
+    expect(screen.getByLabelText("任务标题")).toHaveFocus();
     expect(repository.submitTechnicalSolutionTask).not.toHaveBeenCalled();
   });
 
@@ -723,7 +723,7 @@ describe("TaskWizard", () => {
       title: "可重试方案",
       goal: "形成方案",
       currentProblem: "缺少方案",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionAt: "2026-08-01T10:00:00.000Z",
       constraints: ["遵循架构"],
       outOfScope: ["不改后端"],
@@ -760,7 +760,7 @@ describe("TaskWizard", () => {
       ],
       assignedAgent: {
         agentId: "agent-rd-001",
-        agentName: "AI研发员工",
+        agentName: "AI 研发员工",
         agentVersionRef: {
           kind: "AGENT",
           objectId: "agent-rd-001",
@@ -789,8 +789,8 @@ describe("TaskWizard", () => {
       completionCriteria: ["结构完整"],
     });
 
-    await interaction.click(screen.getByRole("button", { name: "提交 Task" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Task 提交失败");
+    await interaction.click(screen.getByRole("button", { name: "提交任务" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("任务提交失败");
     expect(screen.getByText("可重试方案")).toBeVisible();
     await interaction.click(screen.getByRole("button", { name: "重试提交" }));
 
@@ -807,11 +807,11 @@ describe("TaskWizard", () => {
     repository.saveDraft
       .mockRejectedValueOnce(new Error("disk"))
       .mockImplementation(async (_scope, _actor, draft) => draft);
-    await interaction.type(screen.getByLabelText("Task 标题"), "保留输入");
+    await interaction.type(screen.getByLabelText("任务标题"), "保留输入");
     await interaction.click(screen.getByRole("button", { name: "保存草稿" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("草稿保存失败");
-    expect(screen.getByLabelText("Task 标题")).toHaveValue("保留输入");
+    expect(screen.getByLabelText("任务标题")).toHaveValue("保留输入");
     await interaction.click(screen.getByRole("button", { name: "重试保存" }));
     expect(repository.saveDraft).toHaveBeenCalledTimes(3);
   });

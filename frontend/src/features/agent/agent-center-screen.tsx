@@ -20,7 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-import { AgentStatusBadge } from "./agent-status-badge";
+import { AGENT_STATUS_LABELS, AgentStatusBadge } from "./agent-status-badge";
+import { AGENT_TEST_RESULT_LABELS } from "./agent-display";
 import type {
   AgentListItem,
   AgentPage,
@@ -94,7 +95,7 @@ function MobileFacts({ item }: { item: AgentListItem }) {
         </dd>
       </div>
       <div>
-        <dt className="text-xs text-[var(--aios-muted)]">Human Owner</dt>
+        <dt className="text-xs text-[var(--aios-muted)]">人工负责人</dt>
         <dd className="mt-1 text-sm">
           {ownerNames[item.humanOwnerId] ?? item.humanOwnerId}
         </dd>
@@ -110,11 +111,11 @@ function MobileFacts({ item }: { item: AgentListItem }) {
         <dd className="mt-1 text-sm">{item.autonomyLevel}</dd>
       </div>
       <div>
-        <dt className="text-xs text-[var(--aios-muted)]">Capability</dt>
+        <dt className="text-xs text-[var(--aios-muted)]">能力</dt>
         <dd className="mt-1 text-sm">{item.capabilityCount} 个固定版本</dd>
       </div>
       <div>
-        <dt className="text-xs text-[var(--aios-muted)]">Task 使用</dt>
+        <dt className="text-xs text-[var(--aios-muted)]">任务使用</dt>
         <dd className="mt-1 text-sm">{item.taskUsageCount}</dd>
       </div>
     </>
@@ -152,7 +153,7 @@ export function AgentCenterScreen({
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Workspace AI Workforce Registry
+            工作空间 AI 员工名录
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             AI 员工中心
@@ -160,17 +161,15 @@ export function AgentCenterScreen({
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--aios-muted)]">
             <span className="flex items-center gap-2">
               <Building2 size={16} aria-hidden="true" />
-              Organization：{scopeLabels.organizationName}
+              组织：{scopeLabels.organizationName}
             </span>
             <span className="flex items-center gap-2">
               <Bot size={16} aria-hidden="true" />
-              Workspace：{scopeLabels.workspaceName}
+              工作空间：{scopeLabels.workspaceName}
             </span>
           </div>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-            管理 Agent 身份、不可变 AgentVersion、Human Owner、Capability
-            Assignment、知识范围、Tool Grant 与自治级别。只有 Enabled Agent
-            的 Published 版本可被新 Task 选择。
+            管理 AI 员工身份、不可变 AI 员工版本、人工负责人、能力分配、知识范围、工具授权与自治级别。只有已启用 AI 员工的已发布版本可被新任务选择。
           </p>
         </div>
         {permission.canManage ? (
@@ -230,12 +229,12 @@ export function AgentCenterScreen({
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
-                placeholder="名称、Code 或职责"
+                placeholder="名称、编码或职责"
               />
             </span>
           </label>
           <label className="text-sm font-medium">
-            <span>Agent Status</span>
+            <span>AI 员工状态</span>
             <select
               className="mt-2 min-h-11 w-full rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3"
               value={query.status ?? ""}
@@ -251,14 +250,14 @@ export function AgentCenterScreen({
               {["DRAFT", "TESTING", "ENABLED", "SUSPENDED", "DISABLED"].map(
                 (status) => (
                   <option value={status} key={status}>
-                    {status}
+                    {AGENT_STATUS_LABELS[status as AgentStatus]}
                   </option>
                 ),
               )}
             </select>
           </label>
           <label className="text-sm font-medium">
-            <span>AutonomyLevel</span>
+            <span>自主等级</span>
             <select
               className="mt-2 min-h-11 w-full rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3"
               value={query.autonomyLevel ?? ""}
@@ -279,7 +278,7 @@ export function AgentCenterScreen({
             </select>
           </label>
           <label className="text-sm font-medium">
-            <span>TaskType</span>
+            <span>任务类型</span>
             <select
               className="mt-2 min-h-11 w-full rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3"
               value={query.taskType ?? ""}
@@ -291,7 +290,7 @@ export function AgentCenterScreen({
                 onQueryChange(next);
               }}
             >
-              <option value="">全部 TaskType</option>
+              <option value="">全部任务类型</option>
               {Object.entries(taskTypeLabels).map(([value, label]) => (
                 <option value={value} key={value}>
                   {label}
@@ -321,7 +320,7 @@ export function AgentCenterScreen({
           />
           <p className="mt-3 font-semibold">没有符合条件的 AI 员工</p>
           <p className="mt-1 text-sm text-[var(--aios-muted)]">
-            调整状态、自治级别、TaskType 或关键词后重试。
+            调整状态、自治级别、任务类型或关键词后重试。
           </p>
         </Card>
       ) : (
@@ -341,14 +340,14 @@ export function AgentCenterScreen({
                   <tr>
                     {[
                       "AI 员工",
-                      "Human Owner",
+                      "人工负责人",
                       "状态",
                       "固定版本",
-                      "Autonomy",
-                      "TaskType",
-                      "Capability",
+                      "自主等级",
+                      "任务类型",
+                      "能力",
                       "测试",
-                      "Task 使用",
+                      "任务使用",
                     ].map((heading) => (
                       <th
                         scope="col"
@@ -400,7 +399,7 @@ export function AgentCenterScreen({
                       <td className="px-4 py-4">{item.capabilityCount}</td>
                       <td className="px-4 py-4">
                         {item.testResult ? (
-                          <Badge tone="success">{item.testResult}</Badge>
+                          <Badge tone="success">{AGENT_TEST_RESULT_LABELS[item.testResult]}</Badge>
                         ) : (
                           "未执行"
                         )}
@@ -443,8 +442,7 @@ export function AgentCenterScreen({
             size={17}
             aria-hidden="true"
           />
-          Human Owner 是强制治理关系；AgentVersion 发布不等于获得 Task、知识或
-          Tool 权限。
+          人工负责人是强制治理关系；AI 员工版本发布不等于获得任务、知识或工具权限。
         </p>
         <nav aria-label="AI 员工目录分页" className="flex justify-end gap-3">
           <Button
@@ -476,7 +474,7 @@ export function AgentCenterScreen({
           size={17}
           aria-hidden="true"
         />
-        当前 Runtime 已开放受控的 CodeGraph MCP 只读 Tool Invocation；领域状态、权限边界与版本引用仍由本地持久化实现，不保存真实模型凭据，也不执行写入型 Tool。
+        当前运行时已开放受控的 CodeGraph MCP 只读工具调用；领域状态、权限边界与版本引用仍由本地持久化实现，不保存真实模型凭据，也不执行写入型工具。
       </Card>
     </div>
   );

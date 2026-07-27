@@ -31,9 +31,9 @@ function input(taskId = "task-mock-model-01"): InvokeTechnicalDesignModelInput {
     toolInvocationId: "invocation-0123456789abcdef",
     toolResultReference: "mcp://codegraph/invocation-0123456789abcdef",
     toolOutputDigest: "sha256:tool-output",
-    toolResultExcerpt: "CodeGraph returned bounded source context for the Task.",
+    toolResultExcerpt: "CodeGraph returned bounded source context for the 任务.",
     title: "生成技术方案",
-    goal: "生成可以由 Reviewer 验收的 AIOS 技术方案。",
+    goal: "生成可以由验收人验收的 AIOS 技术方案。",
     goalSummary: "当前缺少模型生成的结构化草稿。",
     constraints: ["遵循现有架构边界"],
     outOfScope: ["不执行外部写入"],
@@ -52,12 +52,12 @@ function output(): string {
   return JSON.stringify({
     sections: TECHNICAL_DESIGN_SECTION_TITLES.map((title) => ({
       title,
-      paragraphs: [`${title}由受控模型根据当前 Task 上下文生成。`],
+      paragraphs: [`${title}由受控模型根据当前任务上下文生成。`],
     })),
   });
 }
 
-describe("Model Gateway", () => {
+describe("模型网关", () => {
   it("pins policy, validates structured output and returns auditable evidence", async () => {
     const complete = vi.fn(async () => ({
       content: output(),

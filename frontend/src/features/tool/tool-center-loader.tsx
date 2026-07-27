@@ -71,7 +71,7 @@ export function ToolCenterLoader() {
           size={21}
           aria-hidden="true"
         />
-        正在加载 ToolVersion、ActionDefinition 与 Health…
+        正在加载工具版本、动作定义与健康状态…
       </Card>
     ) : null;
   }
@@ -85,9 +85,9 @@ export function ToolCenterLoader() {
           aria-hidden="true"
         />
         <div>
-          <h1 className="font-semibold">Tool 数据加载失败</h1>
+          <h1 className="font-semibold">工具数据加载失败</h1>
           <p className="mt-2 text-sm text-[var(--aios-muted)]">
-            本地数据未通过完整性校验，未展示不可信 Tool Contract。
+            本地数据未通过完整性校验，未展示不可信工具契约。
           </p>
         </div>
       </Card>

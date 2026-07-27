@@ -141,7 +141,7 @@ function persistSession(session: SessionState): void {
       JSON.stringify(storedSession),
     );
   } catch {
-    // The Mock session remains usable in memory when tab storage is unavailable.
+    // 标签页存储不可用时，模拟会话仍可在内存中使用。
   }
 }
 
@@ -149,7 +149,7 @@ function clearStoredSession(): void {
   try {
     window.sessionStorage.removeItem(MOCK_SESSION_STORAGE_KEY);
   } catch {
-    // Storage may be unavailable in hardened browser environments.
+    // 加固的浏览器环境可能禁用存储。
   }
 }
 
@@ -270,7 +270,7 @@ export function useSession() {
   const session = useContext(SessionContext);
 
   if (!session) {
-    throw new Error("useSession must be used within a SessionProvider");
+    throw new Error("useSession 必须在 SessionProvider 内部使用");
   }
 
   return session;

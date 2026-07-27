@@ -41,7 +41,7 @@ const archivedWorkspace: DeepReadonly<WorkspaceSummary> = deepFreeze({
   purpose: "保留已结束的研发协作试点记录",
   lastEnteredAt: "2026-05-18 16:20",
   accessStatus: "已归档",
-  unavailableReason: "该 Workspace 已归档，仅可查看范围信息",
+  unavailableReason: "该工作空间已归档，仅可查看范围信息",
 });
 
 export const workspaces: DeepReadonly<WorkspaceSummary[]> = deepFreeze<
@@ -52,8 +52,8 @@ export const users: DeepReadonly<UserIdentity[]> = deepFreeze<UserIdentity[]>([
   { id: "user-pm", name: "林悦", role: "产品经理" },
   { id: "user-dev", name: "周航", role: "开发工程师" },
   { id: "user-lead", name: "陈明", role: "研发负责人" },
-  { id: "user-admin", name: "吴桐", role: "Workspace Admin" },
-  { id: "user-auditor", name: "赵岚", role: "Auditor" },
+  { id: "user-admin", name: "吴桐", role: "工作空间管理员" },
+  { id: "user-auditor", name: "赵岚", role: "审计员" },
 ]);
 
 export const workspaceDashboard: DeepReadonly<WorkspaceDashboard> = deepFreeze<WorkspaceDashboard>({
@@ -81,7 +81,7 @@ export const workspaceDashboard: DeepReadonly<WorkspaceDashboard> = deepFreeze<W
     { id: "quick-analyze-requirement", label: "分析需求" },
     { id: "quick-generate-solution", label: "生成技术方案" },
     { id: "quick-assist-coding", label: "辅助编码" },
-    { id: "quick-code-review", label: "Code Review" },
+    { id: "quick-code-review", label: "代码审查" },
     { id: "quick-automated-test", label: "自动测试" },
   ],
   tasks: [
@@ -95,7 +95,7 @@ export const workspaceDashboard: DeepReadonly<WorkspaceDashboard> = deepFreeze<W
     },
     {
       id: "task-golden-technical-solution",
-      title: "生成 AIOS Task Center 技术方案",
+      title: "生成 AIOS 任务中心技术方案",
       templateName: "生成技术方案",
       status: "NEED_APPROVAL",
       updatedAt: "35 分钟前",
@@ -125,6 +125,6 @@ export const workspaceDashboard: DeepReadonly<WorkspaceDashboard> = deepFreeze<W
   ],
   risks: [
     { id: "risk-001", title: "需求澄清不足", tone: "warning", detail: "商品搜索功能仍有 3 条澄清项等待确认" },
-    { id: "risk-002", title: "Task 超期", tone: "error", detail: "用户中心接口文档更新已超过期望完成时间" },
+    { id: "risk-002", title: "任务超期", tone: "error", detail: "用户中心接口文档更新已超过期望完成时间" },
   ],
 });

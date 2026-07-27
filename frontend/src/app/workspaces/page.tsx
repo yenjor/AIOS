@@ -28,17 +28,17 @@ export default function WorkspacesPage() {
         <Card className="w-full max-w-lg p-6 sm:p-8">
           <Badge tone="warning">前置选择不完整</Badge>
           <h1 className="mt-4 text-2xl font-semibold">
-            {missingIdentity ? "请先选择身份" : "请先选择 Organization"}
+            {missingIdentity ? "请先选择身份" : "请先选择组织"}
           </h1>
           <p className="mt-3 leading-7 text-[var(--aios-muted)]">
-            当前会话缺少进入 Workspace 所需的上下文，请返回完成选择。
+            当前会话缺少进入工作空间所需的上下文，请返回完成选择。
           </p>
           <Link
             className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg font-semibold text-[var(--aios-primary)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
             href={missingIdentity ? "/login" : "/organizations"}
           >
             <ArrowLeft size={18} aria-hidden="true" />
-            {missingIdentity ? "返回身份选择" : "返回 Organization 选择"}
+            {missingIdentity ? "返回身份选择" : "返回组织选择"}
           </Link>
         </Card>
       </main>
@@ -57,15 +57,15 @@ export default function WorkspacesPage() {
         <header>
           <Badge tone="neutral">{organization.name} · {user.name}</Badge>
           <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-            选择 Workspace
+            选择工作空间
           </h1>
           <p className="mt-4 max-w-2xl leading-7 text-[var(--aios-muted)]">
-            Workspace 承载业务目标、AI 员工与任务协作，本次试点聚焦 AI 智能业务线。
+            工作空间承载业务目标、AI 员工与任务协作，本次试点聚焦 AI 智能业务线。
           </p>
         </header>
 
         <section className="mt-8" aria-labelledby="workspace-list-title">
-          <h2 id="workspace-list-title" className="sr-only">可用 Workspace</h2>
+          <h2 id="workspace-list-title" className="sr-only">可用工作空间</h2>
           <ul className="space-y-4">
             {workspaces.map((workspace) => {
               const accessible = workspace.accessStatus === "可访问";
@@ -113,13 +113,13 @@ export default function WorkspacesPage() {
                         className="w-full shrink-0 sm:w-auto"
                         aria-label={
                           accessible
-                            ? `选择 Workspace ${workspace.name}`
-                            : `Workspace ${workspace.name} 不可进入`
+                            ? `选择工作空间 ${workspace.name}`
+                            : `工作空间${workspace.name}不可进入`
                         }
                         disabled={!accessible}
                         onClick={() => handleSelectWorkspace(workspace.id)}
                       >
-                        {accessible ? "进入 Workspace" : "不可进入"}
+                        {accessible ? "进入工作空间" : "不可进入"}
                         <ArrowRight size={17} aria-hidden="true" />
                       </Button>
                     </div>

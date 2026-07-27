@@ -27,7 +27,7 @@ export default function OrganizationsPage() {
           <Badge tone="warning">缺少演示身份</Badge>
           <h1 className="mt-4 text-2xl font-semibold">请先选择身份</h1>
           <p className="mt-3 leading-7 text-[var(--aios-muted)]">
-            当前会话还没有演示用户，无法选择 Organization。
+            当前会话还没有演示用户，无法选择组织。
           </p>
           <Link
             className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg font-semibold text-[var(--aios-primary)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
@@ -53,15 +53,15 @@ export default function OrganizationsPage() {
         <header>
           <Badge tone="neutral">{user.name} · {user.role}</Badge>
           <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-            选择 Organization
+            选择组织
           </h1>
           <p className="mt-4 max-w-2xl leading-7 text-[var(--aios-muted)]">
-            Organization 是企业治理边界。此试点仅提供 README 定义的光位科技组织。
+            组织是企业治理边界。此试点仅提供 README 定义的光位科技组织。
           </p>
         </header>
 
         <section className="mt-8" aria-labelledby="organization-list-title">
-          <h2 id="organization-list-title" className="sr-only">可用 Organization</h2>
+          <h2 id="organization-list-title" className="sr-only">可用组织</h2>
           <Card className="p-6 sm:p-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
@@ -88,9 +88,9 @@ export default function OrganizationsPage() {
                       <dd>当前职责：{user.role}</dd>
                     </div>
                     <div>
-                      <dt className="sr-only">可访问 Workspace 数量</dt>
+                      <dt className="sr-only">可访问工作空间数量</dt>
                       <dd>
-                        可访问 Workspace：{organization.accessibleWorkspaceCount}
+                        可访问工作空间：{organization.accessibleWorkspaceCount}
                       </dd>
                     </div>
                     <div className="sm:col-span-2">
@@ -102,7 +102,7 @@ export default function OrganizationsPage() {
               </div>
               <Button
                 className="w-full sm:w-auto"
-                aria-label={`选择组织 ${organization.name}`}
+                aria-label={`选择组织${organization.name}`}
                 onClick={handleSelectOrganization}
               >
                 进入组织

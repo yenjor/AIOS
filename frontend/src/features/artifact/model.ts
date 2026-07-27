@@ -32,9 +32,9 @@ export interface ArtifactSection {
 export interface ArtifactValidationResult {
   id: string;
   name:
-    | "Artifact 结构完整性"
+    | "成果结构完整性"
     | "知识库引用可追溯"
-    | "Reviewer 人工验收";
+    | "验收人人工验收";
   status: "PASSED" | "PENDING";
   summary: string;
 }

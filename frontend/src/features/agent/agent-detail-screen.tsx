@@ -24,12 +24,18 @@ import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { TOOL_OPERATION_TYPE_LABELS } from "@/features/tool/tool-display";
 
 import type {
   AgentAction,
   AgentActionState,
 } from "./agent-detail-loader";
 import { AgentStatusBadge } from "./agent-status-badge";
+import {
+  AGENT_PERMISSION_ACTION_LABELS,
+  AGENT_PERMISSION_RESOURCE_LABELS,
+  AGENT_TEST_RESULT_LABELS,
+} from "./agent-display";
 import type {
   Agent,
   AgentPermissionDecision,
@@ -51,7 +57,7 @@ function VersionDetail({ version }: { version: AgentVersion }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-[var(--aios-muted)]">
-            AgentVersion v{version.versionNumber}
+            AI 员工版本 v{version.versionNumber}
           </p>
           <h2 className="mt-1 break-all font-mono text-lg font-semibold">
             {version.id}
@@ -67,16 +73,16 @@ function VersionDetail({ version }: { version: AgentVersion }) {
         <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
           <h3 className="flex items-center gap-2 font-semibold">
             <Bot size={18} aria-hidden="true" />
-            Agent Profile
+            AI 员工配置档案
           </h3>
           <dl className="mt-3 grid gap-3 text-sm">
             <div>
-              <dt className="text-xs text-[var(--aios-muted)]">Job Title</dt>
+              <dt className="text-xs text-[var(--aios-muted)]">岗位名称</dt>
               <dd className="mt-1">{version.profile.jobTitle}</dd>
             </div>
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                Role Description
+                角色说明
               </dt>
               <dd className="mt-1 leading-6">
                 {version.profile.roleDescription}
@@ -84,7 +90,7 @@ function VersionDetail({ version }: { version: AgentVersion }) {
             </div>
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                TaskType / Artifact
+                任务类型 / 成果
               </dt>
               <dd className="mt-1 break-words">
                 {version.profile.acceptedTaskTypes.join(", ")} →{" "}
@@ -93,7 +99,7 @@ function VersionDetail({ version }: { version: AgentVersion }) {
             </div>
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                AutonomyLevel
+                自主等级
               </dt>
               <dd className="mt-1">
                 <Badge tone="info">{version.autonomyLevel}</Badge>
@@ -104,12 +110,12 @@ function VersionDetail({ version }: { version: AgentVersion }) {
         <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
           <h3 className="flex items-center gap-2 font-semibold">
             <UserRoundCheck size={18} aria-hidden="true" />
-            Human Collaboration
+            人机协作
           </h3>
           <dl className="mt-3 grid gap-3 text-sm">
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                Human Owner
+                人工负责人
               </dt>
               <dd className="mt-1">
                 {ownerNames[version.humanOwnerId] ?? version.humanOwnerId}
@@ -117,7 +123,7 @@ function VersionDetail({ version }: { version: AgentVersion }) {
             </div>
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                Responsibility Boundary
+                职责边界
               </dt>
               <dd className="mt-1 leading-6">
                 {version.profile.responsibilityBoundary}
@@ -125,7 +131,7 @@ function VersionDetail({ version }: { version: AgentVersion }) {
             </div>
             <div>
               <dt className="text-xs text-[var(--aios-muted)]">
-                Escalation Policy
+                升级策略
               </dt>
               <dd className="mt-1 leading-6">
                 {version.profile.escalationPolicy}
@@ -136,7 +142,7 @@ function VersionDetail({ version }: { version: AgentVersion }) {
       </section>
 
       <section className="mt-6">
-        <h3 className="font-semibold">Capability Assignment</h3>
+        <h3 className="font-semibold">能力分配</h3>
         <div className="mt-3 grid gap-3 xl:grid-cols-2">
           {version.capabilityAssignments.map((reference) => (
             <div
@@ -161,14 +167,14 @@ function VersionDetail({ version }: { version: AgentVersion }) {
         <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
           <h3 className="flex items-center gap-2 font-semibold">
             <BrainCircuit size={18} aria-hidden="true" />
-            Knowledge Scope
+            知识库范围
           </h3>
           {version.knowledgeScopeAssignments.length ? (
             <ul className="mt-3 space-y-2 text-sm text-[var(--aios-muted)]">
               {version.knowledgeScopeAssignments.map((assignment) => (
                 <li key={assignment.scopeDigest}>
-                  CURRENT_WORKSPACE · {assignment.classificationCeiling} ·
-                  Citation Required
+                  当前工作空间 · 内部及以下 ·
+                  必须提供引用
                 </li>
               ))}
             </ul>
@@ -181,27 +187,27 @@ function VersionDetail({ version }: { version: AgentVersion }) {
         <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
           <h3 className="flex items-center gap-2 font-semibold">
             <Wrench size={18} aria-hidden="true" />
-            Tool Grant Reference
+            工具授权引用
           </h3>
           {version.toolGrantReferences.length ? (
             <ul className="mt-3 space-y-2 text-sm text-[var(--aios-muted)]">
               {version.toolGrantReferences.map((grant) => (
                 <li key={`${grant.toolVersionId}:${grant.action}`}>
                   <span className="font-mono">{grant.action}</span> ·{" "}
-                  {grant.operationType} · {grant.riskCeiling}
+                  {TOOL_OPERATION_TYPE_LABELS[grant.operationType]} · {grant.riskCeiling}
                 </li>
               ))}
             </ul>
           ) : (
             <p className="mt-3 text-sm text-[var(--aios-muted)]">
-              未绑定 Tool Grant。
+              未绑定工具授权。
             </p>
           )}
         </div>
         <div className="rounded-lg border border-[var(--aios-control-border)] p-4">
           <h3 className="flex items-center gap-2 font-semibold">
             <ShieldCheck size={18} aria-hidden="true" />
-            Permission Requirement
+            权限要求
           </h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {version.permissionRequirements.map((requirement) => (
@@ -209,7 +215,8 @@ function VersionDetail({ version }: { version: AgentVersion }) {
                 key={`${requirement.resource}:${requirement.action}`}
                 tone="neutral"
               >
-                {requirement.resource}:{requirement.action}
+                {AGENT_PERMISSION_RESOURCE_LABELS[requirement.resource]}：
+                {AGENT_PERMISSION_ACTION_LABELS[requirement.action]}
               </Badge>
             ))}
           </div>
@@ -219,7 +226,7 @@ function VersionDetail({ version }: { version: AgentVersion }) {
       <section className="mt-6 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4">
         <h3 className="flex items-center gap-2 font-semibold">
           <FileCheck2 size={18} aria-hidden="true" />
-          Deterministic Test Gate
+          确定性测试门禁
         </h3>
         {test ? (
           <div className="mt-3">
@@ -229,8 +236,8 @@ function VersionDetail({ version }: { version: AgentVersion }) {
                 size={17}
                 aria-hidden="true"
               />
-              <strong>{test.result}</strong> · Capability、Knowledge、Tool、
-              Permission、Artifact、Prompt Injection 全部通过
+              <strong>{AGENT_TEST_RESULT_LABELS[test.result]}</strong> · 能力、知识库、工具、
+              权限、成果、提示词注入全部通过
             </p>
             <p className="mt-2 break-all font-mono text-xs text-[var(--aios-muted)]">
               {test.evidenceReference}
@@ -241,13 +248,13 @@ function VersionDetail({ version }: { version: AgentVersion }) {
           </div>
         ) : (
           <p className="mt-3 text-sm text-[var(--aios-muted)]">
-            尚未执行测试；该 Draft 不可发布。
+            尚未执行测试；该草稿不可发布。
           </p>
         )}
       </section>
 
       <section className="mt-6">
-        <h3 className="font-semibold">Permanent Prohibitions</h3>
+        <h3 className="font-semibold">永久禁止事项</h3>
         <ul className="mt-3 space-y-2 text-sm leading-6 text-[var(--aios-muted)]">
           {version.profile.permanentProhibitions.map((item) => (
             <li key={item}>• {item}</li>
@@ -299,7 +306,7 @@ export function AgentDetailScreen({
 
   function suspend() {
     const reason = window.prompt(
-      "请输入暂停原因。暂停后新 Task 将无法选择此 AI 员工。",
+      "请输入暂停原因。暂停后新任务将无法选择此 AI 员工。",
     );
     if (reason?.trim())
       void onAction("SUSPEND", undefined, reason.trim());
@@ -308,7 +315,7 @@ export function AgentDetailScreen({
   function disable() {
     if (
       window.confirm(
-        "确认有序停用此 AI 员工？存在 Task 引用时操作会被领域规则拒绝。",
+        "确认有序停用此 AI 员工？存在任务引用时操作会被领域规则拒绝。",
       )
     ) {
       void onAction("DISABLE");
@@ -329,7 +336,7 @@ export function AgentDetailScreen({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm font-semibold text-[var(--aios-primary)]">
-              Agent Aggregate
+              AI 员工聚合
             </p>
             <AgentStatusBadge status={item.status} />
           </div>
@@ -342,8 +349,8 @@ export function AgentDetailScreen({
           </p>
           <p className="mt-2 text-xs text-[var(--aios-muted)]">
             {scopeLabels.organizationName} / {scopeLabels.workspaceName} ·
-            Human Owner {ownerNames[item.humanOwnerId] ?? item.humanOwnerId} ·
-            Aggregate v{item.aggregateVersion}
+            人工负责人 {ownerNames[item.humanOwnerId] ?? item.humanOwnerId} ·
+            聚合 v{item.aggregateVersion}
           </p>
         </div>
         {permission.canManage ? (
@@ -447,7 +454,7 @@ export function AgentDetailScreen({
             aria-hidden="true"
           />
           <div>
-            <p className="font-semibold">Suspension Reason</p>
+            <p className="font-semibold">暂停原因</p>
             <p className="mt-1 text-sm text-[var(--aios-muted)]">
               {item.suspensionReason}
             </p>
@@ -459,7 +466,7 @@ export function AgentDetailScreen({
         <Card className="h-fit p-4">
           <h2 className="flex items-center gap-2 font-semibold">
             <GitBranch size={18} aria-hidden="true" />
-            AgentVersion 历史
+            AI 员工版本历史
           </h2>
           <div className="mt-4 grid gap-2">
             {[...item.versions]
@@ -492,13 +499,12 @@ export function AgentDetailScreen({
       <Card className="mt-5 p-5">
         <h2 className="flex items-center gap-2 font-semibold">
           <ShieldCheck size={18} aria-hidden="true" />
-          Usage 与 Runtime 交集
+          使用情况与运行时交集
         </h2>
         <p className="mt-3 text-sm leading-6 text-[var(--aios-muted)]">
-          Task 引用 {item.referencedTaskIds.length} 次。实际执行权限取 Agent
-          Identity、Organization、Workspace、Task、AgentVersion、
-          CapabilityVersion、Knowledge Scope、Tool Action、Risk、Approval 与
-          AutonomyLevel 的交集；任一维度拒绝即 Default Deny。
+          任务引用 {item.referencedTaskIds.length} 次。实际执行权限取 AI 员工身份、组织、工作空间、任务、AI 员工版本、
+          能力版本、知识库范围、工具动作、风险、审批与
+          自主等级的交集；任一维度拒绝即默认拒绝。
         </p>
         {item.referencedTaskIds.length ? (
           <div className="mt-3 flex flex-wrap gap-2">

@@ -43,7 +43,7 @@ const draft: TechnicalSolutionArtifactDraft = {
   scope,
   taskId: "task-mock-0001",
   runId: "run-task-mock-0001-01",
-  title: "Task Center 黄金路径 · 技术方案",
+  title: "任务中心黄金路径 · 技术方案",
   sections: sectionTitles.map((title) => ({
     title,
     paragraphs: [`${title}的确定性结果。`],
@@ -80,7 +80,7 @@ function expectRepositoryError(
   return true;
 }
 
-describe("Artifact mock repository", () => {
+describe("成果 mock repository", () => {
   let storage: MemoryStorage;
 
   beforeEach(() => {
@@ -127,17 +127,17 @@ describe("Artifact mock repository", () => {
         first.id,
       ),
     ).resolves.toMatchObject({
-      title: "Task Center 黄金路径 · 技术方案",
+      title: "任务中心黄金路径 · 技术方案",
     });
 
     const idempotent = await repository().submitTechnicalSolution(
       "agent-rd-001",
       { ...draft, title: "重试不覆盖已生成版本" },
     );
-    expect(idempotent.title).toBe("Task Center 黄金路径 · 技术方案");
+    expect(idempotent.title).toBe("任务中心黄金路径 · 技术方案");
   });
 
-  it("allows only the fixed Agent to produce and only the Reviewer to accept", async () => {
+  it("allows only the fixed AI 员工 to produce and only the 验收人 to accept", async () => {
     await expect(
       repository().submitTechnicalSolution(
         "agent-other" as "agent-rd-001",
@@ -182,7 +182,7 @@ describe("Artifact mock repository", () => {
     ).resolves.toEqual(accepted);
   });
 
-  it("fails closed and clears structurally invalid persisted Artifact data", async () => {
+  it("fails closed and clears structurally invalid persisted 成果 data", async () => {
     await repository().submitTechnicalSolution("agent-rd-001", draft);
     const envelope = JSON.parse(
       storage.getItem(ARTIFACT_STORE_KEY)!,

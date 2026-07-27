@@ -164,7 +164,7 @@ function getBrowserStorage(): ToolStorage {
   if (typeof window === "undefined") {
     throw new ToolRepositoryError(
       "INVALID_STORE",
-      "Tool / MCP 连接中心仅可在浏览器 Mock Runtime 中使用。",
+      "工具 / MCP 连接中心仅可在浏览器模拟运行时中使用。",
     );
   }
   return window.localStorage;
@@ -210,7 +210,7 @@ function validateScope(scope: ToolScope): void {
   ) {
     throw new ToolRepositoryError(
       "NOT_FOUND",
-      "Tool / MCP 连接中心作用域不可用。",
+      "工具 / MCP 连接中心作用域不可用。",
     );
   }
 }
@@ -219,7 +219,7 @@ function validateActor(actor: ToolActor): void {
   if (!validActorIds.has(actor.userId)) {
     throw new ToolRepositoryError(
       "FORBIDDEN",
-      "Tool / MCP 连接中心操作身份不可用。",
+      "工具 / MCP 连接中心操作身份不可用。",
     );
   }
 }
@@ -232,10 +232,10 @@ function permissionFor(actor: ToolActor): ToolPermissionDecision {
     canManage,
     canPublish: canManage,
     reason: canManage
-      ? "当前身份可注册、测试、审核和治理 Workspace 内的 Tool / MCP Server。"
+      ? "当前身份可注册、测试、审核和治理工作空间内的工具 / MCP 服务。"
       : actor.userId === "user-auditor"
-        ? "Auditor 仅可查看连接、ActionDefinition、测试与状态证据。"
-        : "当前身份可使用已发布 Tool Action，不能修改连接或发布状态。",
+        ? "审计员仅可查看连接、动作定义、测试与状态证据。"
+        : "当前身份可使用已发布工具动作，不能修改连接或发布状态。",
   };
 }
 
@@ -243,7 +243,7 @@ function requireManager(actor: ToolActor): void {
   if (!managerActorIds.has(actor.userId)) {
     throw new ToolRepositoryError(
       "FORBIDDEN",
-      "只有 Workspace Admin 或 Integration Owner 可治理 Tool / MCP Server。",
+      "只有工作空间管理员或集成负责人可治理工具 / MCP 服务。",
     );
   }
 }
@@ -284,7 +284,7 @@ function seedEnvelope(): ToolStoreEnvelope {
   const test = passingTest("mcp-codegraph-local", "user-admin", timestamp);
   const action: ActionDefinition = {
     name: "codegraph.context",
-    description: "读取经过 Workspace Scope 限定的代码结构上下文。",
+    description: "读取经过工作空间范围限定的代码结构上下文。",
     operationType: "READ",
     riskLevel: "R0",
     inputSchema: "codegraph-context-input-v1",
@@ -325,7 +325,7 @@ function seedEnvelope(): ToolStoreEnvelope {
         code: "CODEGRAPH_READ",
         name: "CodeGraph 代码理解",
         description:
-          "通过受控 MCP Server 提供只读代码结构上下文，不执行命令或代码写入。",
+          "通过受控 MCP 服务提供只读代码结构上下文，不执行命令或代码写入。",
         ownerId: "user-admin",
         status: "PUBLISHED",
         publishedVersionId: version.id,
@@ -342,8 +342,8 @@ function seedEnvelope(): ToolStoreEnvelope {
         id: "mcp-codegraph-local",
         scope: cloneMutable(canonicalScope),
         serverIdentity: "aios.codegraph.local",
-        displayName: "CodeGraph 本地 MCP Server",
-        publisher: "AIOS Internal",
+        displayName: "CodeGraph 本地 MCP 服务",
+        publisher: "AIOS 内部团队",
         serverVersion: "1.0.0",
         transport: "STDIO",
         endpointReference: "runtime://codegraph",
@@ -351,7 +351,7 @@ function seedEnvelope(): ToolStoreEnvelope {
         healthStatus: "HEALTHY",
         toolId: "tool-codegraph-read",
         discoverySnapshotDigest: "sha256:mcp-codegraph-discovery-v1",
-        compatibility: "MCP 2025-06 · AIOS Tool Contract v1",
+        compatibility: "MCP 2025-06 · AIOS 工具契约 v1",
         lastTestSummary: test,
         aggregateVersion: 1,
         createdAt: timestamp,
@@ -612,37 +612,37 @@ function validateInput(input: CreateMcpServerInput): void {
   if (fields.some((value) => !isNonEmptyString(value))) {
     throw new ToolRepositoryError(
       "VALIDATION",
-      "MCP Server Identity、Tool 与 ActionDefinition 字段必须完整。",
+      "MCP 服务身份、工具与动作定义字段必须完整。",
     );
   }
   if (!/^[a-z][a-z0-9._-]{2,95}$/.test(input.serverIdentity)) {
     throw new ToolRepositoryError(
       "VALIDATION",
-      "Server Identity 必须是稳定的小写标识。",
+      "服务身份必须是稳定的小写标识。",
     );
   }
   if (!/^[A-Z][A-Z0-9_]{2,63}$/.test(input.toolCode)) {
     throw new ToolRepositoryError(
       "VALIDATION",
-      "Tool Code 必须使用大写字母、数字或下划线。",
+      "工具编码必须使用大写字母、数字或下划线。",
     );
   }
   if (!/^[a-z][a-z0-9._-]{2,95}$/.test(input.actionName)) {
     throw new ToolRepositoryError(
       "VALIDATION",
-      "Action Name 必须是稳定的小写动作标识。",
+      "动作名称必须是稳定的小写动作标识。",
     );
   }
   if (input.transport !== "STDIO") {
     throw new ToolRepositoryError(
       "VALIDATION",
-      "当前 MVP 仅允许受控 STDIO；Streamable HTTP 将在后续版本通过 TLS、OAuth 与 Egress Gate 开放。",
+      "当前 MVP 仅允许受控 STDIO；流式 HTTP 将在后续版本通过 TLS、OAuth 与出站访问门禁开放。",
     );
   }
   if (!input.endpointReference.startsWith("runtime://")) {
     throw new ToolRepositoryError(
       "VALIDATION",
-      "STDIO 连接只接受 runtime:// Endpoint Reference，不保存任意宿主命令。",
+      "STDIO 连接只接受 runtime:// 端点引用，不保存任意宿主命令。",
     );
   }
   if (
@@ -651,7 +651,7 @@ function validateInput(input: CreateMcpServerInput): void {
   ) {
     throw new ToolRepositoryError(
       "VALIDATION",
-      "Credential 只能保存 secret:// SecretReference，不能保存 Secret Value。",
+      "凭据只能保存 secret:// 密钥引用，不能保存密钥值。",
     );
   }
 }
@@ -694,13 +694,13 @@ export function createToolRepository(
     }
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (!isEnvelope(parsed)) throw new Error("invalid envelope");
+      if (!isEnvelope(parsed)) throw new Error("无效数据封装");
       return parsed;
     } catch {
       storage.removeItem(TOOL_STORE_KEY);
       throw new ToolRepositoryError(
         "INVALID_STORE",
-        "Tool / MCP 本地数据未通过完整性校验，已拒绝加载。",
+        "工具 / MCP 本地数据未通过完整性校验，已拒绝加载。",
       );
     }
   }
@@ -709,7 +709,7 @@ export function createToolRepository(
     if (!isEnvelope(envelope)) {
       throw new ToolRepositoryError(
         "INVALID_STORE",
-        "Tool / MCP 写入未通过完整性校验。",
+        "工具 / MCP 写入未通过完整性校验。",
       );
     }
     storage.setItem(TOOL_STORE_KEY, JSON.stringify(envelope));
@@ -728,7 +728,7 @@ export function createToolRepository(
     if (!server) {
       throw new ToolRepositoryError(
         "NOT_FOUND",
-        "MCP Server 在当前 Workspace 中不可用。",
+        "MCP 服务在当前工作空间中不可用。",
       );
     }
     return server;
@@ -739,7 +739,7 @@ export function createToolRepository(
     if (!tool) {
       throw new ToolRepositoryError(
         "NOT_FOUND",
-        "Tool 在当前 Workspace 中不可用。",
+        "工具在当前工作空间中不可用。",
       );
     }
     return tool;
@@ -899,7 +899,7 @@ export function createToolRepository(
       ) {
         throw new ToolRepositoryError(
           "CONFLICT",
-          "Server Identity 或 Tool Code 已存在。",
+          "服务身份或工具编码已存在。",
         );
       }
       const timestamp = now();
@@ -977,7 +977,7 @@ export function createToolRepository(
         discoverySnapshotDigest: stableDigest(
           `${serverId}:${input.serverVersion}:${action.definitionDigest}`,
         ),
-        compatibility: "MCP candidate · AIOS Tool Contract v1",
+        compatibility: "MCP 候选版本 · AIOS 工具契约 v1",
         aggregateVersion: 1,
         createdAt: timestamp,
         createdBy: actor.userId,
@@ -1000,7 +1000,7 @@ export function createToolRepository(
       if (server.status !== "DRAFT" && server.status !== "TESTING") {
         throw new ToolRepositoryError(
           "CONFLICT",
-          "只有 Draft 或 Testing MCP Server 可以运行连接测试。",
+          "只有草稿或测试中 MCP 服务可以运行连接测试。",
         );
       }
       const tool = findTool(envelope, server.toolId);
@@ -1039,7 +1039,7 @@ export function createToolRepository(
       ) {
         throw new ToolRepositoryError(
           "TOOL_NOT_PUBLISHABLE",
-          "MCP Server 必须通过 Identity、Schema、Permission、Result 与 Secret 隔离测试后才能启用。",
+          "MCP 服务必须通过身份、结构规范、权限、结果与密钥隔离测试后才能启用。",
         );
       }
       const timestamp = now();
@@ -1074,7 +1074,7 @@ export function createToolRepository(
       if (server.status !== "ENABLED") {
         throw new ToolRepositoryError(
           "CONFLICT",
-          "只有 Enabled MCP Server 可以暂停。",
+          "只有已启用 MCP 服务可以暂停。",
         );
       }
       const tool = findTool(envelope, server.toolId);
@@ -1113,7 +1113,7 @@ export function createToolRepository(
       ) {
         throw new ToolRepositoryError(
           "CONFLICT",
-          "只有通过测试且 Health 为 Healthy 的 Suspended MCP Server 可以恢复。",
+          "只有通过测试且健康状态为健康的已暂停 MCP 服务可以恢复。",
         );
       }
       const tool = findTool(envelope, server.toolId);
@@ -1149,7 +1149,7 @@ export function createToolRepository(
       if (!option) {
         throw new ToolRepositoryError(
           "NOT_FOUND",
-          "ToolVersion / Action 当前未发布、未授权或 Health 不可用。",
+          "工具版本 / 动作当前未发布、未授权或健康状态不可用。",
         );
       }
       return option;
@@ -1167,7 +1167,7 @@ export function createToolRepository(
       ) {
         throw new ToolRepositoryError(
           "VALIDATION",
-          "ToolInvocationResult 与当前 Workspace、Actor 或结果契约不一致。",
+          "工具调用结果与当前工作空间、执行主体或结果契约不一致。",
         );
       }
       const envelope = load();
@@ -1188,7 +1188,7 @@ export function createToolRepository(
       ) {
         throw new ToolRepositoryError(
           "CONFLICT",
-          "ToolInvocationResult 未命中固定 ToolVersion / ActionDefinition。",
+          "工具调用结果未命中固定工具版本 / 动作定义。",
         );
       }
       const repeated = envelope.invocations.find(
@@ -1201,7 +1201,7 @@ export function createToolRepository(
         ) {
           throw new ToolRepositoryError(
             "CONFLICT",
-            "IdempotencyKey 已绑定不同的 Tool Invocation。",
+            "幂等键已绑定不同的工具调用。",
           );
         }
         return cloneMutable(repeated);
@@ -1216,7 +1216,7 @@ export function createToolRepository(
       if (!isNonEmptyString(taskId)) {
         throw new ToolRepositoryError(
           "VALIDATION",
-          "TaskId 不能为空。",
+          "任务标识不能为空。",
         );
       }
       await delay();

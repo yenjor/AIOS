@@ -104,8 +104,7 @@ export function KnowledgeCreateLoader() {
           <div>
             <h1 className="font-semibold">当前身份不能新增知识</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-              只有研发负责人或 Workspace Admin
-              可注册、创建版本和发布正式知识。
+              只有研发负责人或工作空间管理员可注册、创建版本和发布正式知识。
             </p>
           </div>
         </div>

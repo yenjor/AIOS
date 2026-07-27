@@ -71,7 +71,7 @@ export function McpCenterLoader() {
           size={21}
           aria-hidden="true"
         />
-        正在加载 Registered MCP Server 与连接治理证据…
+        正在加载已注册 MCP 服务与连接治理证据…
       </Card>
     ) : null;
   }

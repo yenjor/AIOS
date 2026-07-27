@@ -68,21 +68,21 @@ describe("TaskWizardLoader", () => {
     expect(view.container).toBeEmptyDOMElement();
   });
 
-  it("checks permission before loading a draft and denies an Auditor safely", async () => {
+  it("checks permission before loading a draft and denies an 审计员 safely", async () => {
     useSession.mockReturnValue({
       ...session,
-      user: { id: "user-auditor", name: "赵岚", role: "Auditor" },
+      user: { id: "user-auditor", name: "赵岚", role: "审计员" },
     });
     repository.getTaskPermission.mockResolvedValue({
       allowed: false,
       code: "FORBIDDEN",
-      reason: "Auditor has read-only Task access.",
+      reason: "审计员 has read-only 任务 access.",
     });
 
     render(<TaskWizardLoader />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "当前身份不能创建 Task",
+      "当前身份不能创建任务",
     );
     expect(repository.getDraft).not.toHaveBeenCalled();
   });
@@ -91,7 +91,7 @@ describe("TaskWizardLoader", () => {
     useSession.mockReturnValue(session);
     render(<TaskWizardLoader />);
 
-    await screen.findByRole("heading", { name: "创建 Task" });
+    await screen.findByRole("heading", { name: "创建任务" });
     const scope = {
       organizationId: "org-guangwei",
       workspaceId: "ws-ai",
@@ -126,13 +126,13 @@ describe("TaskWizardLoader", () => {
 
     useSession.mockReturnValue({
       ...session,
-      user: { id: "user-auditor", name: "赵岚", role: "Auditor" },
+      user: { id: "user-auditor", name: "赵岚", role: "审计员" },
     });
     view.rerender(<TaskWizardLoader />);
     resolveOld({ allowed: true, code: "ALLOWED", reason: "old" });
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "当前身份不能创建 Task",
+      "当前身份不能创建任务",
     );
     expect(repository.getDraft).not.toHaveBeenCalled();
   });
@@ -162,13 +162,13 @@ describe("TaskWizardLoader", () => {
     const interaction = userEvent.setup();
     render(<TaskWizardLoader />);
 
-    await screen.findByRole("heading", { name: "创建 Task" });
+    await screen.findByRole("heading", { name: "创建任务" });
     for (const template of [
       "理解代码",
       "分析需求",
       "生成技术方案",
       "辅助编码",
-      "Code Review",
+      "代码审查",
       "自动测试",
     ]) {
       expect(screen.getByRole("radio", { name: new RegExp(template) })).toBeVisible();

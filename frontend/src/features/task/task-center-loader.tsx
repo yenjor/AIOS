@@ -187,7 +187,7 @@ export function TaskCenterLoader() {
           className="animate-spin text-[var(--aios-primary)] motion-reduce:animate-none"
           size={21}
         />
-        <span>正在加载 Task Center…</span>
+        <span>正在加载任务中心…</span>
       </Card>
     );
   }
@@ -205,11 +205,11 @@ export function TaskCenterLoader() {
             size={21}
           />
           <div>
-            <h1 className="font-semibold">Task 列表加载失败</h1>
+            <h1 className="font-semibold">任务列表加载失败</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               {state.reason === "INVALID_STORE"
-                ? "本地 Task 数据未通过完整性校验，已拒绝展示不可信内容。"
-                : "Task Repository 暂时不可用，请重试加载。"}
+                ? "本地任务数据未通过完整性校验，已拒绝展示不可信内容。"
+                : "任务仓储暂时不可用，请重试加载。"}
             </p>
             <Button
               className="mt-4"

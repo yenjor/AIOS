@@ -53,7 +53,7 @@ export async function invokeCodeGraphContext(
   try {
     envelope = (await response.json()) as InvocationResponse;
   } catch {
-    throw new Error("Tool Broker returned a non-JSON response.");
+    throw new Error("工具代理返回了非 JSON 响应。");
   }
   if (isInvocationResult(envelope.data)) {
     return envelope.data;
@@ -61,6 +61,6 @@ export async function invokeCodeGraphContext(
   const message =
     isRecord(envelope.error) && typeof envelope.error.message === "string"
       ? envelope.error.message
-      : `Tool Broker rejected the invocation (${response.status}).`;
+      : `工具代理拒绝了本次调用（${response.status}）。`;
   throw new Error(message);
 }

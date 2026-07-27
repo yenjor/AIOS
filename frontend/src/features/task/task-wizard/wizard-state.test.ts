@@ -13,14 +13,14 @@ import {
   validateStep,
 } from "./wizard-validation";
 
-describe("Task wizard state", () => {
+describe("任务 wizard state", () => {
   it("round-trips the modeled definition fields without adding unsupported draft keys", () => {
     const values = createInitialWizardValues();
     values.templateName = "生成技术方案";
-    values.title = "生成 Task Center 技术方案";
+    values.title = "生成任务中心技术方案";
     values.goal = "形成可评审方案";
-    values.currentProblem = "Task 缺少可执行定义";
-    values.workScope = "Task Center 页面";
+    values.currentProblem = "任务缺少可执行定义";
+    values.workScope = "任务中心页面";
     values.expectedCompletionLocal = "2026-08-01T18:00";
     values.constraintsText = "遵循现有架构";
     values.outOfScopeText = "不改后端";
@@ -55,8 +55,8 @@ describe("Task wizard state", () => {
       ].sort(),
     );
     expect(draft.constraints).toEqual(["遵循现有架构"]);
-    expect(draft.currentProblem).toBe("Task 缺少可执行定义");
-    expect(draft.workScope).toBe("Task Center 页面");
+    expect(draft.currentProblem).toBe("任务缺少可执行定义");
+    expect(draft.workScope).toBe("任务中心页面");
     expect(draft.expectedCompletionAt).toMatch(
       /^2026-08-01T\d{2}:00:00\.000Z$/,
     );
@@ -91,7 +91,7 @@ describe("Task wizard state", () => {
   });
 });
 
-describe("Task wizard validation", () => {
+describe("任务 wizard validation", () => {
   it("clamps forged progress to the first incomplete step while preserving valid current steps", () => {
     const incomplete = createInitialWizardValues();
     incomplete.templateName = "生成技术方案";
@@ -106,7 +106,7 @@ describe("Task wizard validation", () => {
       title: "完整草稿",
       goal: "形成方案",
       currentProblem: "缺少方案",
-      workScope: "Task Center",
+      workScope: "任务中心",
       expectedCompletionLocal: "2026-08-01T18:00",
       constraintsText: "遵循架构",
       outOfScopeText: "不改后端",
@@ -141,7 +141,7 @@ describe("Task wizard validation", () => {
         title: "高风险旧草稿",
         goal: "形成方案",
         currentProblem: "缺少方案",
-        workScope: "Task Center",
+        workScope: "任务中心",
         expectedCompletionLocal: "2026-08-01T18:00",
         constraintsText: "遵循架构",
         outOfScopeText: "不改后端",
@@ -153,7 +153,7 @@ describe("Task wizard validation", () => {
       expect(validateStep(2, values)).toHaveProperty("riskLevel");
       expect(validateAllSteps(values)).toHaveProperty("riskLevel");
       expect(() => buildTechnicalSolutionDraft(values)).toThrow(
-        "incomplete",
+        "尚未填写完整",
       );
     },
   );
@@ -162,10 +162,10 @@ describe("Task wizard validation", () => {
     const values = createInitialWizardValues();
     Object.assign(values, {
       templateName: "生成技术方案",
-      title: "生成 Task Center 技术方案",
+      title: "生成任务中心技术方案",
       goal: "形成可评审方案",
-      currentProblem: "需要统一 Task 定义",
-      workScope: "Task Center",
+      currentProblem: "需要统一任务定义",
+      workScope: "任务中心",
       expectedCompletionLocal: "2026-08-01T18:00",
       constraintsText: "遵循现有架构",
       outOfScopeText: "不改后端",

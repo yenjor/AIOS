@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         error: {
           code: "RUNTIME_ORIGIN_DENIED",
           message:
-            "The local pilot Model Gateway only accepts same-origin runtime requests.",
+            "本地试点模型网关仅接受同源运行时请求。",
         },
       },
       { status: 403 },
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       {
         error: {
           code: "UNSUPPORTED_MEDIA_TYPE",
-          message: "Content-Type must be application/json.",
+          message: "内容类型必须为 application/json。",
         },
       },
       { status: 415 },
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         {
           error: {
             code: "REQUEST_TOO_LARGE",
-            message: "ModelInvocationRequest exceeds the 32 KiB limit.",
+            message: "模型调用请求超过 32 KiB 限制。",
           },
         },
         { status: 413 },
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       {
         error: {
           code: "INVALID_JSON",
-          message: "Request body must be valid JSON.",
+          message: "请求正文必须是有效的 JSON。",
         },
       },
       { status: 400 },
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       {
         error: {
           code: "MODEL_GATEWAY_FAILURE",
-          message: "Model Gateway could not complete the invocation.",
+          message: "模型网关未能完成调用。",
         },
       },
       { status: 500 },

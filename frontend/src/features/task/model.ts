@@ -11,8 +11,8 @@ export interface TaskScope {
 }
 
 /**
- * A repository actor is an identity reference only. Display roles never grant
- * permission; the repository resolves the stable user ID against its policy.
+ * 数据仓储中的执行主体仅是身份引用。展示角色不授予权限；
+ * 数据仓储会依据自身策略解析稳定的用户标识。
  */
 export interface TaskActor {
   userId: string;
@@ -97,9 +97,9 @@ export interface AgentAssignment {
 }
 
 export type PlanStepResponsibility =
-  | "AI研发员工"
-  | "Validation"
-  | "Reviewer";
+  | "AI 研发员工"
+  | "验证"
+  | "验收人";
 
 export type PlanStepType =
   | "AGENT"
@@ -134,7 +134,7 @@ export type ApprovalPointStatus =
 
 export interface ApprovalPoint {
   id: string;
-  name: "计划确认" | "Artifact验收";
+  name: "计划确认" | "成果验收";
   requiredFor: "PLAN_EXECUTION" | "ARTIFACT_ACCEPTANCE";
   riskLevel: RiskLevel;
   status: ApprovalPointStatus;

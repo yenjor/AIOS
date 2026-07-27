@@ -38,15 +38,15 @@ export function validateStep(
   const errors: WizardErrors = {};
 
   if (step === 1 && !values.templateName) {
-    errors.templateName = "请选择一个 Task 模板。";
+    errors.templateName = "请选择一个任务模板。";
   }
 
   if (step === 2) {
     if (isBlank(values.title)) {
-      errors.title = "请输入 Task 标题。";
+      errors.title = "请输入任务标题。";
     }
     if (isBlank(values.goal)) {
-      errors.goal = "请输入清晰、可验证的 Goal。";
+      errors.goal = "请输入清晰、可验证的目标。";
     }
     if (isBlank(values.currentProblem)) {
       errors.currentProblem = "请说明当前问题。";
@@ -59,7 +59,7 @@ export function validateStep(
       values.priority < 0 ||
       values.priority > 100
     ) {
-      errors.priority = "Priority 必须是 0 到 100 之间的整数。";
+      errors.priority = "优先级必须是 0 到 100 之间的整数。";
     }
     if (values.riskLevel !== "R0" && values.riskLevel !== "R1") {
       errors.riskLevel = "当前试点只允许 R0 或 R1 风险等级。";
@@ -92,7 +92,7 @@ export function validateStep(
     !values.agentVersionId
   ) {
     errors.agentVersionId =
-      "请选择一个当前 Workspace 已启用的 Published AgentVersion。";
+      "请选择一个当前工作空间已启用的已发布 AI 员工版本。";
   }
   if (
     step === 3 &&
@@ -100,11 +100,11 @@ export function validateStep(
     !values.capabilityVersionId
   ) {
     errors.capabilityVersionId =
-      "请选择一个当前 Workspace 可用的 Published 能力版本。";
+      "请选择一个当前工作空间可用的已发布能力版本。";
   }
 
   if (step === 4 && isBlank(values.completionCriteriaText)) {
-    errors.completionCriteriaText = "请至少提供一项 Completion Criteria。";
+    errors.completionCriteriaText = "请至少提供一项完成标准。";
   }
 
   return errors;
@@ -150,11 +150,11 @@ export function buildTechnicalSolutionDraft(
   values: TaskWizardValues,
 ): TaskDraft {
   if (values.templateName !== GOLDEN_TEMPLATE) {
-    throw new Error("Only the technical-solution template can be submitted.");
+    throw new Error("当前仅允许提交技术方案模板。");
   }
   const errors = validateAllSteps(values);
   if (Object.keys(errors).length > 0) {
-    throw new Error("The Task wizard is incomplete.");
+    throw new Error("任务创建向导尚未填写完整。");
   }
   return wizardStateToDraft(
     values,

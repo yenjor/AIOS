@@ -126,8 +126,8 @@ export function AgentCenterLoader() {
             <h1 className="font-semibold">AI 员工中心数据加载失败</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               {state.invalidStore
-                ? "本地 Agent 数据未通过完整性校验，已拒绝展示不可信内容。"
-                : "Agent Repository 暂时不可用，请重试。"}
+                ? "本地 AI 员工数据未通过完整性校验，已拒绝展示不可信内容。"
+                : "AI 员工数据仓储暂时不可用，请重试。"}
             </p>
             <Button
               className="mt-4"

@@ -75,24 +75,24 @@ export function ToolCenterScreen({
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Tool Context
+            工具上下文
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Tool 中心
+            工具中心
           </h1>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--aios-muted)]">
             <span className="flex items-center gap-2">
               <Building2 size={16} aria-hidden="true" />
-              Organization：{scopeLabels.organizationName}
+              组织：{scopeLabels.organizationName}
             </span>
             <span className="flex items-center gap-2">
               <Wrench size={16} aria-hidden="true" />
-              Workspace：{scopeLabels.workspaceName}
+              工作空间：{scopeLabels.workspaceName}
             </span>
           </div>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-            管理 Tool、不可变 ToolVersion、ActionDefinition、动作级风险与 Health。
-            Tool 只返回标准化 InvocationResult，不修改 Task 业务状态。
+            管理工具、不可变工具版本、动作定义、动作级风险与健康状态。
+            工具只返回标准化调用结果，不修改任务业务状态。
           </p>
         </div>
         <Link
@@ -105,16 +105,16 @@ export function ToolCenterScreen({
       </header>
 
       <section
-        aria-label="Tool 中心摘要"
+        aria-label="工具中心摘要"
         className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <SummaryCard label="可见 Tool" value={summary.total} icon={Wrench} />
+        <SummaryCard label="可见工具" value={summary.total} icon={Wrench} />
         <SummaryCard
           label="已发布"
           value={summary.published}
           icon={CheckCircle2}
         />
-        <SummaryCard label="Healthy" value={summary.healthy} icon={Activity} />
+        <SummaryCard label="健康" value={summary.healthy} icon={Activity} />
         <SummaryCard
           label="需要处理"
           value={summary.attention}
@@ -124,7 +124,7 @@ export function ToolCenterScreen({
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-[var(--aios-muted)]">
-          共 {items.length} 个 Tool Aggregate
+          共 {items.length} 个工具聚合
         </p>
         <p className="text-sm text-[var(--aios-muted)]">{permission.reason}</p>
       </div>
@@ -132,25 +132,25 @@ export function ToolCenterScreen({
       <Card className="mt-4 hidden overflow-hidden lg:block">
         <div
           role="region"
-          aria-label="Tool 目录表格，可横向滚动"
+          aria-label="工具目录表格，可横向滚动"
           tabIndex={0}
           className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
         >
           <table
-            aria-label="Tool 目录"
+            aria-label="工具目录"
             className="w-full min-w-[1100px] text-left text-sm"
           >
             <thead className="bg-[var(--aios-canvas)] text-[var(--aios-muted)]">
               <tr>
                 {[
-                  "Tool",
+                  "工具",
                   "状态",
-                  "Health",
+                  "健康状态",
                   "固定版本",
-                  "Action",
+                  "动作",
                   "最高风险",
-                  "MCP Server",
-                  "Owner",
+                  "MCP 服务",
+                  "负责人",
                 ].map((heading) => (
                   <th key={heading} scope="col" className="px-4 py-3 font-medium">
                     {heading}
@@ -200,7 +200,7 @@ export function ToolCenterScreen({
         </div>
       </Card>
 
-      <ul aria-label="Tool 目录移动端列表" className="mt-4 space-y-3 lg:hidden">
+      <ul aria-label="工具目录移动端列表" className="mt-4 space-y-3 lg:hidden">
         {items.map((item) => (
           <li key={item.id}>
             <Card className="p-4">
@@ -219,13 +219,13 @@ export function ToolCenterScreen({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-[var(--aios-muted)]">Health</dt>
+                  <dt className="text-xs text-[var(--aios-muted)]">健康状态</dt>
                   <dd className="mt-1">
                     <ToolHealthBadge status={item.healthStatus} />
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-[var(--aios-muted)]">Action</dt>
+                  <dt className="text-xs text-[var(--aios-muted)]">动作</dt>
                   <dd className="mt-1">{item.actionCount}</dd>
                 </div>
                 <div>
@@ -245,9 +245,7 @@ export function ToolCenterScreen({
           aria-hidden="true"
         />
         <p>
-          Agent 与 Capability 只能绑定已发布、Health 为 Healthy
-          且位于当前 Workspace 的精确 Action；Discovery、OAuth Scope 或 Plugin Manifest
-          都不能自动产生业务权限。
+          AI 员工与能力只能绑定已发布、健康状态为健康且位于当前工作空间的精确动作；发现、OAuth 范围或插件清单都不能自动产生业务权限。
         </p>
       </Card>
     </div>

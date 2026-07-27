@@ -22,9 +22,9 @@ export interface MockAgentRuntimeOutput {
 }
 
 const RUNTIME_STEP_SUMMARIES: Readonly<Record<number, string>> = {
-  1: "已在 Task Goal、Constraints、Completion Criteria 与 Scope Digest 内确认执行边界。",
-  3: "已依据固定 CapabilityVersion 与 WorkflowVersion 形成结构化技术方案草稿。",
-  4: "已完成八个必需章节、知识库引用与 Reviewer 门禁检查。",
+  1: "已在任务目标、约束、完成标准与范围摘要内确认执行边界。",
+  3: "已依据固定能力版本与工作流版本形成结构化技术方案草稿。",
+  4: "已完成八个必需章节、知识库引用与验收人门禁检查。",
 };
 
 function invocationHighlights(invocation: ToolInvocationResult): string[] {
@@ -81,7 +81,7 @@ function requireSuccessfulInvocation(
     !invocation.resultReference
   ) {
     throw new MockAgentRuntimeError(
-      "A successful invocation of the pinned codegraph.context ToolVersion is required.",
+      "必须成功调用固定的 codegraph.context 工具版本。",
     );
   }
   return invocation;
@@ -112,7 +112,7 @@ function requireSuccessfulModelInvocation(
     invocation.sections.length !== 8
   ) {
     throw new MockAgentRuntimeError(
-      "A successful structured Model Invocation for the pinned CapabilityVersion is required.",
+      "必须针对固定能力版本完成结构化模型调用。",
     );
   }
   return invocation;
@@ -126,14 +126,14 @@ function buildSections(
   const sections = structuredClone(modelInvocation.sections!);
   const impact = sections.find(({ title }) => title === "影响模块与文件");
   if (impact) {
-    const evidence = `${invocationHighlights(invocation)[0]}；Tool Invocation ${invocation.id}；Output Digest ${invocation.outputDigest}。`;
+    const evidence = `${invocationHighlights(invocation)[0]}；工具调用 ${invocation.id}；输出摘要 ${invocation.outputDigest}。`;
     impact.paragraphs = [...impact.paragraphs.slice(0, 7), evidence];
   }
   const knowledge = sections.find(({ title }) => title === "知识库引用");
   if (knowledge) {
     knowledge.paragraphs = task.knowledgeVersionRefs.map(
       (reference) =>
-        `${reference.versionId} · ${reference.digest} · locator: README.md#5-系统整体架构`,
+        `${reference.versionId} · ${reference.digest} · 定位：README.md#5-系统整体架构`,
     );
   }
   return sections;
@@ -142,7 +142,7 @@ function buildSections(
 function packageDigest(task: TaskDetail): string {
   const run = task.executionRun;
   if (!run) {
-    throw new MockAgentRuntimeError("ExecutionRun is required.");
+    throw new MockAgentRuntimeError("必须包含执行记录。");
   }
   return run.executionPackageDigest;
 }
@@ -161,7 +161,7 @@ export function executeNextTechnicalSolutionStep(
     !task.workflowVersionRef
   ) {
     throw new MockAgentRuntimeError(
-      "Task is not in an executable technical solution state.",
+      "任务不处于可执行的技术方案状态。",
     );
   }
 
@@ -170,13 +170,13 @@ export function executeNextTechnicalSolutionStep(
       status === "PENDING" && resultType !== "HUMAN_REVIEW",
   );
   if (!nextRecord) {
-    throw new MockAgentRuntimeError("No executable Step remains.");
+    throw new MockAgentRuntimeError("没有剩余的可执行步骤。");
   }
   const planStep = task.executionPlan.steps.find(
     ({ id }) => id === nextRecord.stepId,
   );
   if (!planStep || planStep.stepType === "HUMAN_REVIEW") {
-    throw new MockAgentRuntimeError("Workflow Step is unavailable.");
+    throw new MockAgentRuntimeError("工作流步骤不可用。");
   }
 
   const invocation =
@@ -206,11 +206,11 @@ export function executeNextTechnicalSolutionStep(
     resultType: isArtifactStep ? "ARTIFACT_DRAFT" : "STEP_SUCCEEDED",
     summary:
       isToolStep
-        ? `${invocation!.summary} Invocation ${invocation!.id} 已进入 Audit。`
+        ? `${invocation!.summary} 调用 ${invocation!.id} 已进入审计。`
         : planStep.sequence === 3
-          ? `${structuredModelInvocation!.summary} Invocation ${structuredModelInvocation!.id} 已进入 Audit。`
+          ? `${structuredModelInvocation!.summary} 调用 ${structuredModelInvocation!.id} 已进入审计。`
         : RUNTIME_STEP_SUMMARIES[planStep.sequence] ??
-          "步骤已按固定 WorkflowVersion 完成。",
+          "步骤已按固定工作流版本完成。",
     outputReference,
     outputDigest,
   };

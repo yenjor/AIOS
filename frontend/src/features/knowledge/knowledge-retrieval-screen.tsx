@@ -70,14 +70,13 @@ export function KnowledgeRetrievalScreen() {
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Permission-before-Relevance
+            权限先于相关性
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             知识库检索
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-            在当前 Organization、Workspace、身份和用途范围内检索有效且索引就绪的
-            知识版本，并返回可追溯的引用证据。
+            在当前组织、工作空间、身份和用途范围内检索有效且索引就绪的知识版本，并返回可追溯的引用证据。
           </p>
         </div>
         <Link
@@ -97,12 +96,11 @@ export function KnowledgeRetrievalScreen() {
           />
           <div>
             <p className="text-sm font-semibold">
-              Deterministic Mock Hybrid Retrieval
+              确定性模拟混合检索
             </p>
             <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
-              MVP 用可复现的词法评分模拟 Sparse + Dense
-              合并；没有调用外部模型、Qdrant 或真实 Embedding。权限、固定版本与
-              Citation 边界按正式流程执行。
+              MVP 用可复现的词法评分模拟稀疏检索与稠密检索
+              合并；没有调用外部模型、Qdrant 或真实向量化。权限、固定版本与引用边界按正式流程执行。
             </p>
           </div>
         </div>
@@ -119,7 +117,7 @@ export function KnowledgeRetrievalScreen() {
             id="knowledge-retrieval-query"
             className="min-h-11 flex-1 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3 text-sm focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
             maxLength={300}
-            placeholder="例如：AIOS Task 如何绑定固定知识版本？"
+            placeholder="例如：AIOS 任务如何绑定固定知识版本？"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -192,7 +190,7 @@ export function KnowledgeRetrievalScreen() {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Badge tone="success">
-                          Score {result.score.toFixed(3)}
+                          评分 {result.score.toFixed(3)}
                         </Badge>
                         <Badge>Sparse {result.sparseScore.toFixed(3)}</Badge>
                         <Badge>Dense {result.denseScore.toFixed(3)}</Badge>
@@ -205,7 +203,7 @@ export function KnowledgeRetrievalScreen() {
                       <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                         <p className="flex items-center gap-2 text-xs font-semibold">
                           <ShieldCheck size={15} aria-hidden="true" />
-                          知识版本 ID
+                          知识版本标识
                         </p>
                         <p className="mt-2 break-all font-mono text-xs">
                           {result.citation.knowledgeVersionId}
@@ -214,7 +212,7 @@ export function KnowledgeRetrievalScreen() {
                       <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                         <p className="flex items-center gap-2 text-xs font-semibold">
                           <BookOpen size={15} aria-hidden="true" />
-                          Content Location
+                          内容位置
                         </p>
                         <p className="mt-2 break-all font-mono text-xs">
                           {result.citation.contentLocation}
@@ -223,7 +221,7 @@ export function KnowledgeRetrievalScreen() {
                       <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                         <p className="flex items-center gap-2 text-xs font-semibold">
                           <Braces size={15} aria-hidden="true" />
-                          Citation Digest
+                          引用摘要
                         </p>
                         <p className="mt-2 break-all font-mono text-xs">
                           {result.citation.citationDigest}
@@ -240,7 +238,7 @@ export function KnowledgeRetrievalScreen() {
             <dl className="grid gap-3 md:grid-cols-2">
               <div>
                 <dt className="text-xs text-[var(--aios-muted)]">
-                  Permission Digest
+                  权限摘要
                 </dt>
                 <dd className="mt-1 break-all font-mono text-xs">
                   {state.response.permissionDigest}
@@ -248,7 +246,7 @@ export function KnowledgeRetrievalScreen() {
               </div>
               <div>
                 <dt className="text-xs text-[var(--aios-muted)]">
-                  Scope Digest
+                  范围摘要
                 </dt>
                 <dd className="mt-1 break-all font-mono text-xs">
                   {state.response.scopeDigest}

@@ -6,18 +6,18 @@ const SCREENSHOT_DIRECTORY = join(process.cwd(), "test-results");
 async function enterWorkspace(
   page: Page,
   identity:
-    | "使用 陈明（研发负责人）身份"
-    | "使用 赵岚（Auditor）身份",
+    | "使用陈明（研发负责人）身份"
+    | "使用赵岚（审计员）身份",
 ) {
   await page.goto("/");
   await page.getByRole("link", { name: "进入 AIOS", exact: true }).click();
   await page.getByRole("button", { name: identity, exact: true }).click();
   await page
-    .getByRole("button", { name: "选择组织 光位科技", exact: true })
+    .getByRole("button", { name: "选择组织光位科技", exact: true })
     .click();
   await page
     .getByRole("button", {
-      name: "选择 Workspace AI 智能业务线",
+      name: "选择工作空间 AI 智能业务线",
       exact: true,
     })
     .click();
@@ -40,7 +40,7 @@ test("知识库管理者完成注册、发布、检索、版本替代与纠错�
   page,
 }) => {
   test.setTimeout(120_000);
-  await enterWorkspace(page, "使用 陈明（研发负责人）身份");
+  await enterWorkspace(page, "使用陈明（研发负责人）身份");
 
   const navigation = page.getByRole("navigation", { name: "主要导航" });
   await navigation
@@ -78,7 +78,7 @@ test("知识库管理者完成注册、发布、检索、版本替代与纠错�
     .fill("发布校验指南");
   await page
     .getByLabel("描述", { exact: true })
-    .fill("用于研发 Task 的发布校验、回退验证与证据留存。");
+    .fill("用于研发任务的发布校验、回退验证与证据留存。");
   await page.getByLabel("来源类型", { exact: true }).selectOption("SOP");
   await page
     .getByLabel("来源位置", { exact: true })
@@ -93,7 +93,7 @@ test("知识库管理者完成注册、发布、检索、版本替代与纠错�
   await page
     .getByLabel("知识正文", { exact: true })
     .fill(
-      "# 发布校验\n\n发布前必须执行类型检查、单元测试和构建验证。发布后核对 Citation 与 Artifact 证据，异常时按回退清单恢复。",
+      "# 发布校验\n\n发布前必须执行类型检查、单元测试和构建验证。发布后核对引用与成果证据，异常时按回退清单恢复。",
     );
   await page.getByRole("button", { name: "注册知识", exact: true }).click();
 
@@ -122,14 +122,14 @@ test("知识库管理者完成注册、发布、检索、版本替代与纠错�
   ).toBeVisible();
   await page
     .getByLabel("检索问题", { exact: true })
-    .fill("发布校验 回退 Citation");
+    .fill("发布校验回退引用");
   await page.getByRole("button", { name: "执行检索", exact: true }).click();
   await expect(page.getByText("发布校验指南", { exact: true })).toBeVisible();
   await expect(
     page.getByText("knowledge-mock-0001-v1", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Citation Digest", { exact: true }).first(),
+    page.getByText("引用摘要", { exact: true }).first(),
   ).toBeVisible();
 
   await page.goto("/knowledge/knowledge-mock-0001");
@@ -143,9 +143,9 @@ test("知识库管理者完成注册、发布、检索、版本替代与纠错�
   await page
     .getByLabel("知识正文", { exact: true })
     .fill(
-      "# 发布校验 v2\n\n发布前执行类型检查、单元测试、E2E 与生产构建。发布后验证权限负向用例、固定知识库版本引用和 Artifact，异常时执行已评审回退步骤。",
+      "# 发布校验 v2\n\n发布前执行类型检查、单元测试、E2E 与生产构建。发布后验证权限负向用例、固定知识库版本引用和成果，异常时执行已评审回退步骤。",
     );
-  await page.getByRole("button", { name: "创建 Draft", exact: true }).click();
+  await page.getByRole("button", { name: "创建草稿", exact: true }).click();
   await expect(page).toHaveURL(/\/knowledge\/knowledge-mock-0001$/);
   await expect(page.getByText("knowledge-mock-0001-v2", { exact: true })).toBeVisible();
   await page
@@ -165,7 +165,7 @@ test("知识库管理者完成注册、发布、检索、版本替代与纠错�
     .getByLabel("纠错原因", { exact: true })
     .fill("补充生产发布后的监控观察窗口和责任人。");
   await page
-    .getByLabel("Evidence Reference", { exact: true })
+    .getByLabel("证据引用", { exact: true })
     .fill("docs/reviews/release-review-2026-07.md");
   await page.getByRole("button", { name: "提交纠错", exact: true }).click();
   await expect(page.getByText("补充生产发布后的监控观察窗口和责任人。")).toBeVisible();
@@ -175,10 +175,10 @@ test("知识库管理者完成注册、发布、检索、版本替代与纠错�
   });
 });
 
-test("知识库对 Auditor 保持只读并隐藏机密条目", async ({
+test("知识库对审计员保持只读并隐藏机密条目", async ({
   page,
 }) => {
-  await enterWorkspace(page, "使用 赵岚（Auditor）身份");
+  await enterWorkspace(page, "使用赵岚（审计员）身份");
   await page.goto("/knowledge");
   await expect(
     page.getByRole("heading", { name: "知识库", exact: true }),
@@ -203,7 +203,7 @@ test("知识库在移动视口没有页面级横向溢出", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await enterWorkspace(page, "使用 陈明（研发负责人）身份");
+  await enterWorkspace(page, "使用陈明（研发负责人）身份");
   await page.goto("/knowledge");
   await expect(
     page.getByRole("heading", { name: "知识库", exact: true }),

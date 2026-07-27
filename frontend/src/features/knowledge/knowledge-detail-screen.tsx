@@ -21,6 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 import {
+  KNOWLEDGE_CLASSIFICATION_LABELS,
+  KNOWLEDGE_CORRECTION_STATUS_LABELS,
+  KNOWLEDGE_ITEM_STATUS_LABELS,
+  KNOWLEDGE_PIPELINE_STAGE_LABELS,
+  KNOWLEDGE_SOURCE_TYPE_LABELS,
+} from "./knowledge-display";
+import {
   KnowledgeEffectiveBadge,
   KnowledgeIndexBadge,
 } from "./knowledge-status-badge";
@@ -86,7 +93,7 @@ function ClassificationBadge({
             : "info"
       }
     >
-      {classification}
+      {KNOWLEDGE_CLASSIFICATION_LABELS[classification]}
     </Badge>
   );
 }
@@ -116,7 +123,7 @@ function VersionCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-semibold">
-              Version {version.versionNumber}
+              版本 {version.versionNumber}
             </h3>
             <KnowledgeEffectiveBadge status={version.effectiveStatus} />
             <KnowledgeIndexBadge status={version.indexStatus} />
@@ -208,13 +215,13 @@ function VersionCard({
 
       <dl className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-          <dt className="text-xs text-[var(--aios-muted)]">Content Digest</dt>
+          <dt className="text-xs text-[var(--aios-muted)]">内容摘要</dt>
           <dd className="mt-1 break-all font-mono text-xs">
             {version.contentDigest}
           </dd>
         </div>
         <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-          <dt className="text-xs text-[var(--aios-muted)]">Raw Content Ref</dt>
+          <dt className="text-xs text-[var(--aios-muted)]">原始内容引用</dt>
           <dd className="mt-1 break-all font-mono text-xs">
             {version.rawContentReference.objectKey}
           </dd>
@@ -258,7 +265,7 @@ function VersionCard({
                 />
                 <div>
                   <p className="text-sm font-semibold">
-                    {stage.name} · {stage.processorVersion}
+                    {KNOWLEDGE_PIPELINE_STAGE_LABELS[stage.name]} · {stage.processorVersion}
                   </p>
                   <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
                     {stage.summary}
@@ -269,16 +276,16 @@ function VersionCard({
           </ol>
           <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             {[
-              ["Parser", version.parserVersion],
-              ["Chunker", version.chunkerVersion],
-              ["Embedding", version.embeddingModelVersion],
-              ["Index Version", String(version.indexVersion)],
+              ["解析器", version.parserVersion],
+              ["分块器", version.chunkerVersion],
+              ["向量化", version.embeddingModelVersion],
+              ["索引版本", String(version.indexVersion)],
               [
-                "Chunk Count",
+                "分块数量",
                 String(version.validationSummary.chunkCount),
               ],
               [
-                "Citation Coverage",
+                "引用覆盖率",
                 `${Math.round(
                   version.validationSummary.citationCoverage * 100,
                 )}%`,
@@ -331,9 +338,9 @@ export function KnowledgeDetailScreen({
             <div className="flex flex-wrap items-center gap-2">
               <ClassificationBadge classification={item.classification} />
               <Badge tone={item.status === "ACTIVE" ? "success" : "warning"}>
-                {item.status}
+                {KNOWLEDGE_ITEM_STATUS_LABELS[item.status]}
               </Badge>
-              <Badge>{item.source.sourceType}</Badge>
+              <Badge>{KNOWLEDGE_SOURCE_TYPE_LABELS[item.source.sourceType]}</Badge>
             </div>
             <p className="mt-4 break-all font-mono text-xs text-[var(--aios-muted)]">
               {item.id} · {item.code}
@@ -366,26 +373,26 @@ export function KnowledgeDetailScreen({
 
         <dl className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-            <dt className="text-xs text-[var(--aios-muted)]">Organization</dt>
+            <dt className="text-xs text-[var(--aios-muted)]">组织</dt>
             <dd className="mt-1 text-sm font-semibold">
               {scopeLabels.organizationName}
             </dd>
           </div>
           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-            <dt className="text-xs text-[var(--aios-muted)]">Workspace</dt>
+            <dt className="text-xs text-[var(--aios-muted)]">工作空间</dt>
             <dd className="mt-1 text-sm font-semibold">
               {scopeLabels.workspaceName}
             </dd>
           </div>
           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-            <dt className="text-xs text-[var(--aios-muted)]">Owner</dt>
+            <dt className="text-xs text-[var(--aios-muted)]">负责人</dt>
             <dd className="mt-1 text-sm font-semibold">
               {ownerNames[item.ownerId] ?? item.ownerId}
             </dd>
           </div>
           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
             <dt className="text-xs text-[var(--aios-muted)]">
-              Aggregate Version
+              聚合版本
             </dt>
             <dd className="mt-1 font-mono text-xs">
               {item.aggregateVersion}
@@ -452,10 +459,10 @@ export function KnowledgeDetailScreen({
                   className="rounded-lg bg-[var(--aios-canvas)] p-3"
                 >
                   <p className="text-sm font-semibold">
-                    {scope.scopeType} · {scope.scopeId}
+                    工作空间 · {scope.scopeId}
                   </p>
                   <p className="mt-1 font-mono text-xs text-[var(--aios-muted)]">
-                    {scope.purpose} · {scope.scopeDigest}
+                    软件工程任务 · {scope.scopeDigest}
                   </p>
                 </li>
               ))}
@@ -479,11 +486,11 @@ export function KnowledgeDetailScreen({
           </div>
           <Card className="p-5">
             <p className="text-sm leading-6 text-[var(--aios-muted)]">
-              Task 和 Capability 仅保存知识库版本引用；历史执行继续保留原版本证据。
+              任务和能力仅保存知识库版本引用；历史执行继续保留原版本证据。
             </p>
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--aios-muted)]">
-                Task
+                任务
               </p>
               {item.referencedTaskIds.length ? (
                 <ul className="mt-2 space-y-2">
@@ -504,7 +511,7 @@ export function KnowledgeDetailScreen({
             </div>
             <div className="mt-4">
               <p className="text-xs font-semibold text-[var(--aios-muted)]">
-                Capability
+                能力
               </p>
               <p className="mt-2 text-sm">
                 {item.referencedCapabilityIds.length
@@ -571,7 +578,7 @@ export function KnowledgeDetailScreen({
                     setCorrectionReason("");
                     setEvidenceReference("");
                   } catch {
-                    // The loader renders the repository error and retains the form.
+                    // 加载器会呈现数据仓储错误并保留表单。
                   }
                 })();
               }}
@@ -621,7 +628,7 @@ export function KnowledgeDetailScreen({
                   className="mb-2 block text-sm font-semibold"
                   htmlFor="correction-evidence"
                 >
-                  Evidence Reference
+                  证据引用
                 </label>
                 <input
                   required
@@ -673,7 +680,9 @@ export function KnowledgeDetailScreen({
                     className="rounded-lg bg-[var(--aios-canvas)] p-4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone="warning">{correction.status}</Badge>
+                      <Badge tone="warning">
+                        {KNOWLEDGE_CORRECTION_STATUS_LABELS[correction.status]}
+                      </Badge>
                       <span className="break-all font-mono text-xs">
                         {correction.targetVersionId}
                       </span>

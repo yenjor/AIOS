@@ -56,7 +56,7 @@ export function ToolDetailLoader({ toolId }: { toolId: string }) {
           size={21}
           aria-hidden="true"
         />
-        正在加载 Tool Aggregate 与固定 Action Contract…
+        正在加载工具聚合与固定动作契约…
       </Card>
     ) : null;
   }
@@ -70,9 +70,9 @@ export function ToolDetailLoader({ toolId }: { toolId: string }) {
           aria-hidden="true"
         />
         <div>
-          <h1 className="font-semibold">Tool 不可用</h1>
+          <h1 className="font-semibold">工具不可用</h1>
           <p className="mt-2 text-sm text-[var(--aios-muted)]">
-            当前 Workspace 或身份不能安全解析该 Tool。
+            当前工作空间或身份不能安全解析该工具。
           </p>
         </div>
       </Card>

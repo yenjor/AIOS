@@ -31,15 +31,15 @@ function input(
     riskLevel: "R0",
     idempotencyKey:
       "run-task-golden-technical-solution-01:step-02:codegraph.context",
-    query: "分析 AIOS Task 执行链的相关模块、调用关系、约束与测试入口。",
+    query: "分析 AIOS 任务执行链的相关模块、调用关系、约束与测试入口。",
     ...overrides,
   };
 }
 
-describe("Tool Broker", () => {
+describe("工具代理", () => {
   it("executes the pinned read-only action and returns auditable evidence", async () => {
     const context = vi.fn().mockResolvedValue({
-      text: "TaskDetailLoader -> task-execution-service -> Agent Runtime",
+      text: "TaskDetailLoader -> task-execution-service -> AI 员工运行时",
       sessionInitialized: true,
       serverIdentity: "codegraph",
       serverVersion: "0.9.0",

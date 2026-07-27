@@ -92,7 +92,7 @@ export function CapabilityDetailLoader({ capabilityId }: { capabilityId: string 
   if (state.status === "unavailable") {
     return (
       <Card role="alert" className="mx-auto max-w-xl p-6">
-        <div className="flex items-start gap-3"><ShieldAlert size={21} className="mt-0.5 text-[var(--aios-warning-foreground)]" aria-hidden="true" /><div><h1 className="font-semibold">能力不可用</h1><p className="mt-2 text-sm text-[var(--aios-muted)]">当前 Organization、Workspace 或身份不能安全查看该能力。</p></div></div>
+        <div className="flex items-start gap-3"><ShieldAlert size={21} className="mt-0.5 text-[var(--aios-warning-foreground)]" aria-hidden="true" /><div><h1 className="font-semibold">能力不可用</h1><p className="mt-2 text-sm text-[var(--aios-muted)]">当前组织、工作空间或身份不能安全查看该能力。</p></div></div>
       </Card>
     );
   }

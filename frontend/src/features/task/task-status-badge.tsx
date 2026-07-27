@@ -54,7 +54,7 @@ export function TaskStatusBadge({ status }: TaskStatusBadgeProps) {
       tone={tone}
       className="gap-1.5"
       data-task-status={status}
-      aria-label={`Task 状态：${TASK_STATUS_LABELS[status]}`}
+      aria-label={`任务状态：${TASK_STATUS_LABELS[status]}`}
     >
       <Icon size={13} aria-hidden="true" />
       <span>{TASK_STATUS_LABELS[status]}</span>

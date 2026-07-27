@@ -237,7 +237,7 @@ function getBrowserStorage(): TaskStorage {
   if (typeof window === "undefined") {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Task Mock Repository requires a browser storage boundary.",
+      "任务本地演示数据需要浏览器存储边界。",
     );
   }
 
@@ -519,9 +519,9 @@ function isPlanStep(value: unknown): value is PlanStep {
       "HUMAN_REVIEW",
     ] as const) &&
     isOneOf(value.responsibility, [
-      "AI研发员工",
-      "Validation",
-      "Reviewer",
+      "AI 研发员工",
+      "验证",
+      "验收人",
     ] as const) &&
     isOneOf(value.riskLevel, RISK_LEVELS)
   );
@@ -532,35 +532,35 @@ const technicalSolutionPlanStepContract = [
     name: "需求理解与约束确认",
     description: "明确目标、范围、不做事项和验收标准。",
     stepType: "AGENT",
-    responsibility: "AI研发员工",
+    responsibility: "AI 研发员工",
     riskLevel: "R0",
   },
   {
     name: "代码与模块影响分析",
     description: "只读检索代码结构并识别可能受影响的模块与文件。",
     stepType: "KNOWLEDGE_RETRIEVAL",
-    responsibility: "AI研发员工",
+    responsibility: "AI 研发员工",
     riskLevel: "R0",
   },
   {
     name: "形成技术方案草稿",
-    description: "依据固定 Capability 与知识库版本形成结构化草稿。",
+    description: "依据固定能力与知识库版本形成结构化草稿。",
     stepType: "AGENT",
-    responsibility: "AI研发员工",
+    responsibility: "AI 研发员工",
     riskLevel: "R1",
   },
   {
     name: "方案结构和引用检查",
-    description: "检查 Artifact 结构、关键结论和知识库引用。",
+    description: "检查成果结构、关键结论和知识库引用。",
     stepType: "VALIDATION",
-    responsibility: "Validation",
+    responsibility: "验证",
     riskLevel: "R1",
   },
   {
-    name: "Artifact人工验收",
-    description: "由授权 Reviewer 验收技术方案 Artifact。",
+    name: "成果人工验收",
+    description: "由授权验收人验收技术方案成果。",
     stepType: "HUMAN_REVIEW",
-    responsibility: "Reviewer",
+    responsibility: "验收人",
     riskLevel: "R1",
   },
 ] as const satisfies ReadonlyArray<
@@ -573,7 +573,7 @@ const technicalSolutionPlanStepContract = [
 const technicalSolutionGoalInterpretation =
   "在现有 AIOS 架构边界内形成可评审、可实施的技术方案。";
 const technicalSolutionAssumptions = [
-  "现有文档为 Single Source of Truth",
+  "现有文档为唯一可信来源",
 ] as const;
 
 function isExecutionPlan(value: unknown, taskId: string): value is ExecutionPlan {
@@ -642,7 +642,7 @@ function isApprovalPoint(value: unknown, taskId: string): value is ApprovalPoint
     ]) &&
     typeof value.id === "string" &&
     value.id.startsWith(`${taskId}-approval-`) &&
-    isOneOf(value.name, ["计划确认", "Artifact验收"] as const) &&
+    isOneOf(value.name, ["计划确认", "成果验收"] as const) &&
     isOneOf(value.requiredFor, [
       "PLAN_EXECUTION",
       "ARTIFACT_ACCEPTANCE",
@@ -666,7 +666,7 @@ const approvalPointContract = [
   },
   {
     idSuffix: "approval-artifact",
-    name: "Artifact验收",
+    name: "成果验收",
     requiredFor: "ARTIFACT_ACCEPTANCE",
   },
 ] as const;
@@ -915,7 +915,7 @@ function isExecutionStepRecord(
     return (
       index === 4 &&
       value.resultType === "HUMAN_REVIEW" &&
-      value.summary === "等待授权 Reviewer 验收 Artifact。" &&
+      value.summary === "等待授权验收人验收成果。" &&
       value.outputReference === undefined &&
       value.outputDigest === undefined &&
       value.completedAt === undefined
@@ -1448,7 +1448,7 @@ function cloneMutable<T>(value: T): T {
 function userDisplayName(userId: string): string {
   const user = users.find(({ id }) => id === userId);
   if (!user) {
-    throw new TaskRepositoryError("INVALID_STORE", "Stored Task identity is invalid.");
+    throw new TaskRepositoryError("INVALID_STORE", "已存储的任务身份信息无效。");
   }
   return user.name;
 }
@@ -1458,7 +1458,7 @@ function materializeAgentAssignment(
 ): AgentAssignment {
   return {
     agentId: assignment.agentId,
-    agentName: assignment.agentName ?? "AI研发员工",
+    agentName: assignment.agentName ?? "AI 研发员工",
     agentVersionRef: cloneMutable(assignment.agentVersionRef) as AgentAssignment["agentVersionRef"],
     autonomyLevel: assignment.autonomyLevel,
     humanOwner: {
@@ -1482,7 +1482,7 @@ function storeAgentAssignment(
 
 function materializeTaskOwner(
   owner: StoredTaskOwner,
-  agentName = "AI研发员工",
+  agentName = "AI 研发员工",
 ): TaskOwner {
   return owner.actorType === "AGENT"
     ? {
@@ -1529,10 +1529,10 @@ function materializeTask(task: StoredTaskRecord): TaskDetail {
     currentOwner: task.currentOwner
       ? materializeTaskOwner(
           task.currentOwner,
-          task.assignedAgent.agentName ?? "AI研发员工",
+          task.assignedAgent.agentName ?? "AI 研发员工",
         )
       : undefined,
-    assignedAgentName: task.assignedAgent.agentName ?? "AI研发员工",
+    assignedAgentName: task.assignedAgent.agentName ?? "AI 研发员工",
     assignedAgent: materializeAgentAssignment(task.assignedAgent),
     workflowVersionRef: cloneMutable(task.workflowVersionRef) as TaskDetail["workflowVersionRef"],
   };
@@ -1546,7 +1546,7 @@ function storeTask(task: TaskDetail): StoredTaskRecord {
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "A submitted Task requires fixed execution references.",
+      "已提交任务必须包含固定执行引用。",
     );
   }
 
@@ -1630,7 +1630,7 @@ function validateScope(scope: unknown): asserts scope is TaskScope {
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Task scope is invalid.",
+      "任务作用域无效。",
     );
   }
 
@@ -1639,7 +1639,7 @@ function validateScope(scope: unknown): asserts scope is TaskScope {
     scope.workspaceId !== canonicalScope.workspaceId ||
     workspace.organizationId !== organization.id
   ) {
-    throw new TaskRepositoryError("NOT_FOUND", "Task scope was not found.");
+    throw new TaskRepositoryError("NOT_FOUND", "未找到任务作用域。");
   }
 }
 
@@ -1651,14 +1651,14 @@ function validateActor(actor: unknown): asserts actor is TaskActor {
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Task actor is invalid.",
+      "任务执行主体无效。",
     );
   }
 
   if (!validActorIds.has(actor.userId)) {
     throw new TaskRepositoryError(
       "FORBIDDEN",
-      "The current actor cannot access this Task scope.",
+      "当前执行主体不能访问此任务作用域。",
     );
   }
 }
@@ -1669,8 +1669,8 @@ function createPermissionDecision(actor: TaskActor): TaskPermissionDecision {
     allowed,
     code: allowed ? "ALLOWED" : "FORBIDDEN",
     reason: allowed
-      ? "Workspace member may create Mock Tasks."
-      : "Auditor has read-only Task access.",
+      ? "工作空间成员可以创建模拟任务。"
+      : "审计员仅具有任务只读权限。",
   };
 }
 
@@ -1726,14 +1726,14 @@ function validateDraftInput(draft: unknown): asserts draft is TaskDraft {
   if (!isRecord(draft) || !hasExactKeys(draft, [], draftKeys)) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Task draft contains unsupported fields.",
+      "任务草稿包含不支持的字段。",
     );
   }
 
   if (!isTaskDraftInput(draft)) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Task draft fields are invalid.",
+      "任务草稿字段无效。",
     );
   }
 
@@ -1746,7 +1746,7 @@ function validateDraftInput(draft: unknown): asserts draft is TaskDraft {
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Expected Artifact does not match the Task template.",
+      "预期成果与任务模板不匹配。",
     );
   }
 }
@@ -1807,7 +1807,7 @@ function requireCompleteTechnicalSolutionDraft(
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "The five Task creation steps must be complete before submission.",
+      "提交前必须完成任务创建的五个步骤。",
     );
   }
 }
@@ -1828,7 +1828,7 @@ function validateQuery(query: TaskQuery): {
       "pageSize",
     ])
   ) {
-    throw new TaskRepositoryError("VALIDATION", "Task query is invalid.");
+    throw new TaskRepositoryError("VALIDATION", "任务查询条件无效。");
   }
 
   const page = query.page ?? 1;
@@ -1850,7 +1850,7 @@ function validateQuery(query: TaskQuery): {
         "pendingReview",
       ] as const))
   ) {
-    throw new TaskRepositoryError("VALIDATION", "Task query is invalid.");
+    throw new TaskRepositoryError("VALIDATION", "任务查询条件无效。");
   }
 
   return { page, pageSize };
@@ -1998,7 +1998,7 @@ function createExecutionRun(task: TaskDetail, timestamp: string): ExecutionRun {
   if (!task.executionPlan || !task.workflowVersionRef || !task.assignedAgent) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Task execution requires a fixed Plan, Workflow, and Agent version.",
+      "任务执行必须固定计划、工作流和 AI 员工版本。",
     );
   }
   const runId = `run-${task.id}-01`;
@@ -2074,7 +2074,7 @@ function validateRuntimeStepResult(
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Runtime Step result is invalid.",
+      "运行时步骤结果无效。",
     );
   }
 
@@ -2085,7 +2085,7 @@ function validateRuntimeStepResult(
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "Artifact Step requires ArtifactVersionRef and CitationRef evidence.",
+      "成果步骤必须包含成果版本引用和知识引用证据。",
     );
   }
 
@@ -2096,7 +2096,7 @@ function validateRuntimeStepResult(
   ) {
     throw new TaskRepositoryError(
       "VALIDATION",
-      "A regular Step cannot attach Artifact evidence.",
+      "普通步骤不能附加成果证据。",
     );
   }
 }
@@ -2113,7 +2113,7 @@ export function createTaskRepository(
     if (!isIsoTimestamp(timestamp)) {
       throw new TaskRepositoryError(
         "VALIDATION",
-        "Task clock must return an ISO 8601 UTC timestamp.",
+        "任务时钟必须返回 ISO 8601 UTC 时间戳。",
       );
     }
     return timestamp;
@@ -2132,7 +2132,7 @@ export function createTaskRepository(
     } catch {
       throw new TaskRepositoryError(
         "INVALID_STORE",
-        "Task store is unavailable.",
+        "任务存储不可用。",
       );
     }
 
@@ -2150,11 +2150,11 @@ export function createTaskRepository(
       try {
         storage.removeItem(TASK_STORE_KEY);
       } catch {
-        // The fail-closed error remains authoritative if cleanup is unavailable.
+        // 无法清理时，默认拒绝错误保持权威性。
       }
       throw new TaskRepositoryError(
         "INVALID_STORE",
-        "Task store failed integrity validation and was cleared.",
+        "任务存储未通过完整性校验，已清除不可信数据。",
       );
     }
   }
@@ -2163,7 +2163,7 @@ export function createTaskRepository(
     if (!isTaskStoreEnvelope(envelope)) {
       throw new TaskRepositoryError(
         "INVALID_STORE",
-        "Task store write failed integrity validation.",
+        "任务存储写入未通过完整性校验。",
       );
     }
     try {
@@ -2171,7 +2171,7 @@ export function createTaskRepository(
     } catch {
       throw new TaskRepositoryError(
         "VALIDATION",
-        "Task store could not persist this change.",
+        "任务存储无法持久化本次变更。",
       );
     }
   }
@@ -2210,7 +2210,7 @@ export function createTaskRepository(
     if (!workspaceStore || taskIndex < 0) {
       throw new TaskRepositoryError(
         "NOT_FOUND",
-        "Only a submitted Task in the current Workspace can be changed.",
+        "只能修改当前工作空间内已提交的任务。",
       );
     }
     return {
@@ -2224,7 +2224,7 @@ export function createTaskRepository(
     if (!task.reviewerUserIds.includes(actor.userId)) {
       throw new TaskRepositoryError(
         "FORBIDDEN",
-        "The current actor is not an authorized Reviewer for this Task.",
+        "当前执行主体不是此任务的授权验收人。",
       );
     }
   }
@@ -2236,7 +2236,7 @@ export function createTaskRepository(
     if (task.assignedAgent?.humanOwner.userId !== actor.userId) {
       throw new TaskRepositoryError(
         "FORBIDDEN",
-        "Only the AI employee Human Owner can advance the controlled Agent Runtime.",
+        "只有 AI 员工的人工负责人可以推进受控 AI 员工运行时。",
       );
     }
   }
@@ -2299,7 +2299,7 @@ export function createTaskRepository(
       if (!isNonEmptyString(taskId)) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Task ID is invalid.",
+          "任务标识无效。",
         );
       }
       const task = allTasks(readEnvelope()).find(
@@ -2310,7 +2310,7 @@ export function createTaskRepository(
       );
 
       if (!task) {
-        throw new TaskRepositoryError("NOT_FOUND", "Task was not found.");
+        throw new TaskRepositoryError("NOT_FOUND", "未找到任务。");
       }
       return cloneMutable(task);
     },
@@ -2372,7 +2372,7 @@ export function createTaskRepository(
       } catch {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "The selected CapabilityVersion is not currently Published or authorized.",
+          "所选能力版本当前未发布或未获授权。",
         );
       }
       if (
@@ -2384,7 +2384,7 @@ export function createTaskRepository(
       ) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "The selected CapabilityVersion reference failed digest validation.",
+          "所选能力版本引用未通过摘要校验。",
         );
       }
       let resolvedAgent;
@@ -2399,7 +2399,7 @@ export function createTaskRepository(
       } catch {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "The selected AgentVersion is not Enabled, Published, assigned to the CapabilityVersion, or authorized.",
+          "所选 AI 员工版本未启用、未发布、未分配到该能力版本或未获授权。",
         );
       }
       if (
@@ -2418,13 +2418,13 @@ export function createTaskRepository(
       ) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "The selected AgentVersion assignment failed identity or digest validation.",
+          "所选 AI 员工版本分配未通过身份或摘要校验。",
         );
       }
       if (envelope.nextTaskSequence === Number.MAX_SAFE_INTEGER) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Task sequence capacity has been exhausted.",
+          "任务序列容量已耗尽。",
         );
       }
 
@@ -2457,7 +2457,7 @@ export function createTaskRepository(
       ) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Only a Task waiting for its current Plan approval can start execution.",
+          "只有正在等待当前计划审批的任务可以开始执行。",
         );
       }
       const planApproval = task.approvalPoints.find(
@@ -2466,7 +2466,7 @@ export function createTaskRepository(
       if (!planApproval || planApproval.status !== "PENDING") {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "The Plan approval point is unavailable.",
+          "计划审批点不可用。",
         );
       }
       const timestamp = currentTimestamp();
@@ -2520,7 +2520,7 @@ export function createTaskRepository(
       ) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Task does not have an active ExecutionRun.",
+          "任务没有活动中的执行记录。",
         );
       }
 
@@ -2530,7 +2530,7 @@ export function createTaskRepository(
       if (!nextStep || nextStep.stepId !== result.stepId) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Runtime Step result is out of order.",
+          "运行时步骤结果顺序不正确。",
         );
       }
       if (
@@ -2539,7 +2539,7 @@ export function createTaskRepository(
       ) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Runtime Step result type does not match the fixed Workflow.",
+          "运行时步骤结果类型与固定工作流不匹配。",
         );
       }
 
@@ -2577,7 +2577,7 @@ export function createTaskRepository(
         ) {
           throw new TaskRepositoryError(
             "VALIDATION",
-            "Artifact Step evidence is invalid.",
+            "成果步骤证据无效。",
           );
         }
         task.executionRun.status = "SUCCEEDED";
@@ -2586,7 +2586,7 @@ export function createTaskRepository(
         const humanReviewStep = task.executionRun.steps[4];
         humanReviewStep.status = "WAITING_HUMAN";
         humanReviewStep.resultType = "HUMAN_REVIEW";
-        humanReviewStep.summary = "等待授权 Reviewer 验收 Artifact。";
+        humanReviewStep.summary = "等待授权验收人验收成果。";
         task.artifactVersionRefs = [
           cloneMutable(result.artifactVersionRef),
         ];
@@ -2613,7 +2613,7 @@ export function createTaskRepository(
         if (!followingStep) {
           throw new TaskRepositoryError(
             "VALIDATION",
-            "The fixed Workflow requires an Artifact Step before review.",
+            "固定工作流要求在验收前先完成成果步骤。",
           );
         }
         task.executionRun.currentStepId = followingStep.stepId;
@@ -2655,7 +2655,7 @@ export function createTaskRepository(
       ) {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Task is not waiting for this Artifact acceptance.",
+          "任务当前并未等待本次成果验收。",
         );
       }
       const artifactApproval = task.approvalPoints.find(
@@ -2664,7 +2664,7 @@ export function createTaskRepository(
       if (!artifactApproval || artifactApproval.status !== "PENDING") {
         throw new TaskRepositoryError(
           "VALIDATION",
-          "Artifact acceptance point is unavailable.",
+          "成果验收点不可用。",
         );
       }
 
@@ -2675,7 +2675,7 @@ export function createTaskRepository(
       humanReviewStep.status = "SUCCEEDED";
       humanReviewStep.resultType = "HUMAN_REVIEW";
       humanReviewStep.summary =
-        `${task.assignedAgent!.humanOwner.displayName}（${task.assignedAgent!.humanOwner.userId}）已依据 Completion Criteria 验收 Artifact。`;
+        `${task.assignedAgent!.humanOwner.displayName}（${task.assignedAgent!.humanOwner.userId}）已依据完成标准验收成果。`;
       humanReviewStep.completedAt = timestamp;
       delete task.currentOwner;
       appendTransition(

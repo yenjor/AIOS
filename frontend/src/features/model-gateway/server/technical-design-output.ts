@@ -69,13 +69,13 @@ function normalizedParagraph(value: unknown): string | undefined {
 
 export function parseTechnicalDesignSections(content: string): ArtifactSection[] {
   if (content.length === 0 || content.length > 96_000) {
-    throw new Error("Model output is empty or exceeds the bounded output size.");
+    throw new Error("模型输出为空或超过大小限制。");
   }
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new Error("Model output is not valid JSON.");
+    throw new Error("模型输出不是有效的 JSON。");
   }
   if (
     !isRecord(parsed) ||
@@ -83,7 +83,7 @@ export function parseTechnicalDesignSections(content: string): ArtifactSection[]
     !Array.isArray(parsed.sections) ||
     parsed.sections.length !== TECHNICAL_DESIGN_SECTION_TITLES.length
   ) {
-    throw new Error("Model output does not match the technical design schema.");
+    throw new Error("模型输出与技术方案结构规范不匹配。");
   }
 
   return parsed.sections.map((candidate, index) => {
@@ -96,13 +96,13 @@ export function parseTechnicalDesignSections(content: string): ArtifactSection[]
       candidate.paragraphs.length > 8
     ) {
       throw new Error(
-        `Model output section ${index + 1} violates the fixed Artifact contract.`,
+        `模型输出的第 ${index + 1} 个章节违反固定成果契约。`,
       );
     }
     const paragraphs = candidate.paragraphs.map(normalizedParagraph);
     if (paragraphs.some((paragraph) => paragraph === undefined)) {
       throw new Error(
-        `Model output section ${index + 1} contains an invalid paragraph.`,
+        `模型输出的第 ${index + 1} 个章节包含无效段落。`,
       );
     }
     return {

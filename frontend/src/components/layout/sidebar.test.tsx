@@ -21,19 +21,19 @@ describe("Sidebar", () => {
 
     const approvedItems = [
       "工作台",
-      "Task",
+      "任务",
       "审批待办",
-      "Artifact",
+      "成果",
       "AI 员工",
       "知识库",
       "能力中心",
-      "Workflow",
-      "Tool",
+      "工作流",
+      "工具",
       "MCP 连接",
-      "Plugin 管理",
-      "Organization",
+      "插件管理",
+      "组织",
       "成员与权限",
-      "Audit",
+      "审计",
     ];
 
     for (const label of approvedItems) {
@@ -53,7 +53,7 @@ describe("Sidebar", () => {
     expect(enabledLinks[0]).toHaveAccessibleName("工作台");
     expect(enabledLinks[0]).toHaveAttribute("href", "/workspace");
     expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
-    expect(enabledLinks[1]).toHaveAccessibleName("Task");
+    expect(enabledLinks[1]).toHaveAccessibleName("任务");
     expect(enabledLinks[1]).toHaveAttribute("href", "/tasks");
     expect(enabledLinks[2]).toHaveAccessibleName("AI 员工");
     expect(enabledLinks[2]).toHaveAttribute("href", "/agents");
@@ -61,19 +61,19 @@ describe("Sidebar", () => {
     expect(enabledLinks[3]).toHaveAttribute("href", "/knowledge");
     expect(enabledLinks[4]).toHaveAccessibleName("能力中心");
     expect(enabledLinks[4]).toHaveAttribute("href", "/capabilities");
-    expect(enabledLinks[5]).toHaveAccessibleName("Tool");
+    expect(enabledLinks[5]).toHaveAccessibleName("工具");
     expect(enabledLinks[5]).toHaveAttribute("href", "/tools");
     expect(enabledLinks[6]).toHaveAccessibleName("MCP 连接");
     expect(enabledLinks[6]).toHaveAttribute("href", "/tools/mcp");
 
     const disabledLabels = [
       "审批待办，3 项待处理",
-      "Artifact",
-      "Workflow",
-      "Plugin 管理",
-      "Organization",
+      "成果",
+      "工作流",
+      "插件管理",
+      "组织",
       "成员与权限",
-      "Audit",
+      "审计",
     ];
 
     for (const label of disabledLabels) {

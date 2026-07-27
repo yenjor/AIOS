@@ -109,7 +109,7 @@ export function AgentDetailLoader({ agentId }: { agentId: string }) {
           size={21}
           aria-hidden="true"
         />
-        正在加载 Agent Aggregate、固定版本与治理证据…
+        正在加载 AI 员工聚合、固定版本与治理证据…
       </Card>
     ) : null;
   }
@@ -126,7 +126,7 @@ export function AgentDetailLoader({ agentId }: { agentId: string }) {
           <div>
             <h1 className="font-semibold">AI 员工不可用</h1>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
-              当前 Organization、Workspace 或身份不能安全查看该 Agent。
+              当前组织、工作空间或身份不能安全查看该 AI 员工。
             </p>
           </div>
         </div>
@@ -144,7 +144,7 @@ export function AgentDetailLoader({ agentId }: { agentId: string }) {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Agent 数据加载失败</h1>
+            <h1 className="font-semibold">AI 员工数据加载失败</h1>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
               本地数据未通过完整性校验，未展示不可信内容。
             </p>
@@ -210,7 +210,7 @@ export function AgentDetailLoader({ agentId }: { agentId: string }) {
         message:
           error instanceof AgentRepositoryError
             ? error.message
-            : "Agent 状态变更失败，已保留最后一个有效状态。",
+            : "AI 员工状态变更失败，已保留最后一个有效状态。",
       });
     }
   }

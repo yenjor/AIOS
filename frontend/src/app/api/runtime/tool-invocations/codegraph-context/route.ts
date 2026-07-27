@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         error: {
           code: "RUNTIME_ORIGIN_DENIED",
           message:
-            "The local pilot Tool Broker only accepts same-origin runtime requests.",
+            "本地试点工具代理仅接受同源运行时请求。",
         },
       },
       { status: 403 },
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       {
         error: {
           code: "UNSUPPORTED_MEDIA_TYPE",
-          message: "Content-Type must be application/json.",
+          message: "内容类型必须为 application/json。",
         },
       },
       { status: 415 },
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         {
           error: {
             code: "REQUEST_TOO_LARGE",
-            message: "ToolActionRequest exceeds the 32 KiB limit.",
+            message: "工具动作请求超过 32 KiB 限制。",
           },
         },
         { status: 413 },
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       {
         error: {
           code: "INVALID_JSON",
-          message: "Request body must be valid JSON.",
+          message: "请求正文必须是有效的 JSON。",
         },
       },
       { status: 400 },
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       {
         error: {
           code: "TOOL_BROKER_FAILURE",
-          message: "Tool Broker could not complete the invocation.",
+          message: "工具代理未能完成调用。",
         },
       },
       { status: 500 },

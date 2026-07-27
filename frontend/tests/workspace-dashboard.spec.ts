@@ -5,27 +5,27 @@ export async function enterWorkspaceAsLead(page: Page) {
   await page.getByRole("link", { name: "进入 AIOS", exact: true }).click();
   await page
     .getByRole("button", {
-      name: "使用 陈明（研发负责人）身份",
+      name: "使用陈明（研发负责人）身份",
       exact: true,
     })
     .click();
   await page
-    .getByRole("button", { name: "选择组织 光位科技", exact: true })
+    .getByRole("button", { name: "选择组织光位科技", exact: true })
     .click();
   await page
     .getByRole("button", {
-      name: "选择 Workspace AI 智能业务线",
+      name: "选择工作空间 AI 智能业务线",
       exact: true,
     })
     .click();
 
   await expect(page).toHaveURL(/\/workspace$/, { timeout: 30_000 });
   await expect(
-    page.getByRole("heading", { name: "Workspace 工作台", exact: true }),
+    page.getByRole("heading", { name: "工作空间工作台", exact: true }),
   ).toBeVisible({ timeout: 30_000 });
 }
 
-test("研发负责人通过真实选择流程进入 Workspace 工作台", async ({ page }) => {
+test("研发负责人通过真实选择流程进入工作空间工作台", async ({ page }) => {
   await enterWorkspaceAsLead(page);
 
   await expect(page).toHaveURL(/\/workspace$/);
@@ -39,14 +39,14 @@ test("研发负责人通过真实选择流程进入 Workspace 工作台", async 
   await expect(agentRegion.getByText("责任人：陈明", { exact: true })).toBeVisible();
 
   const metrics = page.getByRole("region", {
-    name: "Workspace 核心指标",
+    name: "工作空间核心指标",
     exact: true,
   });
   const expectedMetrics = new Map([
     ["我的待办", "5"],
-    ["进行中 Task", "12"],
+    ["进行中任务", "12"],
     ["可用 AI 员工", "1"],
-    ["待验收 Artifact", "3"],
+    ["待验收成果", "3"],
   ]);
 
   for (const [name, value] of expectedMetrics) {
@@ -59,7 +59,7 @@ test("研发负责人通过真实选择流程进入 Workspace 工作台", async 
 
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Workspace 工作台", exact: true }),
+    page.getByRole("heading", { name: "工作空间工作台", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", {
@@ -69,19 +69,19 @@ test("研发负责人通过真实选择流程进入 Workspace 工作台", async 
   ).toBeVisible();
   await expect(
     page.getByRole("link", {
-      name: "重新选择 Organization：光位科技",
+      name: "重新选择组织：光位科技",
       exact: true,
     }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", {
-      name: "重新选择 Workspace：AI 智能业务线",
+      name: "重新选择工作空间：AI 智能业务线",
       exact: true,
     }),
   ).toBeVisible();
 });
 
-test("fresh Workspace response never serializes protected dashboard data", async ({
+test("新工作空间响应不会序列化受保护的工作台数据", async ({
   request,
 }) => {
   const responses = await Promise.all([
@@ -93,7 +93,7 @@ test("fresh Workspace response never serializes protected dashboard data", async
     const body = await response.text();
 
     expect(response.ok()).toBe(true);
-    expect(body).not.toContain("Workspace 工作台");
+    expect(body).not.toContain("工作空间工作台");
     expect(body).not.toContain("用户中心登录流程重构");
     expect(body).not.toContain("需求澄清不足");
   }
@@ -128,19 +128,19 @@ test("完整导航保持 README 模块归属且已实现模块可进入", async 
   const expectedGroups = ["工作", "AI 资源", "企业连接", "管理与治理"];
   const expectedItems = [
     "工作台",
-    "Task",
+    "任务",
     "审批待办",
-    "Artifact",
+    "成果",
     "AI 员工",
     "知识库",
     "能力中心",
-    "Workflow",
-    "Tool",
+    "工作流",
+    "工具",
     "MCP 连接",
-    "Plugin 管理",
-    "Organization",
+    "插件管理",
+    "组织",
     "成员与权限",
-    "Audit",
+    "审计",
   ];
 
   for (const group of expectedGroups) {
@@ -166,7 +166,7 @@ test("完整导航保持 README 模块归属且已实现模块可进入", async 
   await expect(workspaceLink).toHaveAttribute("aria-current", "page");
 
   const taskLink = navigation.getByRole("link", {
-    name: "Task",
+    name: "任务",
     exact: true,
   });
   await expect(taskLink).toHaveAttribute("href", "/tasks");
@@ -194,7 +194,7 @@ test("完整导航保持 README 模块归属且已实现模块可进入", async 
   await expect(capabilityLink).not.toHaveAttribute("aria-disabled", "true");
 
   const toolLink = navigation.getByRole("link", {
-    name: "Tool",
+    name: "工具",
     exact: true,
   });
   await expect(toolLink).toHaveAttribute("href", "/tools");
@@ -211,11 +211,11 @@ test("完整导航保持 README 模块归属且已实现模块可进入", async 
     (item) =>
       ![
         "工作台",
-        "Task",
+        "任务",
         "AI 员工",
         "知识库",
         "能力中心",
-        "Tool",
+        "工具",
         "MCP 连接",
       ].includes(item),
   );
@@ -247,7 +247,7 @@ test("完整导航保持 README 模块归属且已实现模块可进入", async 
   ).toBeAttached();
   await expect(
     enterpriseConnections.getByRole("link", {
-      name: "Plugin 管理",
+      name: "插件管理",
       exact: true,
     }),
   ).toBeAttached();

@@ -162,7 +162,7 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
           size={21}
           aria-hidden="true"
         />
-        <span>正在加载 Task 只读详情…</span>
+        <span>正在加载任务只读详情…</span>
       </Card>
     );
   }
@@ -180,10 +180,10 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Task 不可用</h1>
+            <h1 className="font-semibold">任务不可用</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-              无法在当前工作范围中安全显示该 Task。请确认当前 Organization、
-              Workspace 与身份后重试。
+              无法在当前工作范围中安全显示该任务。请确认当前组织、
+              工作空间与身份后重试。
             </p>
           </div>
         </div>
@@ -204,11 +204,11 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Task 数据加载失败</h1>
+            <h1 className="font-semibold">任务数据加载失败</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               {state.reason === "INVALID_STORE"
                 ? "本地只读数据无法通过完整性校验，已拒绝展示不可信内容。"
-                : "Task Repository 暂时不可用，未展示任何可能过期的 Task 内容。"}
+                : "任务仓储暂时不可用，未展示任何可能过期的任务内容。"}
             </p>
             <Button
               className="mt-4"
@@ -280,7 +280,7 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
           modelInvocations,
         });
       } catch {
-        // Preserve the last known valid Read Model if evidence reload fails.
+        // 如果证据重新加载失败，则保留最后一个有效读模型。
       }
       setActionState({
         status: "error",
@@ -288,7 +288,7 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
         message:
           error instanceof Error
             ? `受控动作未完成：${error.message}`
-            : "受控动作未完成。系统已保留最后一个有效状态，请确认当前身份和 Task 状态后重试。",
+            : "受控动作未完成。系统已保留最后一个有效状态，请确认当前身份和任务状态后重试。",
       });
     }
   }

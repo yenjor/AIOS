@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { McpDetailLoader } from "@/features/tool/mcp-detail-loader";
 
 export const metadata: Metadata = {
-  title: "MCP Server 详情 | AIOS",
+  title: "MCP 服务详情 | AIOS",
 };
 
 export default async function McpDetailPage({

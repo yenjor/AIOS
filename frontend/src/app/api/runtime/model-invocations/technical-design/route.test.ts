@@ -20,7 +20,7 @@ function request(body: string, headers: Record<string, string> = {}): Request {
   );
 }
 
-describe("Model Invocation route boundary", () => {
+describe("模型调用 route boundary", () => {
   it("rejects cross-origin requests before parsing an invocation", async () => {
     const response = await POST(
       request("{}", { Origin: "https://untrusted.example" }),

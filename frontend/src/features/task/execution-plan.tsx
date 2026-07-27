@@ -12,9 +12,30 @@ import type { DeepReadonly } from "@/types/domain";
 
 import type {
   ApprovalPoint,
+  ApprovalPointStatus,
   ExecutionPlan as ExecutionPlanModel,
   ExpectedArtifact,
+  PlanStepType,
 } from "./model";
+
+const STEP_TYPE_LABELS: Record<PlanStepType, string> = {
+  AGENT: "AI 员工执行",
+  KNOWLEDGE_RETRIEVAL: "知识库检索",
+  VALIDATION: "结果验证",
+  HUMAN_REVIEW: "人工验收",
+};
+
+const APPROVAL_STATUS_LABELS: Record<ApprovalPointStatus, string> = {
+  PENDING: "待审批",
+  APPROVED: "已批准",
+  REJECTED: "已拒绝",
+  EXPIRED: "已过期",
+};
+
+const APPROVAL_PURPOSE_LABELS: Record<ApprovalPoint["requiredFor"], string> = {
+  PLAN_EXECUTION: "计划执行",
+  ARTIFACT_ACCEPTANCE: "成果验收",
+};
 
 interface ExecutionPlanProps {
   plan?: DeepReadonly<ExecutionPlanModel>;
@@ -66,7 +87,7 @@ export function ExecutionPlan({
           <div>
             <h3 className="font-semibold">计划尚未生成</h3>
             <p className="mt-1 text-sm leading-6 text-[var(--aios-muted)]">
-              当前 Task 还没有持久化的 ExecutionPlan，不展示推测性步骤。
+              当前任务还没有持久化的执行计划，不展示推测性步骤。
             </p>
           </div>
         </div>
@@ -87,7 +108,7 @@ export function ExecutionPlan({
         </div>
         <dl className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Definition
-            label="PlanVersion"
+            label="计划版本"
             value={plan.versionRef.versionId}
             breakAll
           />
@@ -102,19 +123,19 @@ export function ExecutionPlan({
             breakAll
           />
           <Definition
-            label="Version Number"
+            label="版本号"
             value={`v${plan.versionRef.versionNumber}`}
           />
         </dl>
         <div className="mt-4 rounded-lg border border-[var(--aios-control-border)] p-4">
-          <h4 className="text-sm font-semibold">Goal Interpretation</h4>
+          <h4 className="text-sm font-semibold">目标解读</h4>
           <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
             {plan.goalInterpretation}
           </p>
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <div>
-            <h4 className="text-sm font-semibold">Assumptions</h4>
+            <h4 className="text-sm font-semibold">假设条件</h4>
             {plan.assumptions.length > 0 ? (
               <ul className="mt-2 space-y-2 text-sm text-[var(--aios-muted)]">
                 {plan.assumptions.map((assumption) => (
@@ -133,7 +154,7 @@ export function ExecutionPlan({
             )}
           </div>
           <div>
-            <h4 className="text-sm font-semibold">Missing Information</h4>
+            <h4 className="text-sm font-semibold">缺失信息</h4>
             {plan.missingInformation.length > 0 ? (
               <ul className="mt-2 space-y-2 text-sm text-[var(--aios-muted)]">
                 {plan.missingInformation.map((information) => (
@@ -177,7 +198,7 @@ export function ExecutionPlan({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h4 className="font-semibold">{step.name}</h4>
-                    <Badge>{step.stepType}</Badge>
+                    <Badge>{STEP_TYPE_LABELS[step.stepType]}</Badge>
                     <Badge tone={step.riskLevel === "R0" ? "success" : "warning"}>
                       {step.riskLevel}
                     </Badge>
@@ -187,7 +208,7 @@ export function ExecutionPlan({
                   </p>
                   <p className="mt-2 text-xs font-medium text-[var(--aios-muted)]">
                     Responsibility：{step.responsibility.replace(
-                      "AI研发员工",
+                      "AI 研发员工",
                       "AI 研发员工",
                     )}
                   </p>
@@ -205,7 +226,7 @@ export function ExecutionPlan({
               className="text-[var(--aios-primary)]"
               aria-hidden="true"
             />
-            <h3 className="font-semibold">ExpectedArtifact Contract</h3>
+            <h3 className="font-semibold">预期成果契约</h3>
           </div>
           <p className="mt-3 text-sm">
             类型：<strong>{expectedArtifact.artifactType}</strong>
@@ -215,7 +236,7 @@ export function ExecutionPlan({
               ? "需要知识库引用"
               : "未要求知识库引用"}
           </p>
-          <h4 className="mt-4 text-sm font-semibold">Required Sections</h4>
+          <h4 className="mt-4 text-sm font-semibold">必需章节</h4>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
             {expectedArtifact.sections.map((section) => (
               <li
@@ -226,7 +247,7 @@ export function ExecutionPlan({
               </li>
             ))}
           </ul>
-          <h4 className="mt-4 text-sm font-semibold">Completion Criteria</h4>
+          <h4 className="mt-4 text-sm font-semibold">完成标准</h4>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-[var(--aios-muted)]">
             {completionCriteria.map((criterion) => (
               <li key={criterion}>{criterion}</li>
@@ -235,7 +256,7 @@ export function ExecutionPlan({
         </Card>
 
         <Card className="p-5">
-          <h3 className="font-semibold">ApprovalPoint</h3>
+          <h3 className="font-semibold">审批点</h3>
           {approvalPoints.length > 0 ? (
             <ul className="mt-3 space-y-3">
               {approvalPoints.map((approval) => (
@@ -245,21 +266,23 @@ export function ExecutionPlan({
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <h4 className="text-sm font-semibold">{approval.name}</h4>
-                    <Badge tone="warning">{approval.status}</Badge>
+                    <Badge tone="warning">
+                      {APPROVAL_STATUS_LABELS[approval.status]}
+                    </Badge>
                     <Badge>{approval.riskLevel}</Badge>
                   </div>
                   <p className="mt-2 break-all text-xs leading-5 text-[var(--aios-muted)]">
-                    Required For：{approval.requiredFor}
+                    用于：{APPROVAL_PURPOSE_LABELS[approval.requiredFor]}
                   </p>
                   <p className="mt-1 break-all text-xs leading-5 text-[var(--aios-muted)]">
-                    Reviewer：{approval.reviewerUserIds.join("、")}
+                    验收人：{approval.reviewerUserIds.join("、")}
                   </p>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="mt-3 text-sm text-[var(--aios-muted)]">
-              当前无持久化 ApprovalPoint。
+              当前无持久化审批点。
             </p>
           )}
         </Card>

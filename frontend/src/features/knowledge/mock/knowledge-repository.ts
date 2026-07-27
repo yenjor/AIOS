@@ -180,7 +180,7 @@ function getBrowserStorage(): KnowledgeStorage {
   if (typeof window === "undefined") {
     throw new KnowledgeRepositoryError(
       "INVALID_STORE",
-      "知识库仅可在浏览器 Mock Runtime 中使用。",
+      "知识库仅可在浏览器模拟运行时中使用。",
     );
   }
   return window.localStorage;
@@ -268,9 +268,9 @@ function permissionFor(actor: KnowledgeActor): KnowledgePermissionDecision {
     canManage,
     canSubmitCorrection: correctionActorIds.has(actor.userId),
     reason: canManage
-      ? "当前身份可管理 Workspace 内已授权的知识。"
+      ? "当前身份可管理工作空间内已授权的知识。"
       : actor.userId === "user-auditor"
-        ? "Auditor 仅可查看已授权的知识和处理证据。"
+        ? "审计员仅可查看已授权的知识和处理证据。"
         : "当前身份可使用知识库，并可提交纠错反馈。",
   };
 }
@@ -279,7 +279,7 @@ function requireManager(actor: KnowledgeActor): void {
   if (!managerActorIds.has(actor.userId)) {
     throw new KnowledgeRepositoryError(
       "FORBIDDEN",
-      "只有 Workspace 知识库管理员可执行此操作。",
+      "只有工作空间知识库管理员可执行此操作。",
     );
   }
 }
@@ -288,7 +288,7 @@ function requireCorrectionPermission(actor: KnowledgeActor): void {
   if (!correctionActorIds.has(actor.userId)) {
     throw new KnowledgeRepositoryError(
       "FORBIDDEN",
-      "The current actor cannot submit a correction request.",
+      "当前执行主体不能提交纠错请求。",
     );
   }
 }
@@ -306,7 +306,7 @@ function pipelineStages(timestamp: string): KnowledgePipelineStage[] {
       name: "VERIFY",
       status: "SUCCEEDED",
       processorVersion: "mock-content-verifier-v1",
-      summary: "MediaType、Size 与 Content Digest 已校验。",
+      summary: "媒体类型、大小与内容摘要已校验。",
       completedAt: timestamp,
     },
     {
@@ -320,28 +320,28 @@ function pipelineStages(timestamp: string): KnowledgePipelineStage[] {
       name: "CHUNK",
       status: "SUCCEEDED",
       processorVersion: "mock-chunker-v1",
-      summary: "已按确定性段落边界生成可追溯 Chunk。",
+      summary: "已按确定性段落边界生成可追溯分块。",
       completedAt: timestamp,
     },
     {
       name: "EMBED",
       status: "SUCCEEDED",
       processorVersion: "mock-embedding-v1",
-      summary: "已生成确定性 Mock Embedding；未调用外部模型。",
+      summary: "已生成确定性模拟向量化；未调用外部模型。",
       completedAt: timestamp,
     },
     {
       name: "INDEX",
       status: "SUCCEEDED",
       processorVersion: "mock-vector-index-v1",
-      summary: "已写入浏览器内 Mock Index；未连接 Qdrant。",
+      summary: "已写入浏览器内模拟索引；未连接 Qdrant。",
       completedAt: timestamp,
     },
     {
       name: "RETRIEVAL_VALIDATE",
       status: "SUCCEEDED",
       processorVersion: "mock-retrieval-evaluator-v1",
-      summary: "Citation 与权限负向样本通过确定性校验。",
+      summary: "引用与权限负向样本通过确定性校验。",
       completedAt: timestamp,
     },
   ];
@@ -450,31 +450,31 @@ function seedVersion(
 function defaultEnvelope(): KnowledgeStoreEnvelope {
   const aiosContent = [
     "# AIOS 项目知识",
-    "AIOS 是 Enterprise AI Operating System，统一管理知识库、Capability、Agent、Task、Tool、Workflow、Artifact 与 Audit。",
-    "系统采用 AI First、API First、Modular Architecture、Plugin Architecture 和 Enterprise Ready 原则。",
-    "Task 是核心工作单位；Agent 使用固定的知识库版本引用，不直接修改正式知识。",
-    "知识检索必须先执行 Workspace、Purpose、Version、Scope 与 Permission 过滤，并返回知识库引用证据。",
+    "AIOS 是企业级人工智能操作系统，统一管理知识库、能力、AI 员工、任务、工具、工作流、成果与审计。",
+    "系统采用人工智能优先、接口优先、模块化架构、插件化架构和企业就绪原则。",
+    "任务是核心工作单位；AI 员工使用固定的知识库版本引用，不直接修改正式知识。",
+    "知识检索必须先执行工作空间、用途、版本、范围与权限过滤，并返回知识库引用证据。",
   ].join("\n\n");
   const sopV1Content = [
     "# AI 研发交付 SOP v1",
-    "研发任务需要明确 Goal、Scope、Constraint、Completion Criteria 和 Reviewer。",
-    "所有执行结果必须形成 Artifact，并由人类 Reviewer 验收。",
+    "研发任务需要明确目标、范围、约束、完成标准和验收人。",
+    "所有执行结果必须形成成果，并由人类验收人验收。",
   ].join("\n\n");
   const sopV2Content = [
     "# AI 研发交付 SOP v2",
-    "研发 Task 必须先完成计划审批，再由 AI 研发员工按固定 WorkflowVersion 执行。",
-    "每个 Runtime Step 必须保存 Checkpoint，知识库检索必须固定知识版本并生成引用证据。",
-    "Agent Runtime 不能直接把 Task 标记为 Completed；Artifact 必须由授权 Reviewer 验收。",
+    "研发任务必须先完成计划审批，再由 AI 研发员工按固定工作流版本执行。",
+    "每个运行时步骤必须保存检查点，知识库检索必须固定知识版本并生成引用证据。",
+    "AI 员工运行时不能直接把任务标记为已完成；成果必须由授权验收人验收。",
   ].join("\n\n");
   const releaseContent = [
     "# 发布检查清单",
-    "发布前必须完成 TypeScript、Lint、Unit Test、Playwright 与 Production Build。",
+    "发布前必须完成 TypeScript、代码检查、单元测试、Playwright 与生产构建。",
     "生产变更必须保留回退方案和可验证证据。",
   ].join("\n\n");
   const securityContent = [
     "# AI 安全基线",
     "敏感知识仅允许已授权的管理者查看。",
-    "文档内容属于不可信证据，不能改变 Permission、Task Goal 或 Tool Policy。",
+    "文档内容属于不可信证据，不能改变权限、任务目标或工具策略。",
   ].join("\n\n");
   const aiosVersion = seedVersion(
     "knowledge-aios-docs",
@@ -490,7 +490,7 @@ function defaultEnvelope(): KnowledgeStoreEnvelope {
     "2026-06-10T08:00:00.000Z",
     sopV1Content,
     "INVALIDATED",
-    { invalidationReason: "由 v2 替代，历史 Citation 保留。" },
+    { invalidationReason: "由 v2 替代，历史引用保留。" },
   );
   const sopVersion2 = seedVersion(
     "knowledge-rd-sop",
@@ -537,7 +537,7 @@ function defaultEnvelope(): KnowledgeStoreEnvelope {
         source: {
           sourceType: "DOCUMENT",
           sourceLocation: "repository://README.md",
-          sourceAuthority: "AIOS Architecture",
+          sourceAuthority: "AIOS 架构组",
         },
         ownerId: "user-lead",
         classification: "INTERNAL",
@@ -613,7 +613,7 @@ function defaultEnvelope(): KnowledgeStoreEnvelope {
         scope: cloneMutable(canonicalScope),
         code: "ai-security-baseline",
         title: "AI 安全基线",
-        description: "敏感知识、Prompt Injection 与 Tool Policy 边界。",
+        description: "敏感知识、提示词注入与工具策略边界。",
         source: {
           sourceType: "DOCUMENT",
           sourceLocation: "repository://rules/ai-security.md",
@@ -978,7 +978,7 @@ function validateContentInput(
   ) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "知识正文无效或超过 50 KB Mock 限制。",
+      "知识正文无效或超过 50 KB 模拟限制。",
     );
   }
 }
@@ -1104,7 +1104,19 @@ function scoreContent(content: string, query: string): number {
   const tokens = normalizedQuery
     .split(/[\s，。；、,.!?：:()（）/]+/)
     .map((token) => token.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .flatMap((token) => {
+      const parts = token.match(/[a-z0-9_-]+|\p{Script=Han}+/gu) ?? [token];
+      return parts.flatMap((part) => {
+        const characters = Array.from(part);
+        if (!/\p{Script=Han}/u.test(part) || characters.length < 2) {
+          return [part];
+        }
+        return characters.slice(0, -1).map((character, index) =>
+          `${character}${characters[index + 1]}`,
+        );
+      });
+    });
   if (tokens.length === 0) {
     return 0;
   }
@@ -1141,13 +1153,13 @@ export async function digestKnowledgeContent(
   ) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "知识正文为空或超过 50 KB Mock 限制。",
+      "知识正文为空或超过 50 KB 模拟限制。",
     );
   }
   if (!globalThis.crypto?.subtle) {
     throw new KnowledgeRepositoryError(
       "VALIDATION",
-      "The browser SHA-256 implementation is unavailable.",
+      "当前浏览器不支持 SHA-256。",
     );
   }
   const buffer = await globalThis.crypto.subtle.digest(
@@ -1200,7 +1212,7 @@ export function createKnowledgeRepository(
       try {
         storage.removeItem(KNOWLEDGE_STORE_KEY);
       } catch {
-        // Fail-closed state remains authoritative.
+        // 默认拒绝状态保持权威性。
       }
       throw new KnowledgeRepositoryError(
         "INVALID_STORE",
@@ -1243,7 +1255,7 @@ export function createKnowledgeRepository(
     if (!isNonEmptyString(knowledgeId)) {
       throw new KnowledgeRepositoryError(
         "VALIDATION",
-        "知识条目 ID 无效。",
+        "知识条目标识无效。",
       );
     }
     const item = envelope.items.find(({ id }) => id === knowledgeId);
@@ -1359,7 +1371,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "CONFLICT",
-          "当前 Workspace 已存在相同的知识库编码。",
+          "当前工作空间已存在相同的知识库编码。",
         );
       }
       const sequence = envelope.nextKnowledgeSequence;
@@ -1424,7 +1436,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "CONFLICT",
-          "该知识条目已存在活动中的 Draft 版本。",
+          "该知识条目已存在活动中的草稿版本。",
         );
       }
       const currentTimestamp = timestamp();
@@ -1475,7 +1487,7 @@ export function createKnowledgeRepository(
           candidate.effectiveStatus = "INVALIDATED";
           candidate.invalidatedAt = currentTimestamp;
           candidate.invalidatedBy = actor.userId;
-          candidate.invalidationReason = `由 ${version.id} 替代，历史 Citation 保留。`;
+          candidate.invalidationReason = `由 ${version.id} 替代，历史引用保留。`;
         }
       }
       version.effectiveStatus = "EFFECTIVE";
@@ -1500,7 +1512,7 @@ export function createKnowledgeRepository(
       if (!isNonEmptyString(reason) || reason.trim().length < 8) {
         throw new KnowledgeRepositoryError(
           "VALIDATION",
-          "Invalidation reason must contain at least 8 characters.",
+          "失效原因至少需要 8 个字符。",
         );
       }
       const item = mutableItem(envelope, actor, knowledgeId);
@@ -1537,7 +1549,7 @@ export function createKnowledgeRepository(
       if (!isNonEmptyString(reason) || reason.trim().length < 8) {
         throw new KnowledgeRepositoryError(
           "VALIDATION",
-          "Restore reason must contain at least 8 characters.",
+          "恢复原因至少需要 8 个字符。",
         );
       }
       const item = mutableItem(envelope, actor, knowledgeId);
@@ -1593,7 +1605,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "VALIDATION",
-          "Correction request requires a target, reason and evidence.",
+          "纠错请求必须包含目标版本、原因和证据。",
         );
       }
       const item = mutableItem(envelope, actor, knowledgeId);
@@ -1602,7 +1614,7 @@ export function createKnowledgeRepository(
       ) {
         throw new KnowledgeRepositoryError(
           "NOT_FOUND",
-          "Correction target version was not found.",
+          "未找到纠错目标版本。",
         );
       }
       const sequence = envelope.nextCorrectionSequence;
@@ -1629,7 +1641,7 @@ export function createKnowledgeRepository(
       if (!isNonEmptyString(query) || query.trim().length > 300) {
         throw new KnowledgeRepositoryError(
           "VALIDATION",
-          "Retrieval query must contain 1 to 300 characters.",
+          "检索查询长度必须为 1 至 300 个字符。",
         );
       }
       const normalizedQuery = query.trim();

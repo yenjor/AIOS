@@ -38,7 +38,7 @@ const developer: ToolActor = { userId: "user-dev" };
 const auditor: ToolActor = { userId: "user-auditor" };
 const input: CreateMcpServerInput = {
   serverIdentity: "aios.requirement.reader",
-  displayName: "需求文档 MCP Server",
+  displayName: "需求文档 MCP 服务",
   publisher: "AIOS Internal",
   serverVersion: "1.0.0",
   transport: "STDIO",
@@ -46,7 +46,7 @@ const input: CreateMcpServerInput = {
   credentialReference: "secret://workspace/requirement-reader",
   toolCode: "REQUIREMENT_READ",
   toolName: "需求文档读取",
-  toolDescription: "读取当前 Workspace 授权的需求文档。",
+  toolDescription: "读取当前工作空间授权的需求文档。",
   actionName: "requirement.read",
   actionDescription: "读取固定范围内的需求文档。",
   riskLevel: "R0",
@@ -74,7 +74,7 @@ const invocation: ToolInvocationResult = {
   inputDigest: "sha256:input",
   outputDigest: "sha256:output",
   resultReference: "mcp://codegraph/invocation-task-golden-step-02",
-  resultExcerpt: "TaskDetailLoader -> Tool Broker -> CodeGraph MCP",
+  resultExcerpt: "TaskDetailLoader -> 工具代理 -> CodeGraph MCP",
   summary: "CodeGraph MCP 返回受控代码上下文。",
   requestedAt: "2026-07-27T08:00:00.000Z",
   completedAt: "2026-07-27T08:00:01.000Z",
@@ -87,7 +87,7 @@ const invocation: ToolInvocationResult = {
       sequence: 1,
       eventType: "TOOL_INVOCATION_REQUESTED",
       occurredAt: "2026-07-27T08:00:00.000Z",
-      summary: "Tool Invocation 已创建。",
+      summary: "工具调用已创建。",
     },
     {
       sequence: 2,
@@ -118,7 +118,7 @@ function repository(storage = new MemoryStorage()) {
   });
 }
 
-describe("Tool / MCP Mock Repository", () => {
+describe("工具 / MCP 本地演示数据", () => {
   beforeEach(() => {
     window.localStorage.removeItem(TOOL_STORE_KEY);
   });
@@ -141,7 +141,7 @@ describe("Tool / MCP Mock Repository", () => {
     ]);
   });
 
-  it("gates a discovered candidate through test and explicit publish", async () => {
+  it("gates a discovered 候选版本 through test and explicit publish", async () => {
     const repo = repository();
     const created = await repo.createMcpServer(scope, manager, input);
 
@@ -185,13 +185,13 @@ describe("Tool / MCP Mock Repository", () => {
     ).toMatchObject({ toolId: "tool-custom-0001" });
   });
 
-  it("removes a suspended connection from Agent-bindable actions", async () => {
+  it("removes a suspended connection from AI 员工-bindable actions", async () => {
     const repo = repository();
     await repo.suspendMcpServer(
       scope,
       manager,
       "mcp-codegraph-local",
-      "安全复核期间停止新的 Tool Invocation",
+      "安全复核期间停止新的工具调用",
     );
 
     expect(
@@ -204,7 +204,7 @@ describe("Tool / MCP Mock Repository", () => {
     ).toHaveLength(1);
   });
 
-  it("keeps Auditor read-only and rejects corrupted local state", async () => {
+  it("keeps 审计员 read-only and rejects corrupted local state", async () => {
     const storage = new MemoryStorage();
     const repo = repository(storage);
 
@@ -219,7 +219,7 @@ describe("Tool / MCP Mock Repository", () => {
     expect(storage.getItem(TOOL_STORE_KEY)).toBeNull();
   });
 
-  it("persists immutable Tool Invocation evidence per Task", async () => {
+  it("persists immutable 工具调用 evidence per 任务", async () => {
     const repo = repository();
 
     expect(

@@ -52,14 +52,14 @@ const technicalSolutionDraft: TaskDraft & {
   expectedCompletionAt: string;
 } = {
   wizardStep: 5,
-  currentProblem: "当前 Task 创建流程缺少可恢复的业务问题上下文",
-  workScope: "Task Center 创建向导与提交结果映射",
+  currentProblem: "当前任务创建流程缺少可恢复的业务问题上下文",
+  workScope: "任务中心创建向导与提交结果映射",
   expectedCompletionAt: "2026-08-15T10:30:00.000Z",
   templateName: "生成技术方案",
-  title: "设计 Task Center 黄金路径",
+  title: "设计任务中心黄金路径",
   goal: "形成可供研发团队评审并实施的技术方案",
-  constraints: ["遵循现有模块边界", "只使用当前 Workspace 已授权资料"],
-  outOfScope: ["不修改生产系统", "不执行写入类 Tool"],
+  constraints: ["遵循现有模块边界", "只使用当前工作空间已授权资料"],
+  outOfScope: ["不修改生产系统", "不执行写入类工具"],
   priority: 50,
   riskLevel: "R1",
   capabilityVersionRefs: [
@@ -93,7 +93,7 @@ const technicalSolutionDraft: TaskDraft & {
   ],
   assignedAgent: {
     agentId: "agent-rd-001",
-    agentName: "AI研发员工",
+    agentName: "AI 研发员工",
     agentVersionRef: {
       kind: "AGENT",
       objectId: "agent-rd-001",
@@ -125,7 +125,7 @@ const technicalSolutionDraft: TaskDraft & {
   completionCriteria: [
     "技术方案包含约定的全部章节",
     "关键判断包含知识库引用",
-    "由人类 Reviewer 完成 Artifact 验收",
+    "由人类验收人完成成果验收",
   ],
 };
 
@@ -136,7 +136,7 @@ function runtimeStepResult(
   const stepId = `${taskId}-step-${String(sequence).padStart(2, "0")}`;
   const baseResult = {
     stepId,
-    summary: `确定性 Runtime 已完成第 ${sequence} 步。`,
+    summary: `确定性运行时已完成第 ${sequence} 步。`,
     outputReference: `run-${taskId}-step-${String(sequence).padStart(2, "0")}-output`,
     outputDigest: `sha256:execution-package-${taskId}-v1:step-${sequence}`,
   };
@@ -188,7 +188,7 @@ function expectRepositoryError(
   return true;
 }
 
-describe("Task mock repository", () => {
+describe("任务 mock repository", () => {
   let storage: MemoryStorage;
   let delayCalls: number;
 
@@ -239,7 +239,7 @@ describe("Task mock repository", () => {
     );
   });
 
-  it("allows Auditor to list and get but forbids every write operation", async () => {
+  it("allows 审计员 to list and get but forbids every write operation", async () => {
     const repo = repository();
     const page = await repo.listTasks(scope, auditor, { pageSize: 20 });
     await expect(repo.getTask(scope, auditor, page.items[0].id)).resolves.toBeDefined();
@@ -506,12 +506,12 @@ describe("Task mock repository", () => {
     });
   });
 
-  it("round-trips Task wizard metadata losslessly, overwrites later saves, and preserves actor isolation", async () => {
+  it("round-trips 任务 wizard metadata losslessly, overwrites later saves, and preserves actor isolation", async () => {
     const repo = repository();
     const firstInput = {
       wizardStep: 2,
       currentProblem: "需要持久化向导业务问题",
-      workScope: "Task 创建向导前两步",
+      workScope: "任务创建向导前两步",
       expectedCompletionAt: "2026-08-01T09:00:00.000Z",
     };
 
@@ -531,7 +531,7 @@ describe("Task mock repository", () => {
     const changed = {
       wizardStep: 3,
       currentProblem: "更新后的业务问题",
-      workScope: "Task 创建向导前三步",
+      workScope: "任务创建向导前三步",
       expectedCompletionAt: "2026-08-02T09:00:00.000Z",
     };
     const overwritten = await repo.saveDraft(
@@ -547,7 +547,7 @@ describe("Task mock repository", () => {
     await expect(repo.getDraft(scope, developer)).resolves.toBeUndefined();
   });
 
-  it("replaces a rich Task draft with the caller's minimal snapshot and clears every omitted field", async () => {
+  it("replaces a rich 任务 draft with the caller's minimal snapshot and clears every omitted field", async () => {
     const repo = repository();
     await repo.saveDraft(scope, lead, {
       title: "旧标题",
@@ -580,7 +580,7 @@ describe("Task mock repository", () => {
     expect(replaced).not.toHaveProperty("assignedAgent");
   });
 
-  it("clears golden-template bindings when a non-golden Task draft snapshot replaces them", async () => {
+  it("clears golden-template bindings when a non-golden 任务 draft snapshot replaces them", async () => {
     const repo = repository();
     await repo.saveDraft(scope, lead, technicalSolutionDraft);
 
@@ -590,7 +590,7 @@ describe("Task mock repository", () => {
       workScope: "需求分析范围",
       expectedCompletionAt: "2026-08-20T10:00:00.000Z",
       templateName: "分析需求",
-      title: "新的需求分析 Task",
+      title: "新的需求分析任务",
     };
     const replaced = await repo.saveDraft(
       scope,
@@ -621,7 +621,7 @@ describe("Task mock repository", () => {
     ["blank current problem", { currentProblem: "   " }],
     ["blank work scope", { workScope: "\t" }],
     ["invalid completion timestamp", { expectedCompletionAt: "2026-08-01" }],
-  ])("rejects invalid Task wizard metadata: %s", async (_label, value) => {
+  ])("rejects invalid 任务 wizard metadata: %s", async (_label, value) => {
     await expect(
       repository().saveDraft(scope, lead, value as unknown as TaskDraft),
     ).rejects.toSatisfy(
@@ -657,7 +657,7 @@ describe("Task mock repository", () => {
 
     firstTask.title = "调用者污染";
     await expect(repo.getTask(scope, lead, "task-mock-0001")).resolves.toMatchObject({
-      title: "设计 Task Center 黄金路径",
+      title: "设计任务中心黄金路径",
     });
 
     await repo.saveDraft(scope, developer, {
@@ -834,7 +834,7 @@ describe("Task mock repository", () => {
     {
       assignedAgent: {
         agentId: "agent-rd-001",
-        agentName: "AI研发员工",
+        agentName: "AI 研发员工",
         agentVersionRef: null,
         autonomyLevel: "L1辅助",
         humanOwner: {
@@ -846,7 +846,7 @@ describe("Task mock repository", () => {
     {
       assignedAgent: {
         agentId: "agent-rd-001",
-        agentName: "AI研发员工",
+        agentName: "AI 研发员工",
         agentVersionRef: technicalSolutionDraft.assignedAgent?.agentVersionRef,
         autonomyLevel: "L1辅助",
         humanOwner: null,
@@ -864,7 +864,7 @@ describe("Task mock repository", () => {
     );
   });
 
-  it("paginates with stable updatedAt descending and ID tie-break ordering", async () => {
+  it("paginates with stable updatedAt descending and 标识 tie-break ordering", async () => {
     const repo = repository();
     const full = await repo.listTasks(scope, lead, { page: 1, pageSize: 20 });
     const first = await repo.listTasks(scope, lead, { page: 1, pageSize: 4 });
@@ -883,7 +883,7 @@ describe("Task mock repository", () => {
     expect(first).toMatchObject({ total: 12, page: 1, pageSize: 4 });
   });
 
-  it("uses safe NOT_FOUND errors for unknown and cross-scope Task reads", async () => {
+  it("uses safe NOT_FOUND errors for unknown and cross-scope 任务 reads", async () => {
     const repo = repository();
     await expect(repo.getTask(scope, lead, "task-unknown")).rejects.toSatisfy(
       (error: unknown) => expectRepositoryError(error, "NOT_FOUND"),
@@ -972,7 +972,7 @@ describe("Task mock repository", () => {
     ["invalid completion timestamp", (draft: Record<string, unknown>) => {
       draft.expectedCompletionAt = "not-a-timestamp";
     }],
-  ])("clears persisted invalid Task wizard metadata: %s", async (_label, mutate) => {
+  ])("clears persisted invalid 任务 wizard metadata: %s", async (_label, mutate) => {
     const repo = repository();
     await repo.saveDraft(scope, lead, technicalSolutionDraft);
     const envelope = JSON.parse(storage.getItem(TASK_STORE_KEY)!) as Record<
@@ -989,15 +989,15 @@ describe("Task mock repository", () => {
   });
 
   it.each([
-    ["Auditor draft", (envelope: Record<string, unknown>) => {
+    ["审计员 draft", (envelope: Record<string, unknown>) => {
       const workspaceStore = getStoredWorkspace(envelope);
       const drafts = workspaceStore.draftsByActor as Record<string, unknown>;
       drafts["user-auditor"] = {
         templateName: "生成技术方案",
-        title: "Auditor 不可创建",
+        title: "审计员不可创建",
       };
     }],
-    ["Auditor Task initiator", (envelope: Record<string, unknown>) => {
+    ["审计员任务 initiator", (envelope: Record<string, unknown>) => {
       const task = getFirstStoredTask(envelope);
       (task.initiator as Record<string, unknown>).userId = "user-auditor";
     }],
@@ -1025,7 +1025,7 @@ describe("Task mock repository", () => {
       getStoredPlanSteps(envelope)[1].stepType = "AGENT";
     }],
     ["changed fixed plan step owner", (envelope: Record<string, unknown>) => {
-      getStoredPlanSteps(envelope)[3].responsibility = "AI研发员工";
+      getStoredPlanSteps(envelope)[3].responsibility = "AI 研发员工";
     }],
     ["changed fixed plan step risk", (envelope: Record<string, unknown>) => {
       getStoredPlanSteps(envelope)[2].riskLevel = "R0";
@@ -1058,7 +1058,7 @@ describe("Task mock repository", () => {
     ["approved plan point", (envelope: Record<string, unknown>) => {
       getStoredApprovalPoints(envelope)[0].status = "APPROVED";
     }],
-    ["duplicate approval point ID", (envelope: Record<string, unknown>) => {
+    ["duplicate approval point 标识", (envelope: Record<string, unknown>) => {
       const points = getStoredApprovalPoints(envelope);
       points[1].id = points[0].id;
     }],
@@ -1084,14 +1084,14 @@ describe("Task mock repository", () => {
     ["updatedAt before createdAt", (envelope: Record<string, unknown>) => {
       getFirstStoredTask(envelope).updatedAt = "2026-07-25T00:00:00.000Z";
     }],
-    ["history before Task creation", (envelope: Record<string, unknown>) => {
+    ["history before 任务 creation", (envelope: Record<string, unknown>) => {
       getStoredHistory(envelope)[0].occurredAt = "2026-07-25T00:00:00.000Z";
     }],
-    ["history after Task update", (envelope: Record<string, unknown>) => {
+    ["history after 任务 update", (envelope: Record<string, unknown>) => {
       getStoredHistory(envelope)[3].occurredAt = "2099-01-01T00:00:00.000Z";
     }],
     [
-      "duplicate numeric sequence via noncanonical Task ID",
+      "duplicate numeric sequence via noncanonical 任务标识",
       (envelope: Record<string, unknown>) => {
         const workspaceStore = getStoredWorkspace(envelope);
         const tasks = workspaceStore.createdTasks as Array<

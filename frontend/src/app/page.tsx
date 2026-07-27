@@ -11,8 +11,7 @@ export default function Home() {
           企业 AI 工作操作系统
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-          统一管理企业知识库、Capability、Agent、Task、Tool、Artifact 与
-          Audit，让 AI 员工在明确责任和权限边界内完成工作。
+          统一管理企业知识库、能力、AI 员工、任务、工具、成果与审计，让 AI 员工在明确责任和权限边界内完成工作。
         </p>
         <Link
           className="mt-8 inline-flex items-center rounded-lg bg-indigo-600 px-5 py-3 font-medium text-white transition-colors hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"

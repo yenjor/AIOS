@@ -57,8 +57,8 @@ function repository(storage = new MemoryStorage()) {
   });
 }
 
-describe("Capability Mock Repository", () => {
-  it("exposes only Published versions as Task selection options", async () => {
+describe("能力本地演示数据", () => {
+  it("exposes only 已发布 versions as 任务 selection options", async () => {
     const options = await repository().listPublishedOptions(
       scope,
       developer,
@@ -77,7 +77,7 @@ describe("Capability Mock Repository", () => {
     expect(options[0].toolActions).toEqual(["codegraph.context"]);
   });
 
-  it("runs Draft through evaluation, review and publish before Task use", async () => {
+  it("次运行草稿 through evaluation, review and publish before 任务 use", async () => {
     const repo = repository();
     const created = await repo.createCapability(scope, manager, input);
     const draft = created.versions[0];
@@ -122,7 +122,7 @@ describe("Capability Mock Repository", () => {
     );
   });
 
-  it("suspends new Task resolution without mutating the version content", async () => {
+  it("suspends new 任务 resolution without mutating the version content", async () => {
     const repo = repository();
     const before = await repo.getCapability(
       scope,

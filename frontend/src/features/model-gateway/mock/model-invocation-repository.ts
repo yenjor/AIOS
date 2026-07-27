@@ -45,7 +45,7 @@ const validActorIds = new Set([
 
 function storage(): ModelInvocationStorage {
   if (typeof window === "undefined") {
-    throw new Error("Model Invocation store is only available in the browser.");
+    throw new Error("模型调用存储仅可在浏览器中使用。");
   }
   return window.localStorage;
 }
@@ -253,13 +253,13 @@ function readEnvelope(target: ModelInvocationStorage): ModelInvocationStoreEnvel
   } catch {
     target.removeItem(MODEL_INVOCATION_STORE_KEY);
     throw new Error(
-      "Model Invocation 本地数据未通过完整性校验，已拒绝加载。",
+      "模型调用本地数据未通过完整性校验，已拒绝加载。",
     );
   }
 }
 
 function assertScope(scope: ModelInvocationScope): void {
-  if (!isScope(scope)) throw new Error("Model Invocation scope is invalid.");
+  if (!isScope(scope)) throw new Error("模型调用作用域无效。");
 }
 
 export async function listTaskModelInvocations(
@@ -269,7 +269,7 @@ export async function listTaskModelInvocations(
 ): Promise<ModelInvocationResult[]> {
   assertScope(scope);
   if (!validActorIds.has(actor.userId) || !taskId) {
-    throw new Error("Model Invocation query is invalid.");
+    throw new Error("模型调用查询条件无效。");
   }
   return structuredClone(
     readEnvelope(storage()).invocations.filter(
@@ -294,14 +294,14 @@ export async function recordModelInvocation(
     invocation.scope.workspaceId !== scope.workspaceId ||
     invocation.actorId !== actor.userId
   ) {
-    throw new Error("Model Invocation result is invalid for the active scope.");
+    throw new Error("模型调用结果与当前作用域不匹配。");
   }
   const target = storage();
   const envelope = readEnvelope(target);
   const existing = envelope.invocations.find(({ id }) => id === invocation.id);
   if (existing) {
     if (JSON.stringify(existing) !== JSON.stringify(invocation)) {
-      throw new Error("Model Invocation ID is already bound to different evidence.");
+      throw new Error("模型调用标识已绑定到其他证据。");
     }
     return structuredClone(existing);
   }

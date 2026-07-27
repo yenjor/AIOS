@@ -33,7 +33,7 @@ export interface DashboardScreenProps {
 }
 
 const ARTIFACT_ACTION_DESCRIPTION =
-  "将在 Artifact 审批与验收流程实施阶段启用";
+  "将在成果审批与验收流程实施阶段启用";
 
 const statusIcons: Record<BadgeTone, LucideIcon> = {
   info: CircleDot,
@@ -69,14 +69,14 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Workspace
+            工作空间
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Workspace 工作台
+            工作空间工作台
           </h1>
           <CurrentResponsibility />
           <p className="mt-2 text-sm text-[var(--aios-muted)]">
-            Task 列表、创建向导与只读详情已接入 Mock Repository。
+            任务列表、创建向导与只读详情已接入本地演示数据。
           </p>
         </div>
         {canCreate ? (
@@ -84,24 +84,24 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
             href="/tasks/new"
             className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--aios-primary)] px-4 text-sm font-semibold text-[var(--aios-surface)] transition hover:bg-[color-mix(in_srgb,var(--aios-primary)_85%,var(--aios-navigation))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--aios-primary)]"
           >
-            创建 Task
+            创建任务
           </Link>
         ) : createPermissionStatus === "denied" ? (
           <p className="rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-4 py-3 text-sm text-[var(--aios-muted)]">
-            当前身份可查看 Task，但不能创建。
+            当前身份可查看任务，但不能创建。
           </p>
         ) : null}
       </header>
 
       <section
-        aria-label="Workspace 核心指标"
+        aria-label="工作空间核心指标"
         className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         <MetricCard label="我的待办" value={metrics.todo} />
-        <MetricCard label="进行中 Task" value={metrics.runningTasks} />
+        <MetricCard label="进行中任务" value={metrics.runningTasks} />
         <MetricCard label="可用 AI 员工" value={metrics.availableAgents} />
         <MetricCard
-          label="待验收 Artifact"
+          label="待验收成果"
           value={metrics.pendingArtifacts}
         />
       </section>
@@ -171,11 +171,11 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                 </div>
                 <div
                   role="group"
-                  aria-label="累计 Artifact"
+                  aria-label="累计成果"
                   className="flex flex-col"
                 >
                   <dt className="order-2 mt-1 text-xs text-[var(--aios-muted)]">
-                    累计 Artifact
+                    累计成果
                   </dt>
                   <dd className="order-1 text-2xl font-semibold tabular-nums">
                     {agent.artifactsProduced}
@@ -215,10 +215,10 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
 
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between gap-3 px-5 py-4">
-              <h2 className="font-semibold">最近 Task</h2>
+              <h2 className="font-semibold">最近任务</h2>
               <Link
                 href="/tasks"
-                aria-label="查看全部 Task"
+                aria-label="查看全部任务"
                 className="inline-flex min-h-9 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-[var(--aios-text)] transition hover:bg-[var(--aios-canvas)] focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
               >
                 查看全部
@@ -227,16 +227,16 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
             </div>
             <div
               role="region"
-              aria-label="最近 Task 表格，可横向滚动"
+              aria-label="最近任务表格，可横向滚动"
               tabIndex={0}
               className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--aios-primary)]"
             >
               <table className="w-full min-w-[720px] border-t border-[var(--aios-control-border)] text-left text-sm">
-                <caption className="sr-only">最近 Task 列表</caption>
+                <caption className="sr-only">最近任务列表</caption>
                 <thead className="bg-[var(--aios-canvas)] text-[var(--aios-muted)]">
                   <tr>
                     <th scope="col" className="px-5 py-3 font-medium">
-                      Task
+                      任务
                     </th>
                     <th scope="col" className="px-5 py-3 font-medium">
                       模板
@@ -261,7 +261,7 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                       <th scope="row" className="px-5 py-3 font-medium">
                         <Link
                           href={`/tasks/${task.id}`}
-                          aria-label={`查看 Task ${task.id}`}
+                          aria-label={`查看任务 ${task.id}`}
                           className="underline-offset-4 hover:text-[var(--aios-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
                         >
                           {task.title}
@@ -285,7 +285,7 @@ export function DashboardScreen({ snapshot }: DashboardScreenProps) {
                         colSpan={5}
                         className="px-5 py-8 text-center text-[var(--aios-muted)]"
                       >
-                        暂无最近 Task
+                        暂无最近任务
                       </td>
                     </tr>
                   ) : null}

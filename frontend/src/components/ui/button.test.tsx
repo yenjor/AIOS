@@ -6,23 +6,23 @@ import { Button } from "./button";
 
 describe("Button", () => {
   it("renders a disabled named button", () => {
-    render(<Button disabled>创建 Task</Button>);
+    render(<Button disabled>创建任务</Button>);
 
-    expect(screen.getByRole("button", { name: "创建 Task" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "创建任务" })).toBeDisabled();
   });
 
   it("uses the primary token and merges custom class conflicts", () => {
-    render(<Button className="rounded-none">创建 Task</Button>);
+    render(<Button className="rounded-none">创建任务</Button>);
 
-    const button = screen.getByRole("button", { name: "创建 Task" });
+    const button = screen.getByRole("button", { name: "创建任务" });
     expect(button).toHaveClass("bg-[var(--aios-primary)]", "rounded-none");
     expect(button).not.toHaveClass("rounded-lg");
   });
 
   it("uses the accessible control border token for the secondary variant", () => {
-    render(<Button variant="secondary">创建 Task</Button>);
+    render(<Button variant="secondary">创建任务</Button>);
 
-    expect(screen.getByRole("button", { name: "创建 Task" })).toHaveClass(
+    expect(screen.getByRole("button", { name: "创建任务" })).toHaveClass(
       "border-[var(--aios-control-border)]",
     );
   });
@@ -32,7 +32,7 @@ describe("Button", () => {
 
     render(
       <Button aria-describedby="button-description" data-testid="create-button" ref={ref}>
-        创建 Task
+        创建任务
       </Button>,
     );
 

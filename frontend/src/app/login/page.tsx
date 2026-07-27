@@ -45,7 +45,7 @@ export default function LoginPage() {
                 AI 智能业务线角色
               </h2>
               <p className="mt-1 text-sm text-[var(--aios-muted)]">
-                选择身份后进入 Organization 与 Workspace。
+                选择身份后进入组织与工作空间。
               </p>
             </div>
           </div>
@@ -68,7 +68,7 @@ export default function LoginPage() {
                   </div>
                   <Button
                     className="mt-6 w-full"
-                    aria-label={`使用 ${user.name}（${user.role}）身份`}
+                    aria-label={`使用${user.name}（${user.role}）身份`}
                     onClick={() => handleSelectUser(user.id)}
                   >
                     使用此身份

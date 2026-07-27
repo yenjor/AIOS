@@ -73,10 +73,10 @@ describe("TaskCenterScreen", () => {
   it("shows scope, summaries, canonical filters, and a permitted create link", () => {
     renderScreen();
 
-    expect(screen.getByRole("heading", { name: "Task Center" })).toBeVisible();
-    expect(screen.getByText("Organization：光位科技")).toBeVisible();
-    expect(screen.getByText("Workspace：AI 智能业务线")).toBeVisible();
-    expect(screen.getByRole("link", { name: "创建 Task" })).toHaveAttribute(
+    expect(screen.getByRole("heading", { name: "任务中心" })).toBeVisible();
+    expect(screen.getByText("组织：光位科技")).toBeVisible();
+    expect(screen.getByText("工作空间：AI 智能业务线")).toBeVisible();
+    expect(screen.getByRole("link", { name: "创建任务" })).toHaveAttribute(
       "href",
       "/tasks/new",
     );
@@ -132,9 +132,9 @@ describe("TaskCenterScreen", () => {
       status: "EXECUTING",
     });
 
-    await interaction.clear(screen.getByRole("searchbox", { name: "搜索 Task" }));
+    await interaction.clear(screen.getByRole("searchbox", { name: "搜索任务" }));
     await interaction.type(
-      screen.getByRole("searchbox", { name: "搜索 Task" }),
+      screen.getByRole("searchbox", { name: "搜索任务" }),
       "技术方案",
     );
     await interaction.click(screen.getByRole("button", { name: "搜索" }));
@@ -176,9 +176,9 @@ describe("TaskCenterScreen", () => {
   it("renders desktop and mobile read models with safe detail links", () => {
     renderScreen();
 
-    const table = screen.getByRole("table", { name: "Task 列表" });
+    const table = screen.getByRole("table", { name: "任务列表" });
     for (const heading of [
-      "Task",
+      "任务",
       "模板",
       "状态",
       "优先级",
@@ -186,7 +186,7 @@ describe("TaskCenterScreen", () => {
       "发起人",
       "AI 员工",
       "当前负责人",
-      "预期 Artifact",
+      "预期成果",
       "更新时间",
     ]) {
       expect(
@@ -195,11 +195,11 @@ describe("TaskCenterScreen", () => {
     }
     expect(
       screen.getAllByRole("link", {
-        name: `查看 Task ${goldenTechnicalSolutionTask.id}`,
+        name: `查看任务 ${goldenTechnicalSolutionTask.id}`,
       }),
     ).toHaveLength(2);
     for (const link of screen.getAllByRole("link", {
-      name: `查看 Task ${goldenTechnicalSolutionTask.id}`,
+      name: `查看任务 ${goldenTechnicalSolutionTask.id}`,
     })) {
       expect(link).toHaveAttribute(
         "href",
@@ -207,7 +207,7 @@ describe("TaskCenterScreen", () => {
       );
     }
     expect(
-      screen.getAllByLabelText("Task 状态：待审批"),
+      screen.getAllByLabelText("任务状态：待审批"),
     ).toHaveLength(2);
   });
 
@@ -225,15 +225,15 @@ describe("TaskCenterScreen", () => {
         page={{ ...page, total: 0, items: [] }}
       />,
     );
-    expect(screen.getByText("没有符合当前筛选条件的 Task")).toBeVisible();
+    expect(screen.getByText("没有符合当前筛选条件的任务")).toBeVisible();
   });
 
   it("does not render a create entry when permission is denied", () => {
     renderScreen({ canCreate: false });
 
     expect(
-      screen.queryByRole("link", { name: "创建 Task" }),
+      screen.queryByRole("link", { name: "创建任务" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("当前身份可查看 Task，但不能创建。")).toBeVisible();
+    expect(screen.getByText("当前身份可查看任务，但不能创建。")).toBeVisible();
   });
 });

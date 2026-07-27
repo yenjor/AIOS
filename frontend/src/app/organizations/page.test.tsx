@@ -19,7 +19,7 @@ function OrganizationTestControls() {
   return (
     <>
       <button onClick={() => selectUser("user-lead")}>建立演示身份</button>
-      <output aria-label="当前 Organization">{organization?.name ?? "未选择"}</output>
+      <output aria-label="当前组织">{organization?.name ?? "未选择"}</output>
     </>
   );
 }
@@ -36,7 +36,7 @@ test("shows recovery before offering a login fallback for an empty restored sess
   );
 
   expect(
-    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+    screen.getByRole("heading", { name: "正在恢复模拟会话" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("heading", { name: "请先选择身份" }),
@@ -63,13 +63,13 @@ test("restores an identity without flashing the missing identity error", async (
   );
 
   expect(
-    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+    screen.getByRole("heading", { name: "正在恢复模拟会话" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("heading", { name: "请先选择身份" }),
   ).not.toBeInTheDocument();
   expect(
-    await screen.findByRole("heading", { name: "选择 Organization" }),
+    await screen.findByRole("heading", { name: "选择组织" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("heading", { name: "请先选择身份" }),
@@ -87,13 +87,13 @@ test("updates the organization before navigating to workspaces", async () => {
   );
 
   await interaction.click(screen.getByRole("button", { name: "建立演示身份" }));
-  await interaction.click(screen.getByRole("button", { name: "选择组织 光位科技" }));
+  await interaction.click(screen.getByRole("button", { name: "选择组织光位科技" }));
 
-  expect(screen.getByLabelText("当前 Organization")).toHaveTextContent("光位科技");
+  expect(screen.getByLabelText("当前组织")).toHaveTextContent("光位科技");
   expect(push).toHaveBeenCalledWith("/workspaces");
 });
 
-test("shows the approved Organization scope information", async () => {
+test("shows the approved 组织 scope information", async () => {
   const interaction = userEvent.setup();
 
   render(
@@ -108,7 +108,7 @@ test("shows the approved Organization scope information", async () => {
   expect(screen.getByText("org-guangwei")).toBeVisible();
   expect(screen.getByText("管理光位科技企业 AI 资源与工作范围")).toBeVisible();
   expect(screen.getByText("当前职责：研发负责人")).toBeVisible();
-  expect(screen.getByText("可访问 Workspace：1")).toBeVisible();
+  expect(screen.getByText("可访问工作空间：1")).toBeVisible();
   expect(screen.getByText("最近进入：2026-07-24 18:30")).toBeVisible();
   const accessBadge = screen.getByText("可访问", { selector: "span" });
   expect(accessBadge).toBeVisible();

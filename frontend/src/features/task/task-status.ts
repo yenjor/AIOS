@@ -35,7 +35,7 @@ export const TASK_TEMPLATE_NAMES = [
   "分析需求",
   "生成技术方案",
   "辅助编码",
-  "Code Review",
+  "代码审查",
   "自动测试",
 ] as const;
 
@@ -46,7 +46,7 @@ export const TASK_TEMPLATE_ARTIFACTS = {
   分析需求: "需求分析报告",
   生成技术方案: "技术方案",
   辅助编码: "代码变更",
-  "Code Review": "Code Review 报告",
+  "代码审查": "代码审查报告",
   自动测试: "测试报告",
 } as const satisfies Record<TaskTemplateName, string>;
 

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ToolDetailLoader } from "@/features/tool/tool-detail-loader";
 
 export const metadata: Metadata = {
-  title: "Tool 详情 | AIOS",
+  title: "工具详情 | AIOS",
 };
 
 export default async function ToolDetailPage({

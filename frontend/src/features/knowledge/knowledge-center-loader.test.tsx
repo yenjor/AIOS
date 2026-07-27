@@ -71,7 +71,7 @@ beforeEach(() => {
 });
 
 describe("KnowledgeCenterLoader", () => {
-  it("waits for a complete session before reading Knowledge", async () => {
+  it("在读取知识库前等待完整会话", async () => {
     useSession.mockReturnValue({ ...completeSession, hydrated: false });
     const view = render(<KnowledgeCenterLoader />);
 
@@ -109,16 +109,16 @@ describe("KnowledgeCenterLoader", () => {
     );
   });
 
-  it("keeps read access but hides management action for Auditor", async () => {
+  it("keeps read access but hides management action for 审计员", async () => {
     useSession.mockReturnValue({
       ...completeSession,
-      user: { id: "user-auditor", name: "赵岚", role: "Auditor" },
+      user: { id: "user-auditor", name: "赵岚", role: "审计员" },
     });
     getKnowledgePermission.mockResolvedValue({
       canRead: true,
       canManage: false,
       canSubmitCorrection: false,
-      reason: "Auditor read only.",
+      reason: "审计员 read only.",
     });
 
     render(<KnowledgeCenterLoader />);

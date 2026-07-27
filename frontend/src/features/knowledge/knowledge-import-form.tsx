@@ -17,6 +17,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
+import {
+  KNOWLEDGE_CLASSIFICATION_LABELS,
+  KNOWLEDGE_SOURCE_TYPE_LABELS,
+} from "./knowledge-display";
 import type {
   KnowledgeClassification,
   KnowledgeSourceType,
@@ -71,7 +75,7 @@ async function readTextFile(
     throw new Error("只支持 UTF-8 Markdown（.md）或纯文本（.txt）文件。");
   }
   if (file.size > MAX_CONTENT_BYTES) {
-    throw new Error("Mock 导入文件不能超过 50 KB。");
+    throw new Error("模拟导入文件不能超过 50 KB。");
   }
   const content = await file.text();
   if (!content.trim()) {
@@ -128,9 +132,9 @@ function ContentFields({
               aria-hidden="true"
             />
             <div>
-              <p className="text-sm font-semibold">导入 Markdown / Text</p>
+              <p className="text-sm font-semibold">导入 Markdown / 文本</p>
               <p className={helpClass}>
-                文件仅用于填充正文；MVP 使用 Mock Content Store，不上传到 MinIO。
+                文件仅用于填充正文；MVP 使用模拟内容存储，不上传到 MinIO。
               </p>
             </div>
           </div>
@@ -198,8 +202,7 @@ function ContentFields({
           }
         />
         <p className={helpClass}>
-          正文上限 50 KB。提交时在浏览器内计算 SHA-256；不会把 File
-          对象或 Secret 写入本地仓储。
+          正文上限 50 KB。提交时在浏览器内计算 SHA-256；不会把文件对象或密钥写入本地仓储。
         </p>
       </div>
     </>
@@ -320,9 +323,11 @@ export function KnowledgeRegistrationForm({
                 })
               }
             >
-              {["DOCUMENT", "CODE", "SOP", "HISTORY", "EXPERIENCE"].map(
+              {(["DOCUMENT", "CODE", "SOP", "HISTORY", "EXPERIENCE"] as const).map(
                 (sourceType) => (
-                  <option key={sourceType}>{sourceType}</option>
+                  <option key={sourceType} value={sourceType}>
+                    {KNOWLEDGE_SOURCE_TYPE_LABELS[sourceType]}
+                  </option>
                 ),
               )}
             </select>
@@ -343,9 +348,11 @@ export function KnowledgeRegistrationForm({
                 })
               }
             >
-              {["PUBLIC", "INTERNAL", "CONFIDENTIAL"].map(
+              {(["PUBLIC", "INTERNAL", "CONFIDENTIAL"] as const).map(
                 (classification) => (
-                  <option key={classification}>{classification}</option>
+                  <option key={classification} value={classification}>
+                    {KNOWLEDGE_CLASSIFICATION_LABELS[classification]}
+                  </option>
                 ),
               )}
             </select>
@@ -395,16 +402,16 @@ export function KnowledgeRegistrationForm({
               }
             >
               <option value="user-lead">陈明（研发负责人）</option>
-              <option value="user-admin">吴桐（Workspace Admin）</option>
+              <option value="user-admin">吴桐（工作空间管理员）</option>
             </select>
           </div>
           <div>
             <span className={labelClass}>适用范围</span>
             <div className="min-h-11 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] px-3 py-2 text-sm">
-              当前 Workspace · software_engineering_tasks
+              当前工作空间 · 软件工程任务
             </div>
             <p className={helpClass}>
-              MVP 固定为当前 Workspace，禁止跨租户或静默扩大范围。
+              MVP 固定为当前工作空间，禁止跨租户或静默扩大范围。
             </p>
           </div>
         </div>
@@ -489,8 +496,7 @@ export function KnowledgeVersionForm({
           创建新版本
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-          有效版本不会被原地修改。新内容将创建 Draft，完成确定性 Mock
-          处理和权限负向验证后等待发布。
+          有效版本不会被原地修改。新内容将创建草稿，完成确定性模拟处理和权限负向验证后等待发布。
         </p>
       </header>
 
@@ -522,7 +528,7 @@ export function KnowledgeVersionForm({
               aria-hidden="true"
             />
           ) : null}
-          {busy ? "正在创建版本…" : "创建 Draft"}
+          {busy ? "正在创建版本…" : "创建草稿"}
         </Button>
       </div>
     </form>

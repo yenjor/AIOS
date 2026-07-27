@@ -49,12 +49,12 @@ describe("Topbar", () => {
 
     expect(
       await screen.findByRole("link", {
-        name: `重新选择 Organization：${organization.name}`,
+        name: `重新选择组织：${organization.name}`,
       }),
     ).toHaveAttribute("href", "/organizations");
     expect(
       screen.getByRole("link", {
-        name: `重新选择 Workspace：${workspace.name}`,
+        name: `重新选择工作空间：${workspace.name}`,
       }),
     ).toHaveAttribute("href", "/workspaces");
     expect(
@@ -62,7 +62,7 @@ describe("Topbar", () => {
     ).toHaveAttribute("href", "/login");
   });
 
-  it("enables Task creation from repository permission while keeping notifications disabled", async () => {
+  it("enables 任务 creation from repository permission while keeping notifications disabled", async () => {
     render(
       <CompleteSession>
         <Topbar
@@ -73,7 +73,7 @@ describe("Topbar", () => {
       </CompleteSession>,
     );
 
-    const createTask = await screen.findByRole("link", { name: "创建 Task" });
+    const createTask = await screen.findByRole("link", { name: "创建任务" });
     const notifications = screen.getByRole("button", {
       name: "通知（将在对应实施阶段启用）",
     });
@@ -83,11 +83,11 @@ describe("Topbar", () => {
     expect(notifications).toHaveAccessibleDescription(
       "通知功能将在对应实施阶段启用",
     );
-    expect(screen.getByText("Mock Repository · Workspace 隔离")).toBeVisible();
+    expect(screen.getByText("本地演示数据 · 工作空间隔离")).toBeVisible();
     expect(screen.queryByText("只读演示 · 功能未启用")).not.toBeInTheDocument();
   });
 
-  it("does not render Task creation for Auditor", async () => {
+  it("does not render 任务 creation for 审计员", async () => {
     render(
       <CompleteSession userId="user-auditor">
         <Topbar
@@ -100,11 +100,11 @@ describe("Topbar", () => {
 
     expect(
       await screen.findByRole("link", {
-        name: "切换身份：赵岚，Auditor",
+        name: "切换身份：赵岚，审计员",
       }),
     ).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: "创建 Task" }),
+      screen.queryByRole("link", { name: "创建任务" }),
     ).not.toBeInTheDocument();
   });
 

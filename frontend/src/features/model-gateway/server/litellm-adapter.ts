@@ -39,13 +39,13 @@ function completionEndpoint(baseUrl: string): string {
   } catch {
     throw new LiteLlmCompletionError(
       "GATEWAY_NOT_CONFIGURED",
-      "AIOS_LITELLM_BASE_URL is not a valid URL.",
+      "AIOS_LITELLM_BASE_URL 不是有效的 URL。",
     );
   }
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new LiteLlmCompletionError(
       "GATEWAY_NOT_CONFIGURED",
-      "LiteLLM Model Gateway must use HTTP or HTTPS.",
+      "LiteLLM 模型网关必须使用 HTTP 或 HTTPS。",
     );
   }
   const path = url.pathname.replace(/\/$/, "");
@@ -91,7 +91,7 @@ async function readBoundedBody(response: Response, maximumBytes: number) {
       await reader.cancel();
       throw new LiteLlmCompletionError(
         "OUTPUT_INVALID",
-        "LiteLLM response exceeds the bounded response size.",
+        "LiteLLM 响应超过大小限制。",
       );
     }
     chunks.push(value);
@@ -113,7 +113,7 @@ function responseContent(value: unknown): {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new LiteLlmCompletionError(
       "OUTPUT_INVALID",
-      "LiteLLM returned an invalid completion envelope.",
+      "LiteLLM 返回了无效的补全响应封装。",
     );
   }
   const record = value as Record<string, unknown>;
@@ -137,7 +137,7 @@ function responseContent(value: unknown): {
   ) {
     throw new LiteLlmCompletionError(
       "OUTPUT_INVALID",
-      "LiteLLM completion content or resolved model is invalid.",
+      "LiteLLM 补全内容或解析后的模型无效。",
     );
   }
   const usage = usageFrom(record.usage);
@@ -172,7 +172,7 @@ export function createLiteLlmAdapter({
       ) {
         throw new LiteLlmCompletionError(
           "GATEWAY_NOT_CONFIGURED",
-          "LiteLLM Model Gateway address and technical-design model alias are not configured.",
+          "尚未配置 LiteLLM 模型网关地址和技术方案模型别名。",
         );
       }
       const controller = new AbortController();
@@ -187,7 +187,7 @@ export function createLiteLlmAdapter({
             ...(apiKey?.trim()
               ? { Authorization: `Bearer ${apiKey.trim()}` }
               : {}),
-            "X-AIOS-Model-Policy": "reasoning-structured-output",
+            "X-AIOS-模型-Policy": "reasoning-structured-output",
           },
           cache: "no-store",
           signal: controller.signal,
@@ -209,13 +209,13 @@ export function createLiteLlmAdapter({
         if (error instanceof Error && error.name === "AbortError") {
           throw new LiteLlmCompletionError(
             "GATEWAY_TIMEOUT",
-            "LiteLLM request timed out; provider completion state is unknown.",
+            "LiteLLM 请求超时；模型提供方的补全状态未知。",
           );
         }
         if (error instanceof LiteLlmCompletionError) throw error;
         throw new LiteLlmCompletionError(
           "GATEWAY_UNAVAILABLE",
-          "LiteLLM Model Gateway could not be reached.",
+          "无法连接 LiteLLM 模型网关。",
         );
       } finally {
         clearTimeout(timeout);
@@ -226,14 +226,14 @@ export function createLiteLlmAdapter({
           response.status === 429 ? "RATE_LIMITED" : "PROVIDER_ERROR";
         throw new LiteLlmCompletionError(
           classification,
-          `LiteLLM rejected the completion with HTTP ${response.status}.`,
+          `LiteLLM 拒绝了补全请求，HTTP 状态码为 ${response.status}。`,
         );
       }
       const declaredLength = Number(response.headers.get("content-length"));
       if (Number.isFinite(declaredLength) && declaredLength > 128_000) {
         throw new LiteLlmCompletionError(
           "OUTPUT_INVALID",
-          "LiteLLM response exceeds the bounded response size.",
+          "LiteLLM 响应超过大小限制。",
         );
       }
       const raw = await readBoundedBody(response, 128_000);
@@ -243,7 +243,7 @@ export function createLiteLlmAdapter({
       } catch {
         throw new LiteLlmCompletionError(
           "OUTPUT_INVALID",
-          "LiteLLM returned a non-JSON response.",
+          "LiteLLM 返回了非 JSON 响应。",
         );
       }
       const completion = responseContent(parsed);

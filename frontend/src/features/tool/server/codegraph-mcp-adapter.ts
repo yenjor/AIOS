@@ -89,7 +89,7 @@ function toolText(result: unknown): string {
   ) {
     throw new CodeGraphMcpError(
       "INVALID_RESULT",
-      "MCP Tool returned an invalid result envelope.",
+      "MCP 工具返回了无效的结果封装。",
       true,
     );
   }
@@ -105,7 +105,7 @@ function toolText(result: unknown): string {
   if (candidate.isError || !text) {
     throw new CodeGraphMcpError(
       "INVALID_RESULT",
-      text || "MCP Tool returned an empty result.",
+      text || "MCP 工具返回了空结果。",
       true,
     );
   }
@@ -124,7 +124,7 @@ export function createCodeGraphMcpAdapter({
         return Promise.reject(
           new CodeGraphMcpError(
             "MCP_UNAVAILABLE",
-            "CodeGraph index is not initialized for the AIOS workspace.",
+            "当前 AIOS 工作空间尚未初始化 CodeGraph 索引。",
           ),
         );
       }
@@ -142,7 +142,7 @@ export function createCodeGraphMcpAdapter({
             ok: false,
             error: new CodeGraphMcpError(
               "TRANSPORT_TIMEOUT",
-              "CodeGraph MCP invocation exceeded the 15 second deadline.",
+              "CodeGraph MCP 调用超过 15 秒时限。",
               initialized,
             ),
           });
@@ -172,7 +172,7 @@ export function createCodeGraphMcpAdapter({
                 ok: false,
                 error: new CodeGraphMcpError(
                   "MCP_UNAVAILABLE",
-                  response.error?.message ?? "MCP initialize failed.",
+                  response.error?.message ?? "MCP 初始化失败。",
                 ),
               });
               return;
@@ -220,7 +220,7 @@ export function createCodeGraphMcpAdapter({
                 ok: false,
                 error: new CodeGraphMcpError(
                   "INVALID_RESULT",
-                  response.error.message ?? "codegraph_context failed.",
+                  response.error.message ?? "CodeGraph 上下文检索失败。",
                   initialized,
                 ),
               });
@@ -244,7 +244,7 @@ export function createCodeGraphMcpAdapter({
                     ? error
                     : new CodeGraphMcpError(
                         "INVALID_RESULT",
-                        "Unable to normalize MCP Tool result.",
+                        "无法规范化 MCP 工具结果。",
                         initialized,
                       ),
               });
@@ -259,7 +259,7 @@ export function createCodeGraphMcpAdapter({
               ok: false,
               error: new CodeGraphMcpError(
                 "INVALID_RESULT",
-                "MCP output exceeded the configured size limit.",
+                "MCP 输出超过配置的大小限制。",
                 initialized,
               ),
             });
@@ -275,7 +275,7 @@ export function createCodeGraphMcpAdapter({
             try {
               handleResponse(JSON.parse(line) as JsonRpcResponse);
             } catch {
-              // Ignore non-protocol diagnostic lines; stderr is captured separately.
+              // 忽略非协议诊断行；标准错误输出会单独采集。
             }
           }
         });
@@ -289,7 +289,7 @@ export function createCodeGraphMcpAdapter({
             ok: false,
             error: new CodeGraphMcpError(
               "MCP_UNAVAILABLE",
-              `Unable to start CodeGraph MCP Server: ${error.message}`,
+              `无法启动 CodeGraph MCP 服务：${error.message}`,
               initialized,
             ),
           });
@@ -301,7 +301,7 @@ export function createCodeGraphMcpAdapter({
               ok: false,
               error: new CodeGraphMcpError(
                 "MCP_UNAVAILABLE",
-                `CodeGraph MCP Server exited before completing the request (code ${code ?? "unknown"}). ${stderr.trim()}`.slice(
+                `CodeGraph MCP 服务在请求完成前退出（退出码 ${code ?? "未知"}）。${stderr.trim()}`.slice(
                   0,
                   800,
                 ),

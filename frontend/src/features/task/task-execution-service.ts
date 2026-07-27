@@ -39,7 +39,7 @@ function createCodeGraphRequest(
   attemptNumber: number,
 ): InvokeCodeGraphContextInput {
   if (!task.executionRun || !task.assignedAgent) {
-    throw new Error("ExecutionRun and assigned Agent are required.");
+    throw new Error("必须包含执行记录和已分配的 AI 员工。");
   }
   const toolRef = task.toolVersionRefs.find(
     ({ actionId }) => actionId === "codegraph.context",
@@ -52,14 +52,14 @@ function createCodeGraphRequest(
     toolRef.operationType !== "READ"
   ) {
     throw new Error(
-      "Execution Package does not pin the published codegraph.context ToolVersion.",
+      "执行包未固定已发布的 codegraph.context 工具版本。",
     );
   }
   const query = [
-    `为 Task「${task.title}」读取 AIOS 当前实现的相关代码结构、调用关系、约束和测试入口。`,
+    `为任务「${task.title}」读取 AIOS 当前实现的相关代码结构、调用关系、约束和测试入口。`,
     `目标：${task.goal}`,
     `当前问题：${task.goalSummary}`,
-    "只返回与该 Task 技术方案有关的只读项目上下文。",
+    "只返回与该任务技术方案有关的只读项目上下文。",
   ]
     .join("\n")
     .slice(0, 1_200);
@@ -107,7 +107,7 @@ async function resolvePinnedCapabilityVersion(
   actor: TaskActor,
 ): Promise<CapabilityVersion> {
   const reference = task.capabilityVersionRefs[0];
-  if (!reference) throw new Error("Execution Package requires CapabilityVersion.");
+  if (!reference) throw new Error("执行包必须包含能力版本。");
   const capability = await getCapability(task.scope, actor, reference.objectId);
   const version = capability.versions.find(({ id }) => id === reference.versionId);
   if (
@@ -123,7 +123,7 @@ async function resolvePinnedCapabilityVersion(
     !version.modelPolicy.toolCallingRequired
   ) {
     throw new Error(
-      "Published CapabilityVersion no longer matches the pinned technical-design execution contract.",
+      "已发布能力版本不再匹配固定的技术方案执行契约。",
     );
   }
   return version;
@@ -137,14 +137,14 @@ function createModelRequest(
   attemptNumber: number,
 ): InvokeTechnicalDesignModelInput {
   if (!task.executionRun || !task.assignedAgent || !task.workflowVersionRef) {
-    throw new Error("ExecutionRun, Agent and WorkflowVersion are required.");
+    throw new Error("必须包含执行记录、AI 员工和工作流版本。");
   }
   if (
     toolInvocation.status !== "SUCCEEDED" ||
     !toolInvocation.outputDigest ||
     !toolInvocation.resultReference
   ) {
-    throw new Error("A successful Tool Invocation is required before model reasoning.");
+    throw new Error("模型推理前必须成功完成工具调用。");
   }
   return {
     scope: { ...task.scope },
@@ -225,7 +225,7 @@ export async function advanceFirstAiEmployee(
       publishedAction.riskLevel !== "R0"
     ) {
       throw new Error(
-        "Published Tool Action no longer matches the pinned Execution Package.",
+        "已发布工具动作不再匹配固定执行包。",
       );
     }
     const invocationResult = await invokeCodeGraphContext(
@@ -246,13 +246,13 @@ export async function advanceFirstAiEmployee(
     );
     if (invocation.status !== "SUCCEEDED") {
       throw new Error(
-        `Tool Invocation ${invocation.id} ended as ${invocation.status}: ${invocation.summary}`,
+        `工具调用 ${invocation.id} 结束，状态为 ${invocation.status}：${invocation.summary}`,
       );
     }
   }
   if (nextStep?.sequence === 3 && !modelInvocation) {
     if (!invocation) {
-      throw new Error("Model reasoning requires successful CodeGraph evidence.");
+      throw new Error("模型推理必须包含成功的 CodeGraph 证据。");
     }
     const capabilityVersion = await resolvePinnedCapabilityVersion(task, actor);
     const currentRunModelInvocations = modelInvocations.filter(
@@ -260,14 +260,14 @@ export async function advanceFirstAiEmployee(
     );
     if (currentRunModelInvocations.some(({ status }) => status === "UNKNOWN")) {
       throw new Error(
-        "Model completion state is UNKNOWN; automatic retry is disabled and Human Owner review is required.",
+        "模型完成状态未知；已禁用自动重试，需要人工负责人审核。",
       );
     }
     if (
       currentRunModelInvocations.length >= capabilityVersion.failurePolicy.retryLimit
     ) {
       throw new Error(
-        `Model retry limit ${capabilityVersion.failurePolicy.retryLimit} reached; Human Owner review is required.`,
+        `模型重试次数已达到上限 ${capabilityVersion.failurePolicy.retryLimit}，需要人工负责人审核。`,
       );
     }
     const invocationResult = await invokeTechnicalDesignModel(
@@ -286,7 +286,7 @@ export async function advanceFirstAiEmployee(
     );
     if (modelInvocation.status !== "SUCCEEDED") {
       throw new Error(
-        `Model Invocation ${modelInvocation.id} ended as ${modelInvocation.status}: ${modelInvocation.summary}`,
+        `模型调用 ${modelInvocation.id} 结束，状态为 ${modelInvocation.status}：${modelInvocation.summary}`,
       );
     }
   }
@@ -308,7 +308,7 @@ export async function advanceFirstAiEmployee(
     );
     if (!knowledgeVersionRef) {
       throw new Error(
-        "Artifact Citation does not match the immutable Execution Package.",
+        "成果引用与不可变执行包不匹配。",
       );
     }
     stepResult = {
@@ -343,7 +343,7 @@ export async function acceptTaskArtifact(
     ({ accepted }) => !accepted,
   );
   if (!artifactRef) {
-    throw new Error("Task does not have a pending ArtifactVersion.");
+    throw new Error("任务没有待处理的成果版本。");
   }
   const artifact = await acceptArtifact(scope, actor, artifactRef.objectId);
   return recordArtifactAcceptance(

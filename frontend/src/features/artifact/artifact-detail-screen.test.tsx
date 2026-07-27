@@ -22,7 +22,7 @@ function artifact(): TechnicalSolutionArtifact {
       organizationId: "org-guangwei",
       workspaceId: "ws-ai",
     },
-    title: "Task Center 黄金路径 · 技术方案",
+    title: "任务中心黄金路径 · 技术方案",
     artifactType: "技术方案",
     status: "PENDING_REVIEW",
     version: {
@@ -38,7 +38,7 @@ function artifact(): TechnicalSolutionArtifact {
     validationResults: [
       {
         id: "validation-structure",
-        name: "Artifact 结构完整性",
+        name: "成果结构完整性",
         status: "PASSED",
         summary: "八个必需章节均已生成。",
       },
@@ -50,7 +50,7 @@ function artifact(): TechnicalSolutionArtifact {
       },
       {
         id: "validation-review",
-        name: "Reviewer 人工验收",
+        name: "验收人人工验收",
         status: "PENDING",
         summary: "等待验收。",
       },
@@ -89,17 +89,17 @@ describe("ArtifactDetailScreen", () => {
           organizationName: "光位科技",
           workspaceName: "AI 智能业务线",
         }}
-        viewer={{ name: "赵岚", role: "Auditor" }}
+        viewer={{ name: "赵岚", role: "审计员" }}
       />,
     );
 
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Task Center 黄金路径 · 技术方案",
+        name: "任务中心黄金路径 · 技术方案",
       }),
     ).toBeVisible();
-    expect(screen.getByText("PENDING_REVIEW")).toBeVisible();
+    expect(screen.getByText("待验收")).toBeVisible();
     for (const title of sectionTitles) {
       expect(screen.getAllByText(title).length).toBeGreaterThan(0);
     }
@@ -107,13 +107,13 @@ describe("ArtifactDetailScreen", () => {
     expect(screen.getByText("workflow-technical-solution-v1")).toBeVisible();
     expect(screen.getByText("README.md#5-系统整体架构")).toBeVisible();
     expect(
-      screen.getByRole("link", { name: "返回所属 Task" }),
+      screen.getByRole("link", { name: "返回所属任务" }),
     ).toHaveAttribute("href", "/tasks/task-mock-0001");
     expect(
       within(
-        screen.getByRole("heading", { name: "Validation" }).parentElement!
+        screen.getByRole("heading", { name: "验证" }).parentElement!
           .parentElement!,
-      ).getByText("Reviewer 人工验收"),
+      ).getByText("验收人人工验收"),
     ).toBeVisible();
   });
 
@@ -136,9 +136,9 @@ describe("ArtifactDetailScreen", () => {
       />,
     );
 
-    expect(screen.getByText("Artifact 已由 Reviewer 验收")).toBeVisible();
+    expect(screen.getByText("成果已由验收人验收")).toBeVisible();
     expect(
-      screen.getByText(/Accepted by user-lead/),
+      screen.getByText(/验收人：user-lead/),
     ).toBeVisible();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });

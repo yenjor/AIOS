@@ -114,7 +114,7 @@ export function KnowledgeVersionCreateLoader({
           <div>
             <h1 className="font-semibold">不能创建新版本</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-              当前身份无管理权限，或该知识条目已存在待处理的 Draft。
+              当前身份无管理权限，或该知识条目已存在待处理的草稿。
             </p>
           </div>
         </div>

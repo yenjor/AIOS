@@ -20,6 +20,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 import {
+  KNOWLEDGE_CLASSIFICATION_LABELS,
+  KNOWLEDGE_SOURCE_TYPE_LABELS,
+} from "./knowledge-display";
+import {
   KnowledgeEffectiveBadge,
   KnowledgeIndexBadge,
 } from "./knowledge-status-badge";
@@ -104,7 +108,7 @@ function KnowledgeFacts({ item }: { item: KnowledgeListItem }) {
       <div>
         <dt className="text-xs text-[var(--aios-muted)]">来源</dt>
         <dd className="mt-1 break-words text-sm">
-          {item.sourceType} · {item.sourceLocation}
+          {KNOWLEDGE_SOURCE_TYPE_LABELS[item.sourceType]} · {item.sourceLocation}
         </dd>
       </div>
       <div>
@@ -125,14 +129,14 @@ function KnowledgeFacts({ item }: { item: KnowledgeListItem }) {
                   : "info"
             }
           >
-            {item.classification}
+            {KNOWLEDGE_CLASSIFICATION_LABELS[item.classification]}
           </Badge>
         </dd>
       </div>
       <div>
         <dt className="text-xs text-[var(--aios-muted)]">引用</dt>
         <dd className="mt-1 text-sm">
-          Task {item.referencedTaskCount} · Capability{" "}
+          任务 {item.referencedTaskCount} · 能力{" "}
           {item.referencedCapabilityCount}
         </dd>
       </div>
@@ -192,7 +196,7 @@ export function KnowledgeCenterScreen({
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Workspace 知识库视图
+            工作空间知识库视图
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             知识库
@@ -200,16 +204,16 @@ export function KnowledgeCenterScreen({
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--aios-muted)]">
             <span className="flex items-center gap-2">
               <Building2 size={16} aria-hidden="true" />
-              Organization：{scopeLabels.organizationName}
+              组织：{scopeLabels.organizationName}
             </span>
             <span className="flex items-center gap-2">
               <Database size={16} aria-hidden="true" />
-              Workspace：{scopeLabels.workspaceName}
+              工作空间：{scopeLabels.workspaceName}
             </span>
           </div>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
             管理知识条目、固定知识版本、来源、范围、敏感等级和处理证据。
-            Document、Chunk、Embedding 与 Index 只作为可重建的处理投影展示。
+            文档、分块、向量化与索引只作为可重建的处理投影展示。
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -267,7 +271,7 @@ export function KnowledgeCenterScreen({
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
-                placeholder="名称、Code 或来源"
+                placeholder="名称、编码或来源"
               />
             </span>
           </label>
@@ -311,7 +315,13 @@ export function KnowledgeCenterScreen({
               {["PENDING", "INDEXING", "READY", "FAILED", "STALE"].map(
                 (status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {{
+                      PENDING: "等待索引",
+                      INDEXING: "索引中",
+                      READY: "索引就绪",
+                      FAILED: "索引失败",
+                      STALE: "索引过期",
+                    }[status]}
                   </option>
                 ),
               )}
@@ -333,9 +343,9 @@ export function KnowledgeCenterScreen({
               className="mt-2 min-h-11 w-full rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3 text-sm focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
             >
               <option value="">全部敏感等级</option>
-              <option value="PUBLIC">PUBLIC</option>
-              <option value="INTERNAL">INTERNAL</option>
-              <option value="CONFIDENTIAL">CONFIDENTIAL</option>
+              <option value="PUBLIC">公开</option>
+              <option value="INTERNAL">内部</option>
+              <option value="CONFIDENTIAL">机密</option>
             </select>
           </label>
           <Button type="submit" className="self-end">
@@ -386,7 +396,7 @@ export function KnowledgeCenterScreen({
                       "有效状态",
                       "索引状态",
                       "当前版本",
-                      "Task / Capability 引用",
+                      "任务 / 能力引用",
                       "纠错",
                       "更新时间",
                     ].map((heading) => (
@@ -409,7 +419,7 @@ export function KnowledgeCenterScreen({
                         </span>
                       </th>
                       <td className="max-w-72 px-4 py-4">
-                        <p>{item.sourceType}</p>
+                        <p>{KNOWLEDGE_SOURCE_TYPE_LABELS[item.sourceType]}</p>
                         <p className="mt-1 break-all text-xs text-[var(--aios-muted)]">
                           {item.sourceLocation}
                         </p>
@@ -427,7 +437,7 @@ export function KnowledgeCenterScreen({
                                 : "info"
                           }
                         >
-                          {item.classification}
+                          {KNOWLEDGE_CLASSIFICATION_LABELS[item.classification]}
                         </Badge>
                       </td>
                       <td className="px-4 py-4">
@@ -443,13 +453,13 @@ export function KnowledgeCenterScreen({
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        Task {item.referencedTaskCount} · Capability{" "}
+                        任务 {item.referencedTaskCount} · 能力{" "}
                         {item.referencedCapabilityCount}
                       </td>
                       <td className="px-4 py-4">
                         {item.openCorrectionCount > 0 ? (
                           <Badge tone="warning">
-                            {item.openCorrectionCount} OPEN
+                            {item.openCorrectionCount} 个待处理
                           </Badge>
                         ) : (
                           "无"

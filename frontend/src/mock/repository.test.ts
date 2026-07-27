@@ -76,7 +76,7 @@ describe("getWorkspaceDashboard", () => {
   });
 
   it("rejects an unknown workspace instead of returning another scope", async () => {
-    await expect(getWorkspaceDashboard("ws-unknown")).rejects.toThrow("Workspace not found");
+    await expect(getWorkspaceDashboard("ws-unknown")).rejects.toThrow("未找到工作空间");
   });
 
   it("exports stable organization, workspace, and user fixture identities", () => {
@@ -90,8 +90,8 @@ describe("getWorkspaceDashboard", () => {
       { id: "user-pm", name: "林悦", role: "产品经理" },
       { id: "user-dev", name: "周航", role: "开发工程师" },
       { id: "user-lead", name: "陈明", role: "研发负责人" },
-      { id: "user-admin", name: "吴桐", role: "Workspace Admin" },
-      { id: "user-auditor", name: "赵岚", role: "Auditor" },
+      { id: "user-admin", name: "吴桐", role: "工作空间管理员" },
+      { id: "user-auditor", name: "赵岚", role: "审计员" },
     ]);
     expect(workspaces.map(({ id, accessStatus }) => ({ id, accessStatus }))).toEqual([
       { id: "ws-ai", accessStatus: "可访问" },
@@ -99,7 +99,7 @@ describe("getWorkspaceDashboard", () => {
     ]);
   });
 
-  it("uses canonical Task templates and statuses", async () => {
+  it("uses canonical 任务 templates and statuses", async () => {
     const dashboard = await getWorkspaceDashboard("ws-ai");
 
     expect(workspaceDashboard.currentUser).toBe(users[2]);
@@ -118,7 +118,7 @@ describe("getWorkspaceDashboard", () => {
     expect(dashboard.tasks[0]).not.toHaveProperty("tone");
   });
 
-  it("keeps every dashboard Task ID resolvable by the public Task Repository", async () => {
+  it("keeps every dashboard 任务标识 resolvable by the public 任务仓储", async () => {
     for (const task of workspaceDashboard.tasks) {
       await expect(
         getTask(
@@ -171,7 +171,7 @@ describe("getWorkspaceDashboard", () => {
     ]);
     expect(dashboard.risks).toEqual([
       { id: "risk-001", title: "需求澄清不足", detail: "商品搜索功能仍有 3 条澄清项等待确认", tone: "warning" },
-      { id: "risk-002", title: "Task 超期", detail: "用户中心接口文档更新已超过期望完成时间", tone: "error" },
+      { id: "risk-002", title: "任务超期", detail: "用户中心接口文档更新已超过期望完成时间", tone: "error" },
     ]);
   });
 });

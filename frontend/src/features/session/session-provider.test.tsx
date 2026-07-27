@@ -39,7 +39,7 @@ function SessionHarness() {
           <dd>{organization?.name ?? "未选择"}</dd>
         </div>
         <div>
-          <dt>Workspace</dt>
+          <dt>工作空间</dt>
           <dd>{workspace?.name ?? "未选择"}</dd>
         </div>
       </dl>
@@ -59,7 +59,7 @@ function SessionHarness() {
         选择光位科技
       </button>
       <button onClick={() => setLastSelectionResult(selectWorkspace("ws-ai"))}>
-        选择 AI Workspace
+        选择 AI 工作空间
       </button>
       <button onClick={() => setLastSelectionResult(selectUser("user-missing"))}>
         选择无效用户
@@ -68,7 +68,7 @@ function SessionHarness() {
         选择无效组织
       </button>
       <button onClick={() => setLastSelectionResult(selectWorkspace("ws-missing"))}>
-        选择无效 Workspace
+        选择无效工作空间
       </button>
     </>
   );
@@ -90,7 +90,7 @@ test("selects the mock user, organization, and workspace in order", async () => 
   await screen.findByText("已恢复");
   await interaction.click(screen.getByRole("button", { name: "选择研发负责人" }));
   await interaction.click(screen.getByRole("button", { name: "选择光位科技" }));
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
 
   expect(screen.getByText("陈明")).toBeInTheDocument();
   expect(screen.getByText("光位科技")).toBeInTheDocument();
@@ -117,7 +117,7 @@ test("reselecting an organization clears the selected workspace", async () => {
   await screen.findByText("已恢复");
   await interaction.click(screen.getByRole("button", { name: "选择研发负责人" }));
   await interaction.click(screen.getByRole("button", { name: "选择光位科技" }));
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
   expect(screen.getByText("AI 智能业务线")).toBeInTheDocument();
 
   await interaction.click(screen.getByRole("button", { name: "选择光位科技" }));
@@ -143,10 +143,10 @@ test("returns false for unknown fixture IDs without replacing the current sessio
   await screen.findByText("已恢复");
   await interaction.click(screen.getByRole("button", { name: "选择研发负责人" }));
   await interaction.click(screen.getByRole("button", { name: "选择光位科技" }));
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
   await interaction.click(screen.getByRole("button", { name: "选择无效用户" }));
   await interaction.click(screen.getByRole("button", { name: "选择无效组织" }));
-  await interaction.click(screen.getByRole("button", { name: "选择无效 Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择无效工作空间" }));
 
   expect(screen.getByText("陈明")).toBeInTheDocument();
   expect(screen.getByText("光位科技")).toBeInTheDocument();
@@ -166,7 +166,7 @@ test("clears organization and workspace scope after switching identity", async (
   await screen.findByText("已恢复");
   await interaction.click(screen.getByRole("button", { name: "选择研发负责人" }));
   await interaction.click(screen.getByRole("button", { name: "选择光位科技" }));
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
   await interaction.click(screen.getByRole("button", { name: "选择开发工程师" }));
 
   expect(screen.getByText("周航")).toBeInTheDocument();
@@ -192,17 +192,17 @@ test("requires identity and organization before selecting a lower scope", async 
   expect(screen.getByLabelText("最近选择结果")).toHaveTextContent("false");
   expect(window.sessionStorage.getItem(MOCK_SESSION_STORAGE_KEY)).toBeNull();
 
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
   expect(screen.getByLabelText("最近选择结果")).toHaveTextContent("false");
   expect(window.sessionStorage.getItem(MOCK_SESSION_STORAGE_KEY)).toBeNull();
 
   await interaction.click(screen.getByRole("button", { name: "选择研发负责人" }));
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
   expect(screen.getByLabelText("最近选择结果")).toHaveTextContent("false");
   expect(screen.queryByText("AI 智能业务线")).not.toBeInTheDocument();
 });
 
-test("restores a validated ID-only session after remount", async () => {
+test("restores a validated 标识-only session after remount", async () => {
   const interaction = userEvent.setup();
   const firstView = render(
     <SessionProvider>
@@ -213,7 +213,7 @@ test("restores a validated ID-only session after remount", async () => {
   await screen.findByText("已恢复");
   await interaction.click(screen.getByRole("button", { name: "选择研发负责人" }));
   await interaction.click(screen.getByRole("button", { name: "选择光位科技" }));
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
   firstView.unmount();
 
   render(
@@ -232,11 +232,11 @@ describe.each([
   ["非法 JSON", "{"],
   ["未知用户", JSON.stringify({ userId: "user-unknown" })],
   [
-    "Workspace 缺少 Organization",
+    "工作空间缺少组织",
     JSON.stringify({ userId: "user-lead", workspaceId: "ws-ai" }),
   ],
   [
-    "不一致的 Organization",
+    "不一致的组织",
     JSON.stringify({
       userId: "user-lead",
       organizationId: "org-unknown",
@@ -244,7 +244,7 @@ describe.each([
     }),
   ],
   [
-    "不可访问的 Workspace",
+    "不可访问的工作空间",
     JSON.stringify({
       userId: "user-lead",
       organizationId: "org-guangwei",
@@ -253,7 +253,7 @@ describe.each([
   ],
   [
     "包含非白名单字段",
-    JSON.stringify({ userId: "user-lead", role: "Workspace Admin" }),
+    JSON.stringify({ userId: "user-lead", role: "工作空间管理员" }),
   ],
 ])("invalid persisted session: %s", (_label, storedValue) => {
   test("clears the payload and restores an empty session", async () => {
@@ -283,7 +283,7 @@ test("persists only stable fixture IDs and never names, roles, or credentials", 
   await screen.findByText("已恢复");
   await interaction.click(screen.getByRole("button", { name: "选择研发负责人" }));
   await interaction.click(screen.getByRole("button", { name: "选择光位科技" }));
-  await interaction.click(screen.getByRole("button", { name: "选择 AI Workspace" }));
+  await interaction.click(screen.getByRole("button", { name: "选择 AI 工作空间" }));
 
   const storedValue = window.sessionStorage.getItem(MOCK_SESSION_STORAGE_KEY);
   expect(storedValue).not.toBeNull();
@@ -297,7 +297,7 @@ test("persists only stable fixture IDs and never names, roles, or credentials", 
 
 test("throws a clear error when useSession is called outside SessionProvider", () => {
   expect(() => render(<SessionHarness />)).toThrow(
-    "useSession must be used within a SessionProvider",
+    "useSession 必须在 SessionProvider 内部使用",
   );
 });
 

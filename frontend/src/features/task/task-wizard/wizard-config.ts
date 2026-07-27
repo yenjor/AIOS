@@ -41,7 +41,7 @@ export const TECHNICAL_SOLUTION_SECTIONS = [
 
 export const AGENT_ASSIGNMENT: AgentAssignment = {
   agentId: "agent-rd-001",
-  agentName: "AI研发员工",
+  agentName: "AI 研发员工",
   agentVersionRef: {
     kind: "AGENT",
     objectId: "agent-rd-001",
@@ -98,7 +98,7 @@ export const APPROVAL_POINT_SUMMARIES = [
     riskLevel: "R1",
   },
   {
-    name: "Artifact验收",
+    name: "成果验收",
     requiredFor: "ARTIFACT_ACCEPTANCE",
     reviewer: "陈明（user-lead）",
     riskLevel: "R1",

@@ -100,8 +100,8 @@ export function AppShell({ children }: AppShellProps) {
     const nextSelection = !user
       ? { href: "/login", label: "前往选择身份" }
       : !organization
-        ? { href: "/organizations", label: "前往选择 Organization" }
-        : { href: "/workspaces", label: "前往选择 Workspace" };
+        ? { href: "/organizations", label: "前往选择组织" }
+        : { href: "/workspaces", label: "前往选择工作空间" };
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-[var(--aios-canvas)] px-5 py-10">
@@ -117,7 +117,7 @@ export function AppShell({ children }: AppShellProps) {
           </Badge>
           <h1 className="mt-4 text-2xl font-semibold">尚未选择完整工作范围</h1>
           <p className="mt-3 leading-7 text-[var(--aios-muted)]">
-            进入 AIOS 工作区需要依次确认用户身份、Organization 与 Workspace。
+            进入 AIOS 工作区需要依次确认用户身份、组织与工作空间。
           </p>
           <Link
             href={nextSelection.href}

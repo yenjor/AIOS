@@ -59,7 +59,7 @@ function validateRequest(
   ) {
     throw new ToolBrokerError(
       "INVALID_REQUEST",
-      "ToolActionRequest does not satisfy the bounded execution contract.",
+      "工具动作请求不满足受限执行契约。",
       400,
     );
   }
@@ -69,7 +69,7 @@ function validateRequest(
   ) {
     throw new ToolBrokerError(
       "PERMISSION_DENIED",
-      "Only the assigned AI employee Human Owner may advance this local pilot invocation.",
+      "只有已分配 AI 员工的人工负责人可以推进本地试点调用。",
       403,
     );
   }
@@ -83,7 +83,7 @@ function validateRequest(
   ) {
     throw new ToolBrokerError(
       "VERSION_MISMATCH",
-      "ToolVersion, ActionDefinition, operation or risk is not the published read-only contract.",
+      "工具版本、动作定义、操作类型或风险等级不符合已发布的只读契约。",
       409,
     );
   }
@@ -119,7 +119,7 @@ export function createToolBroker({
         if (cached.requestFingerprint !== requestFingerprint) {
           throw new ToolBrokerError(
             "INVALID_REQUEST",
-            "IdempotencyKey is already bound to a different ToolActionRequest.",
+            "幂等键已绑定到其他工具动作请求。",
             409,
           );
         }
@@ -149,14 +149,14 @@ export function createToolBroker({
           eventType: "TOOL_INVOCATION_REQUESTED",
           occurredAt: requestedAt,
           summary:
-            "固定 ToolVersion、Action、Task、Run 与 IdempotencyKey 已创建。",
+            "固定工具版本、动作、任务、执行记录与幂等键已创建。",
         },
         {
           sequence: 2,
           eventType: "TOOL_PERMISSION_ALLOWED",
           occurredAt: requestedAt,
           summary:
-            "Human Owner、Workspace、READ/R0 与固定执行包交集校验通过。",
+            "人工负责人、工作空间、读取操作/R0 与固定执行包交集校验通过。",
         },
       ];
 
@@ -171,13 +171,13 @@ export function createToolBroker({
             sequence: 3,
             eventType: "MCP_SESSION_INITIALIZED",
             occurredAt: completedAt,
-            summary: `MCP ${output.serverIdentity}@${output.serverVersion} 会话初始化并完成 Action 调用。`,
+            summary: `MCP ${output.serverIdentity}@${output.serverVersion} 会话初始化并完成动作调用。`,
           },
           {
             sequence: 4,
             eventType: "TOOL_INVOCATION_SUCCEEDED",
             occurredAt: completedAt,
-            summary: "结果已完成大小限制、结构归一化与 Digest 固定。",
+            summary: "结果已完成大小限制、结构归一化与摘要固定。",
           },
         );
         result = {
@@ -218,7 +218,7 @@ export function createToolBroker({
             ? error
             : new CodeGraphMcpError(
                 "MCP_UNAVAILABLE",
-                "CodeGraph MCP invocation failed.",
+                "CodeGraph MCP 调用失败。",
               );
         const unknown = mcpError.code === "TRANSPORT_TIMEOUT";
         if (mcpError.sessionInitialized) {
@@ -226,7 +226,7 @@ export function createToolBroker({
             sequence: 3,
             eventType: "MCP_SESSION_INITIALIZED",
             occurredAt: completedAt,
-            summary: "MCP 会话已初始化，但 Action 未返回可确认结果。",
+            summary: "MCP 会话已初始化，但动作未返回可确认结果。",
           });
         }
         events.push({

@@ -9,7 +9,7 @@ import {
   type TaskStatus,
 } from "./task-status";
 
-describe("Task status and template contracts", () => {
+describe("任务 status and template contracts", () => {
   it("keeps the twelve persisted TaskStatus values in their canonical order", () => {
     expect(TASK_STATUSES).toEqual([
       "DRAFT",
@@ -47,13 +47,13 @@ describe("Task status and template contracts", () => {
     expect(Object.keys(TASK_STATUS_LABELS)).toEqual(TASK_STATUSES);
   });
 
-  it("keeps the six approved Task templates and Artifact mappings", () => {
+  it("keeps the six approved 任务 templates and 成果 mappings", () => {
     expect(TASK_TEMPLATE_NAMES).toEqual([
       "理解代码",
       "分析需求",
       "生成技术方案",
       "辅助编码",
-      "Code Review",
+      "代码审查",
       "自动测试",
     ]);
     expect(TASK_TEMPLATE_ARTIFACTS).toEqual({
@@ -61,7 +61,7 @@ describe("Task status and template contracts", () => {
       分析需求: "需求分析报告",
       生成技术方案: "技术方案",
       辅助编码: "代码变更",
-      "Code Review": "Code Review 报告",
+      "代码审查": "代码审查报告",
       自动测试: "测试报告",
     });
   });

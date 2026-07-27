@@ -61,7 +61,7 @@ export function CapabilityCreateLoader() {
     return complete ? (
       <Card role="status" className="mx-auto flex max-w-xl items-center gap-3 p-6">
         <LoaderCircle className="animate-spin text-[var(--aios-primary)] motion-reduce:animate-none" size={20} aria-hidden="true" />
-        正在加载 Capability Builder 权限…
+        正在加载能力构建器权限…
       </Card>
     ) : null;
   }
@@ -134,11 +134,11 @@ export function CapabilityCreateLoader() {
         <ArrowLeft size={16} aria-hidden="true" />返回能力中心
       </Link>
       <header className="mt-3">
-        <p className="text-sm font-semibold text-[var(--aios-primary)]">Capability Builder</p>
-        <h1 className="mt-1 text-3xl font-semibold">创建能力 Draft</h1>
+        <p className="text-sm font-semibold text-[var(--aios-primary)]">能力构建器</p>
+        <h1 className="mt-1 text-3xl font-semibold">创建能力草稿</h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-          一个 CapabilityVersion 固定 Skill、Prompt、Model、知识需求、Tool Action、
-          Workflow、Permission、Artifact、Evaluation 与 FailurePolicy。创建后必须评测并审查，不能直接 Published。
+          一个能力版本固定技能、提示词、模型、知识需求、工具动作、
+          工作流、权限、成果、评测与失败策略。创建后必须评测并审查，不能直接已发布。
         </p>
       </header>
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
@@ -149,23 +149,23 @@ export function CapabilityCreateLoader() {
           </Card>
         ) : null}
         <Card className="p-5">
-          <h2 className="flex items-center gap-2 text-lg font-semibold"><Boxes size={19} aria-hidden="true" />业务身份与 Skill</h2>
+          <h2 className="flex items-center gap-2 text-lg font-semibold"><Boxes size={19} aria-hidden="true" />业务身份与技能</h2>
           <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <label className="text-sm font-semibold">Capability Code
+            <label className="text-sm font-semibold">能力编码
               <input required name="code" pattern="[A-Za-z][A-Za-z0-9_]{2,63}" placeholder="TECHNICAL_RESEARCH" className={inputClass} />
             </label>
             <label className="text-sm font-semibold">能力名称
               <input required name="name" placeholder="技术调研" className={inputClass} />
             </label>
-            <label className="text-sm font-semibold md:col-span-2">Purpose
+            <label className="text-sm font-semibold md:col-span-2">用途
               <textarea required name="purpose" rows={3} placeholder="说明能力解决的问题、适用边界和预期成果。" className={inputClass} />
             </label>
-            <label className="text-sm font-semibold">TaskType
+            <label className="text-sm font-semibold">任务类型
               <select name="taskType" className={inputClass}>
                 {taskOptions.map((option) => <option value={option.value} key={option.value}>{option.label} · {option.artifact}</option>)}
               </select>
             </label>
-            <label className="text-sm font-semibold">Owner
+            <label className="text-sm font-semibold">负责人
               <select name="ownerId" defaultValue="user-lead" className={inputClass}>
                 {users.filter(({ id }) => id !== "user-auditor").map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.name} · {candidate.role}</option>)}
               </select>
@@ -174,37 +174,37 @@ export function CapabilityCreateLoader() {
         </Card>
         <Card className="p-5">
           <h2 className="text-lg font-semibold">固定执行组成</h2>
-          <p className="mt-2 text-sm text-[var(--aios-muted)]">这里只保存版本引用和治理策略，不保存 Prompt 正文、知识正文、Credential 或运行状态。</p>
+          <p className="mt-2 text-sm text-[var(--aios-muted)]">这里只保存版本引用和治理策略，不保存提示词正文、知识正文、凭据或运行状态。</p>
           <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <label className="text-sm font-semibold">PromptTemplateRef
+            <label className="text-sm font-semibold">提示词模板引用
               <input required name="promptId" defaultValue="prompt-capability-custom" className={inputClass} />
             </label>
-            <label className="text-sm font-semibold">ModelPolicy Profile
+            <label className="text-sm font-semibold">模型策略配置档案
               <input required name="modelProfile" defaultValue="reasoning-structured-output" className={inputClass} />
             </label>
-            <label className="text-sm font-semibold">WorkflowVersionRef
+            <label className="text-sm font-semibold">工作流版本引用
               <input required name="workflowId" defaultValue="workflow-capability-standard" className={inputClass} />
             </label>
-            <label className="text-sm font-semibold">Tool Action（可选）
+            <label className="text-sm font-semibold">工具动作（可选）
               <input name="toolAction" placeholder="codegraph.context" className={inputClass} />
             </label>
             <label className="md:col-span-2 flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm">
               <input type="checkbox" name="includeKnowledge" defaultChecked className="mt-1 accent-[var(--aios-primary)]" />
-              <span><span className="block font-semibold">需要当前 Workspace 的有效知识库版本</span><span className="mt-1 block leading-6 text-[var(--aios-muted)]">固定 Requirement；Task Resolution 与 Runtime 仍会执行 Scope、Classification、Purpose、Permission 与 Citation 校验。</span></span>
+              <span><span className="block font-semibold">需要当前工作空间的有效知识库版本</span><span className="mt-1 block leading-6 text-[var(--aios-muted)]">固定要求；任务解析与运行时仍会执行范围、敏感分级、用途、权限与引用校验。</span></span>
             </label>
           </div>
         </Card>
         <Card className="p-5">
           <h2 className="text-lg font-semibold">发布门禁</h2>
           <ul className="mt-3 grid gap-2 text-sm leading-6 text-[var(--aios-muted)] sm:grid-cols-2">
-            <li>• 3 次确定性代表性样本</li><li>• Quality Score ≥ 0.85</li>
-            <li>• Prompt Injection 与越权负向测试</li><li>• ArtifactContract 映射检查</li>
-            <li>• Permission Default Deny</li><li>• 人工 Reviewer 显式发布</li>
+            <li>• 3 次确定性代表性样本</li><li>• 质量评分 ≥ 0.85</li>
+            <li>• 提示词注入与越权负向测试</li><li>• 成果契约映射检查</li>
+            <li>• 权限默认拒绝</li><li>• 人工验收人显式发布</li>
           </ul>
         </Card>
         <div className="flex flex-wrap justify-end gap-3">
           <Link href="/capabilities" className="inline-flex min-h-11 items-center rounded-lg border border-[var(--aios-control-border)] px-4 text-sm font-semibold">取消</Link>
-          <Button disabled={saving} type="submit">{saving ? "正在创建…" : "创建 Draft"}</Button>
+          <Button disabled={saving} type="submit">{saving ? "正在创建…" : "创建草稿"}</Button>
         </div>
       </form>
     </div>

@@ -103,7 +103,7 @@ describe("TaskCenterLoader", () => {
 
     render(<TaskCenterLoader />);
 
-    expect(await screen.findByRole("heading", { name: "Task Center" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "任务中心" })).toBeVisible();
     expect(getTaskPermission).toHaveBeenCalledWith(
       { organizationId: "org-guangwei", workspaceId: "ws-ai" },
       { userId: "user-pm" },
@@ -115,10 +115,10 @@ describe("TaskCenterLoader", () => {
     expect(screen.getByRole("group", { name: "待我验收" })).toHaveTextContent("3");
   });
 
-  it("lets Auditor read the list without exposing Task creation", async () => {
+  it("lets 审计员 read the list without exposing 任务 creation", async () => {
     useSession.mockReturnValue({
       ...completeSession,
-      user: { id: "user-auditor", name: "赵岚", role: "Auditor" },
+      user: { id: "user-auditor", name: "赵岚", role: "审计员" },
     });
     getTaskPermission.mockResolvedValue({
       allowed: false,
@@ -128,12 +128,12 @@ describe("TaskCenterLoader", () => {
 
     render(<TaskCenterLoader />);
 
-    expect(await screen.findByRole("heading", { name: "Task Center" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "任务中心" })).toBeVisible();
     expect(listTasks).toHaveBeenCalledTimes(5);
     expect(
-      screen.queryByRole("link", { name: "创建 Task" }),
+      screen.queryByRole("link", { name: "创建任务" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("当前身份可查看 Task，但不能创建。")).toBeVisible();
+    expect(screen.getByText("当前身份可查看任务，但不能创建。")).toBeVisible();
   });
 
   it("retains the active query when retrying a safe error", async () => {
@@ -150,7 +150,7 @@ describe("TaskCenterLoader", () => {
       .mockResolvedValueOnce(emptyPage({ ownership: "pendingReview", pageSize: 1 }));
 
     render(<TaskCenterLoader />);
-    await screen.findByRole("heading", { name: "Task Center" });
+    await screen.findByRole("heading", { name: "任务中心" });
 
     listTasks.mockRejectedValueOnce(new Error("private backend details"));
     await interaction.selectOptions(
@@ -158,7 +158,7 @@ describe("TaskCenterLoader", () => {
       "EXECUTING",
     );
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Task 列表加载失败",
+      "任务列表加载失败",
     );
     expect(screen.getByRole("alert")).not.toHaveTextContent(
       "private backend details",
@@ -169,7 +169,7 @@ describe("TaskCenterLoader", () => {
         Promise.resolve(emptyPage(query)),
     );
     await interaction.click(screen.getByRole("button", { name: "重试加载" }));
-    await screen.findByRole("heading", { name: "Task Center" });
+    await screen.findByRole("heading", { name: "任务中心" });
 
     expect(listTasks).toHaveBeenCalledWith(
       { organizationId: "org-guangwei", workspaceId: "ws-ai" },
@@ -190,7 +190,7 @@ describe("TaskCenterLoader", () => {
     render(<TaskCenterLoader />);
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("本地 Task 数据未通过完整性校验");
+    expect(alert).toHaveTextContent("本地任务数据未通过完整性校验");
     expect(alert).not.toHaveTextContent("private local envelope details");
     expect(listTasks).not.toHaveBeenCalled();
   });
@@ -219,14 +219,14 @@ describe("TaskCenterLoader", () => {
 
     await waitFor(() => expect(getTaskPermission).toHaveBeenCalledTimes(2));
     resolveOld({ ...emptyPage(), total: 99 });
-    expect(await screen.findByRole("heading", { name: "Task Center" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "任务中心" })).toBeVisible();
     expect(listTasks).toHaveBeenCalledWith(
       { organizationId: "org-guangwei", workspaceId: "ws-ai" },
       { userId: "user-dev" },
       expect.objectContaining({ page: 1, pageSize: 8 }),
     );
     await waitFor(() =>
-      expect(screen.queryByText("共 99 个 Task")).not.toBeInTheDocument(),
+      expect(screen.queryByText("共 99 个任务")).not.toBeInTheDocument(),
     );
   });
 });

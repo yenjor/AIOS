@@ -74,7 +74,7 @@ describe("AppShell", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+      screen.getByRole("heading", { name: "正在恢复模拟会话" }),
     ).toBeVisible();
     expect(
       await screen.findByRole("heading", { name: "尚未选择完整工作范围" }),
@@ -94,7 +94,7 @@ describe("AppShell", () => {
     render(
       <CompleteSession>
         <AppShell>
-          <p>Workspace 内容</p>
+          <p>工作空间内容</p>
         </AppShell>
       </CompleteSession>,
     );
@@ -132,7 +132,7 @@ describe("AppShell", () => {
     render(
       <CompleteSession>
         <AppShell>
-          <p>Workspace 内容</p>
+          <p>工作空间内容</p>
         </AppShell>
       </CompleteSession>,
     );
@@ -156,7 +156,7 @@ describe("AppShell", () => {
     render(
       <CompleteSession>
         <AppShell>
-          <p>Workspace 内容</p>
+          <p>工作空间内容</p>
         </AppShell>
       </CompleteSession>,
     );
@@ -189,7 +189,7 @@ describe("AppShell", () => {
     render(
       <CompleteSession>
         <AppShell>
-          <p>Workspace 内容</p>
+          <p>工作空间内容</p>
         </AppShell>
       </CompleteSession>,
     );
@@ -209,12 +209,12 @@ describe("AppShell", () => {
       <>
         <CompleteSession>
           <AppShell>
-            <p>第一个 Workspace</p>
+            <p>第一个工作空间</p>
           </AppShell>
         </CompleteSession>
         <CompleteSession>
           <AppShell>
-            <p>第二个 Workspace</p>
+            <p>第二个工作空间</p>
           </AppShell>
         </CompleteSession>
       </>,
@@ -236,7 +236,7 @@ describe("AppShell", () => {
     );
     expect(new Set(notificationDescriptionIds).size).toBe(2);
 
-    const taskLinks = screen.getAllByRole("link", { name: "Task" });
+    const taskLinks = screen.getAllByRole("link", { name: "任务" });
     expect(taskLinks).toHaveLength(2);
     for (const taskLink of taskLinks) {
       expect(taskLink).toHaveAttribute("href", "/tasks");
@@ -256,7 +256,7 @@ describe("AppShell", () => {
     const { unmount } = render(
       <CompleteSession>
         <AppShell>
-          <p>Workspace 内容</p>
+          <p>工作空间内容</p>
         </AppShell>
       </CompleteSession>,
     );

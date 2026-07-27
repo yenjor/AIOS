@@ -17,9 +17,9 @@ describe("Badge", () => {
     ["warning", "--aios-warning-foreground"],
     ["error", "--aios-error-foreground"],
   ] as const)("uses the accessible %s foreground token for %s status text", (tone, token) => {
-    render(<Badge tone={tone}>Status</Badge>);
+    render(<Badge tone={tone}>状态</Badge>);
 
-    expect(screen.getByText("Status")).toHaveClass(`text-[var(${token})]`);
+    expect(screen.getByText("状态")).toHaveClass(`text-[var(${token})]`);
   });
 
   it("forwards native attributes and refs", () => {

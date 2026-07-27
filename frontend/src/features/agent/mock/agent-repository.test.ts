@@ -44,7 +44,7 @@ const input: CreateAgentInput = {
   code: "AI_SOLUTION_ARCHITECT",
   name: "AI 解决方案架构师",
   roleDescription:
-    "读取授权 Task、知识和代码上下文，生成由 Human Owner 验收的技术方案。",
+    "读取授权任务、知识和代码上下文，生成由人工负责人验收的技术方案。",
   humanOwnerId: "user-lead",
   jobTitle: "AI 解决方案架构师",
   capabilityVersionIds: ["capability-technical-solution-v1"],
@@ -71,13 +71,13 @@ function repository(storage = new MemoryStorage()) {
   });
 }
 
-describe("Agent Mock Repository", () => {
+describe("AI 员工本地演示数据", () => {
   beforeEach(() => {
     window.localStorage.removeItem(AGENT_STORE_KEY);
     window.localStorage.removeItem(TOOL_STORE_KEY);
   });
 
-  it("only exposes Enabled Agent with a Published version and valid runtime bindings", async () => {
+  it("only exposes 已启用 AI 员工 with a 已发布 version and valid runtime bindings", async () => {
     const options = await repository().listEnabledOptions(
       scope,
       developer,
@@ -87,7 +87,7 @@ describe("Agent Mock Repository", () => {
     expect(options).toHaveLength(1);
     expect(options[0]).toMatchObject({
       agentId: "agent-rd-001",
-      agentName: "AI研发员工",
+      agentName: "AI 研发员工",
       autonomyLevel: "L1辅助",
       humanOwner: { userId: "user-lead", displayName: "陈明" },
       agentVersionRef: {
@@ -102,7 +102,7 @@ describe("Agent Mock Repository", () => {
     });
   });
 
-  it("runs Draft through deterministic test and publish before Task selection", async () => {
+  it("次运行草稿 through deterministic test and publish before 任务 selection", async () => {
     const repo = repository();
     const created = await repo.createAgent(scope, manager, input);
     const draft = created.versions[0];
@@ -146,7 +146,7 @@ describe("Agent Mock Repository", () => {
     expect(options.map(({ agentId }) => agentId)).toContain(created.id);
   });
 
-  it("suspends new Task assignment without mutating the Published AgentVersion", async () => {
+  it("suspends new 任务 assignment without mutating the 已发布 AI 员工版本", async () => {
     const repo = repository();
     const before = await repo.getAgent(scope, manager, "agent-rd-001");
     const digest = before.versions[0].contentDigest;
@@ -155,7 +155,7 @@ describe("Agent Mock Repository", () => {
       scope,
       manager,
       before.id,
-      "Tool Health 事件待复核",
+      "工具健康状态事件待复核",
     );
     expect(suspended.status).toBe("SUSPENDED");
     expect(suspended.versions[0].contentDigest).toBe(digest);
@@ -173,13 +173,13 @@ describe("Agent Mock Repository", () => {
     expect(resumed.status).toBe("ENABLED");
   });
 
-  it("fails closed when an Agent Tool Grant points to a suspended MCP Server", async () => {
+  it("fails closed when an AI 员工工具授权 points to a suspended MCP 服务", async () => {
     const repo = repository();
     await suspendMcpServer(
       scope,
       manager,
       "mcp-codegraph-local",
-      "连接安全复核期间停止新的 Agent Execution",
+      "连接安全复核期间停止新的 AI 员工 Execution",
     );
 
     expect(
@@ -200,7 +200,7 @@ describe("Agent Mock Repository", () => {
     ).toHaveLength(1);
   });
 
-  it("enforces Agent Builder permissions and fails closed on corrupted storage", async () => {
+  it("enforces AI 员工构建器 permissions and fails closed on corrupted storage", async () => {
     const storage = new MemoryStorage();
     const repo = repository(storage);
 

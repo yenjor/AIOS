@@ -19,7 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-import { CapabilityStatusBadge } from "./capability-status-badge";
+import {
+  CAPABILITY_STATUS_LABELS,
+  CapabilityStatusBadge,
+} from "./capability-status-badge";
 import type {
   CapabilityListItem,
   CapabilityPage,
@@ -43,6 +46,12 @@ const taskTypeLabels: Record<CapabilityTaskType, string> = {
   CODE_REVIEW: "代码审查",
   AUTOMATED_TEST: "自动测试",
 };
+
+const evaluationLabels = {
+  PASSED: "已通过",
+  FAILED: "未通过",
+  BLOCKED: "已阻断",
+} as const;
 
 function SummaryCard({
   label,
@@ -92,7 +101,7 @@ function CapabilityFacts({ item }: { item: CapabilityListItem }) {
         </dd>
       </div>
       <div>
-        <dt className="text-xs text-[var(--aios-muted)]">TaskType</dt>
+        <dt className="text-xs text-[var(--aios-muted)]">任务类型</dt>
         <dd className="mt-1 flex flex-wrap gap-1">
           {item.taskTypes.map((taskType) => (
             <Badge key={taskType} tone="info">
@@ -110,15 +119,15 @@ function CapabilityFacts({ item }: { item: CapabilityListItem }) {
       <div>
         <dt className="text-xs text-[var(--aios-muted)]">治理证据</dt>
         <dd className="mt-1 text-sm">
-          评测 {item.evaluationResult ?? "未执行"} · 依赖 {item.dependencyCount}
+          评测 {item.evaluationResult ? evaluationLabels[item.evaluationResult] : "未执行"} · 依赖 {item.dependencyCount}
         </dd>
       </div>
       <div>
-        <dt className="text-xs text-[var(--aios-muted)]">Owner</dt>
+        <dt className="text-xs text-[var(--aios-muted)]">负责人</dt>
         <dd className="mt-1 text-sm">{ownerNames[item.ownerId] ?? item.ownerId}</dd>
       </div>
       <div>
-        <dt className="text-xs text-[var(--aios-muted)]">Task 使用</dt>
+        <dt className="text-xs text-[var(--aios-muted)]">任务使用</dt>
         <dd className="mt-1 text-sm">{item.taskUsageCount}</dd>
       </div>
     </>
@@ -159,22 +168,22 @@ export function CapabilityCenterScreen({
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-semibold text-[var(--aios-primary)]">
-            Workspace 授权能力目录
+            工作空间授权能力目录
           </p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">能力中心</h1>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--aios-muted)]">
             <span className="flex items-center gap-2">
               <Building2 size={16} aria-hidden="true" />
-              Organization：{scopeLabels.organizationName}
+              组织：{scopeLabels.organizationName}
             </span>
             <span className="flex items-center gap-2">
               <Boxes size={16} aria-hidden="true" />
-              Workspace：{scopeLabels.workspaceName}
+              工作空间：{scopeLabels.workspaceName}
             </span>
           </div>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-            管理 Capability、不可变 CapabilityVersion、固定组件引用、评测证据与发布状态。
-            Task 只能选择当前 Workspace 已授权的 Published 版本。
+            管理能力、不可变能力版本、固定组件引用、评测证据与发布状态。
+            任务只能选择当前工作空间已授权的已发布版本。
           </p>
         </div>
         {permission.canManage ? (
@@ -218,12 +227,12 @@ export function CapabilityCenterScreen({
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 className="min-h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
-                placeholder="名称、Code 或用途"
+                placeholder="名称、编码或用途"
               />
             </span>
           </label>
           <label className="text-sm font-medium">
-            <span>Release Status</span>
+            <span>发布状态</span>
             <select
               className="mt-2 min-h-11 w-full rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3"
               value={query.releaseStatus ?? ""}
@@ -241,14 +250,14 @@ export function CapabilityCenterScreen({
               {[..."DRAFT|VALIDATING|IN_REVIEW|PUBLISHED|SUSPENDED|DEPRECATED|RETIRED".split("|")].map(
                 (status) => (
                   <option value={status} key={status}>
-                    {status}
+                    {CAPABILITY_STATUS_LABELS[status as CapabilityReleaseStatus]}
                   </option>
                 ),
               )}
             </select>
           </label>
           <label className="text-sm font-medium">
-            <span>TaskType</span>
+            <span>任务类型</span>
             <select
               className="mt-2 min-h-11 w-full rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] px-3"
               value={query.taskType ?? ""}
@@ -262,7 +271,7 @@ export function CapabilityCenterScreen({
                 onQueryChange(next);
               }}
             >
-              <option value="">全部 TaskType</option>
+              <option value="">全部任务类型</option>
               {Object.entries(taskTypeLabels).map(([value, label]) => (
                 <option value={value} key={value}>
                   {label}
@@ -283,7 +292,7 @@ export function CapabilityCenterScreen({
         <Card className="mt-4 p-8 text-center">
           <Boxes className="mx-auto text-[var(--aios-muted)]" size={28} aria-hidden="true" />
           <p className="mt-3 font-semibold">没有符合条件的能力</p>
-          <p className="mt-1 text-sm text-[var(--aios-muted)]">调整状态、TaskType 或关键词后重试。</p>
+          <p className="mt-1 text-sm text-[var(--aios-muted)]">调整状态、任务类型或关键词后重试。</p>
         </Card>
       ) : (
         <>
@@ -292,7 +301,7 @@ export function CapabilityCenterScreen({
               <table aria-label="能力目录" className="w-full min-w-[1180px] text-left text-sm">
                 <thead className="bg-[var(--aios-canvas)] text-[var(--aios-muted)]">
                   <tr>
-                    {["能力", "TaskType", "Owner", "状态", "固定版本", "评测", "依赖", "Task 使用", "更新时间"].map(
+                    {["能力", "任务类型", "负责人", "状态", "固定版本", "评测", "依赖", "任务使用", "更新时间"].map(
                       (heading) => <th scope="col" key={heading} className="px-4 py-3 font-medium">{heading}</th>,
                     )}
                   </tr>
@@ -309,7 +318,7 @@ export function CapabilityCenterScreen({
                       <td className="px-4 py-4">{ownerNames[item.ownerId] ?? item.ownerId}</td>
                       <td className="px-4 py-4"><CapabilityStatusBadge status={item.releaseStatus} /></td>
                       <td className="px-4 py-4"><span className="block">v{item.currentVersionNumber}</span><span className="mt-1 block break-all font-mono text-xs text-[var(--aios-muted)]">{item.currentVersionId}</span></td>
-                      <td className="px-4 py-4">{item.evaluationResult ? <Badge tone="success">{item.evaluationResult}</Badge> : "未执行"}</td>
+                      <td className="px-4 py-4">{item.evaluationResult ? <Badge tone="success">{evaluationLabels[item.evaluationResult]}</Badge> : "未执行"}</td>
                       <td className="px-4 py-4">{item.dependencyCount}</td>
                       <td className="px-4 py-4">{item.taskUsageCount}</td>
                       <td className="px-4 py-4"><time className="text-xs" dateTime={item.updatedAt}>{item.updatedAt}</time></td>
@@ -337,7 +346,7 @@ export function CapabilityCenterScreen({
       <div className="mt-5 flex flex-col gap-3 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-surface)] p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-start gap-2 text-sm text-[var(--aios-muted)]">
           <ShieldCheck className="mt-0.5 shrink-0 text-[var(--aios-success-foreground)]" size={17} aria-hidden="true" />
-          当前为 Workspace 内受控目录；未实现跨 Workspace Marketplace、外部交易或自动安装。
+          当前为工作空间内受控目录；未实现跨工作空间能力市场、外部交易或自动安装。
         </p>
         <nav aria-label="能力目录分页" className="flex justify-end gap-3">
           <Button variant="secondary" disabled={page.page <= 1} onClick={() => onQueryChange({ ...query, page: page.page - 1 })}>

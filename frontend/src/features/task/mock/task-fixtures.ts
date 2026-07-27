@@ -73,7 +73,7 @@ const workflowVersionRef: WorkflowVersionRef = {
 
 const assignedAgent: AgentAssignment = {
   agentId: "agent-rd-001",
-  agentName: "AI研发员工",
+  agentName: "AI 研发员工",
   agentVersionRef: { ...agentVersionRef },
   autonomyLevel: "L1辅助",
   humanOwner: {
@@ -85,7 +85,7 @@ const assignedAgent: AgentAssignment = {
 const agentOwner: TaskOwner = {
   actorType: "AGENT",
   actorId: "agent-rd-001",
-  displayName: "AI研发员工",
+  displayName: "AI 研发员工",
 };
 
 const expectedTechnicalSolution: ExpectedArtifact = {
@@ -128,7 +128,7 @@ function makePlan(taskId: string): ExecutionPlan {
       digest: `sha256:plan-${taskId}-v1`,
     },
     goalInterpretation: "在现有 AIOS 架构边界内形成可评审、可实施的技术方案。",
-    assumptions: ["现有文档为 Single Source of Truth"],
+    assumptions: ["现有文档为唯一可信来源"],
     missingInformation: [],
     steps: [
       {
@@ -137,7 +137,7 @@ function makePlan(taskId: string): ExecutionPlan {
         name: "需求理解与约束确认",
         description: "明确目标、范围、不做事项和验收标准。",
         stepType: "AGENT",
-        responsibility: "AI研发员工",
+        responsibility: "AI 研发员工",
         riskLevel: "R0",
       },
       {
@@ -146,34 +146,34 @@ function makePlan(taskId: string): ExecutionPlan {
         name: "代码与模块影响分析",
         description: "只读检索代码结构并识别可能受影响的模块与文件。",
         stepType: "KNOWLEDGE_RETRIEVAL",
-        responsibility: "AI研发员工",
+        responsibility: "AI 研发员工",
         riskLevel: "R0",
       },
       {
         id: `${taskId}-step-03`,
         sequence: 3,
         name: "形成技术方案草稿",
-        description: "依据固定 Capability 与知识库版本形成结构化草稿。",
+        description: "依据固定能力与知识库版本形成结构化草稿。",
         stepType: "AGENT",
-        responsibility: "AI研发员工",
+        responsibility: "AI 研发员工",
         riskLevel: "R1",
       },
       {
         id: `${taskId}-step-04`,
         sequence: 4,
         name: "方案结构和引用检查",
-        description: "检查 Artifact 结构、关键结论和知识库引用。",
+        description: "检查成果结构、关键结论和知识库引用。",
         stepType: "VALIDATION",
-        responsibility: "Validation",
+        responsibility: "验证",
         riskLevel: "R1",
       },
       {
         id: `${taskId}-step-05`,
         sequence: 5,
-        name: "Artifact人工验收",
-        description: "由授权 Reviewer 验收技术方案 Artifact。",
+        name: "成果人工验收",
+        description: "由授权验收人验收技术方案成果。",
         stepType: "HUMAN_REVIEW",
-        responsibility: "Reviewer",
+        responsibility: "验收人",
         riskLevel: "R1",
       },
     ],
@@ -193,7 +193,7 @@ function makeApprovalPoints(taskId: string): ApprovalPoint[] {
     },
     {
       id: `${taskId}-approval-artifact`,
-      name: "Artifact验收",
+      name: "成果验收",
       requiredFor: "ARTIFACT_ACCEPTANCE",
       riskLevel: "R1",
       status: "PENDING",
@@ -328,7 +328,7 @@ function makeFixture(input: FixtureInput): TaskDetail {
     initiator,
     currentOwner:
       input.status === "EXECUTING" ? { ...agentOwner } : undefined,
-    assignedAgentName: hasPlan ? "AI研发员工" : undefined,
+    assignedAgentName: hasPlan ? "AI 研发员工" : undefined,
     participantUserIds: input.participantUserIds ?? [
       input.initiatorId,
       "user-lead",
@@ -343,7 +343,7 @@ function makeFixture(input: FixtureInput): TaskDetail {
     completionCriteria: [
       `${expectedArtifact.artifactType}符合结构要求`,
       "关键结论包含知识库引用",
-      "Artifact 完成人工验收",
+      "成果完成人工验收",
     ],
     assignedAgent: hasPlan ? structuredClone(assignedAgent) : undefined,
     capabilityVersionRefs: hasPlan
@@ -383,8 +383,8 @@ export const GOLDEN_TECHNICAL_SOLUTION_TASK_ID =
 const goldenTask: PlannedTaskDetail = {
   ...makeFixture({
     id: GOLDEN_TECHNICAL_SOLUTION_TASK_ID,
-    title: "生成 AIOS Task Center 技术方案",
-    goal: "形成可供研发团队评审并实施的 Task Center 技术方案",
+    title: "生成 AIOS 任务中心技术方案",
+    goal: "形成可供研发团队评审并实施的任务中心技术方案",
     templateName: "生成技术方案",
     status: "NEED_APPROVAL",
     priority: 50,
@@ -510,7 +510,7 @@ const mutableTaskFixtures: TaskDetail[] = [
   makeFixture({
     id: "task-seed-review",
     title: "验收支付模块自动测试报告",
-    goal: "审查自动测试报告并作出 Artifact 验收决定",
+    goal: "审查自动测试报告并作出成果验收决定",
     templateName: "自动测试",
     status: "REVIEW",
     priority: 25,
@@ -523,7 +523,7 @@ const mutableTaskFixtures: TaskDetail[] = [
   makeFixture({
     id: "task-seed-rework",
     title: "返工订单服务技术方案",
-    goal: "依据 Reviewer 反馈修订订单服务技术方案",
+    goal: "依据验收人反馈修订订单服务技术方案",
     templateName: "生成技术方案",
     status: "REWORK",
     priority: 15,
@@ -546,9 +546,9 @@ const mutableTaskFixtures: TaskDetail[] = [
   }),
   makeFixture({
     id: "task-seed-cancelled",
-    title: "取消遗留模块 Code Review",
+    title: "取消遗留模块代码审查",
     goal: "停止已不再需要的遗留模块审查",
-    templateName: "Code Review",
+    templateName: "代码审查",
     status: "CANCELLED",
     priority: 90,
     riskLevel: "R3",

@@ -126,8 +126,7 @@ export function KnowledgeDetailLoader({
           <div>
             <h1 className="font-semibold">知识条目不可用</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-              当前 Organization、Workspace 或身份不能安全查看该
-              知识条目。敏感条目不会泄露其存在性。
+              当前组织、工作空间或身份不能安全查看该知识条目。敏感条目不会泄露其存在性。
             </p>
           </div>
         </div>

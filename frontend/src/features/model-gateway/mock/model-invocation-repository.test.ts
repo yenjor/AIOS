@@ -67,10 +67,10 @@ const invocation: ModelInvocationResult = {
   })),
 };
 
-describe("Model Invocation repository", () => {
+describe("模型调用 repository", () => {
   beforeEach(() => window.localStorage.clear());
 
-  it("persists immutable model evidence scoped to the Task", async () => {
+  it("persists immutable model evidence scoped to the 任务", async () => {
     await expect(recordModelInvocation(scope, actor, invocation)).resolves.toEqual(
       invocation,
     );

@@ -52,12 +52,12 @@ export async function invokeTechnicalDesignModel(
   try {
     envelope = (await response.json()) as InvocationResponse;
   } catch {
-    throw new Error("Model Gateway returned a non-JSON response.");
+    throw new Error("模型网关返回了非 JSON 响应。");
   }
   if (isInvocationResult(envelope.data)) return envelope.data;
   const message =
     isRecord(envelope.error) && typeof envelope.error.message === "string"
       ? envelope.error.message
-      : `Model Gateway rejected the invocation (${response.status}).`;
+      : `模型网关拒绝了本次调用（${response.status}）。`;
   throw new Error(message);
 }

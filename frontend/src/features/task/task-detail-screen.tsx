@@ -27,8 +27,11 @@ import type { DeepReadonly, WorkspaceRole } from "@/types/domain";
 
 import { ExecutionPlan } from "./execution-plan";
 import type {
+  ExecutionRunStatus,
+  ExecutionStepStatus,
   TaskDetail,
   VersionRef,
+  VersionRefKind,
 } from "./model";
 import { TASK_STATUS_LABELS } from "./task-status";
 import { TaskStatusBadge } from "./task-status-badge";
@@ -47,7 +50,7 @@ export interface TaskDetailViewer {
 export type TaskDetailControlledAction =
   | "批准计划"
   | "开始执行"
-  | "接受 Artifact";
+  | "接受成果";
 
 export interface TaskDetailActionState {
   status: "idle" | "working" | "error";
@@ -86,9 +89,9 @@ const DETAIL_NAVIGATION = [
   { id: "task-overview", label: "概览" },
   { id: "task-plan", label: "计划" },
   { id: "task-execution", label: "执行" },
-  { id: "task-artifact", label: "Artifact" },
+  { id: "task-artifact", label: "成果" },
   { id: "task-collaboration", label: "协作" },
-  { id: "task-audit", label: "Audit" },
+  { id: "task-audit", label: "审计" },
 ] as const;
 
 const CONTROLLED_ACTIONS = [
@@ -101,17 +104,94 @@ const CONTROLLED_ACTIONS = [
   "恢复",
   "取消",
   "人工接管",
-  "调用 Tool",
-  "接受 Artifact",
-  "驳回 Artifact",
-  "要求 Artifact 返工",
+  "调用工具",
+  "接受成果",
+  "驳回成果",
+  "要求成果返工",
 ] as const;
 
 const SUPPORTED_ACTIONS = new Set<TaskDetailControlledAction>([
   "批准计划",
   "开始执行",
-  "接受 Artifact",
+  "接受成果",
 ]);
+
+const EXECUTION_RUN_STATUS_LABELS: Record<ExecutionRunStatus, string> = {
+  RUNNING: "执行中",
+  SUCCEEDED: "执行成功",
+};
+
+const EXECUTION_STEP_STATUS_LABELS: Record<ExecutionStepStatus, string> = {
+  PENDING: "等待执行",
+  SUCCEEDED: "执行成功",
+  WAITING_HUMAN: "等待人工处理",
+};
+
+const TOOL_INVOCATION_STATUS_LABELS: Record<
+  ToolInvocationResult["status"],
+  string
+> = {
+  SUCCEEDED: "调用成功",
+  FAILED: "调用失败",
+  DENIED: "已拒绝",
+  UNKNOWN: "结果未知",
+};
+
+const MODEL_INVOCATION_STATUS_LABELS: Record<
+  ModelInvocationResult["status"],
+  string
+> = {
+  SUCCEEDED: "调用成功",
+  FAILED: "调用失败",
+  UNKNOWN: "结果未知",
+};
+
+const MODEL_ERROR_LABELS: Record<
+  NonNullable<ModelInvocationResult["errorClassification"]>,
+  string
+> = {
+  GATEWAY_NOT_CONFIGURED: "模型网关未配置",
+  GATEWAY_UNAVAILABLE: "模型网关不可用",
+  GATEWAY_TIMEOUT: "模型网关超时",
+  RATE_LIMITED: "模型调用受限流",
+  PROVIDER_ERROR: "模型提供方错误",
+  OUTPUT_INVALID: "模型输出不符合结构要求",
+};
+
+const TOOL_AUDIT_EVENT_LABELS: Record<
+  ToolInvocationResult["auditEvents"][number]["eventType"],
+  string
+> = {
+  TOOL_INVOCATION_REQUESTED: "已请求工具调用",
+  TOOL_PERMISSION_ALLOWED: "工具权限已放行",
+  MCP_SESSION_INITIALIZED: "MCP 会话已初始化",
+  TOOL_INVOCATION_SUCCEEDED: "工具调用成功",
+  TOOL_INVOCATION_FAILED: "工具调用失败",
+  TOOL_INVOCATION_UNKNOWN: "工具调用结果未知",
+};
+
+const MODEL_AUDIT_EVENT_LABELS: Record<
+  ModelInvocationResult["auditEvents"][number]["eventType"],
+  string
+> = {
+  MODEL_INVOCATION_REQUESTED: "已请求模型调用",
+  MODEL_POLICY_ALLOWED: "模型策略已放行",
+  MODEL_GATEWAY_DISPATCHED: "模型网关已分发",
+  MODEL_RESPONSE_RECEIVED: "已收到模型响应",
+  MODEL_OUTPUT_VALIDATED: "模型输出已验证",
+  MODEL_INVOCATION_FAILED: "模型调用失败",
+  MODEL_INVOCATION_UNKNOWN: "模型调用结果未知",
+};
+
+const VERSION_REF_KIND_LABELS: Record<VersionRefKind, string> = {
+  AGENT: "AI 员工",
+  CAPABILITY: "能力",
+  KNOWLEDGE: "知识库",
+  TOOL: "工具",
+  WORKFLOW: "工作流",
+  PLAN: "计划",
+  ARTIFACT: "成果",
+};
 
 function userLabel(userId: string) {
   const name = USER_NAMES[userId];
@@ -119,7 +199,7 @@ function userLabel(userId: string) {
 }
 
 function actorName(displayName: string) {
-  return displayName.replace("AI研发员工", "AI 研发员工");
+  return displayName.replace("AI 研发员工", "AI 研发员工");
 }
 
 function ReferenceCard({
@@ -142,32 +222,32 @@ function ReferenceCard({
         <span className="text-xs font-semibold uppercase tracking-wide text-[var(--aios-muted)]">
           {label}
         </span>
-        <Badge>{reference.kind}</Badge>
+        <Badge>{VERSION_REF_KIND_LABELS[reference.kind]}</Badge>
       </div>
       <dl className="mt-3 space-y-2 text-xs">
         <div>
-          <dt className="text-[var(--aios-muted)]">Object</dt>
+          <dt className="text-[var(--aios-muted)]">对象</dt>
           <dd className="mt-0.5 break-all font-mono">{reference.objectId}</dd>
         </div>
         <div>
-          <dt className="text-[var(--aios-muted)]">VersionRef</dt>
+          <dt className="text-[var(--aios-muted)]">版本引用</dt>
           <dd className="mt-0.5 break-all font-mono">{reference.versionId}</dd>
         </div>
         <div>
-          <dt className="text-[var(--aios-muted)]">Digest</dt>
+          <dt className="text-[var(--aios-muted)]">摘要</dt>
           <dd className="mt-0.5 break-all font-mono">{reference.digest}</dd>
         </div>
         {actionId ? (
           <div>
-            <dt className="text-[var(--aios-muted)]">Action</dt>
+            <dt className="text-[var(--aios-muted)]">动作</dt>
             <dd className="mt-0.5 break-all font-mono">{actionId}</dd>
           </div>
         ) : null}
         {operationType ? (
           <div>
-            <dt className="text-[var(--aios-muted)]">Operation Type</dt>
+            <dt className="text-[var(--aios-muted)]">操作类型</dt>
             <dd className="mt-0.5 font-semibold">
-              {operationType} · 只读
+              读取 · 只读
             </dd>
           </div>
         ) : null}
@@ -236,19 +316,19 @@ export function TaskDetailScreen({
         : isMutableMockTask &&
             isReviewer &&
             task.status === "REVIEW"
-          ? "接受 Artifact"
+          ? "接受成果"
           : undefined;
   const fixedReferences: DisplayVersionRef[] = [
     ...(task.assignedAgent
       ? [
           {
-            label: "Agent",
+            label: "AI 员工",
             reference: task.assignedAgent.agentVersionRef,
           },
         ]
       : []),
     ...task.capabilityVersionRefs.map((reference) => ({
-      label: "Capability",
+      label: "能力",
       reference,
     })),
     ...task.knowledgeVersionRefs.map((reference) => ({
@@ -256,13 +336,13 @@ export function TaskDetailScreen({
       reference,
     })),
     ...task.toolVersionRefs.map((reference) => ({
-      label: "Tool",
+      label: "工具",
       reference,
       actionId: reference.actionId,
       operationType: reference.operationType,
     })),
     ...(task.workflowVersionRef
-      ? [{ label: "Workflow", reference: task.workflowVersionRef }]
+      ? [{ label: "工作流", reference: task.workflowVersionRef }]
       : []),
   ];
 
@@ -273,7 +353,7 @@ export function TaskDetailScreen({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <TaskStatusBadge status={task.status} />
-              <Badge tone="info">Priority {task.priority}</Badge>
+              <Badge tone="info">优先级 {task.priority}</Badge>
               <Badge tone={task.riskLevel === "R0" ? "success" : "warning"}>
                 {task.riskLevel}
               </Badge>
@@ -296,7 +376,7 @@ export function TaskDetailScreen({
             <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
               {enabledAction
                 ? `当前可执行受控动作：${enabledAction}`
-                : "当前身份仅可查看此 Task 的执行证据。"}
+                : "当前身份仅可查看此任务的执行证据。"}
             </p>
           </div>
         </div>
@@ -305,7 +385,7 @@ export function TaskDetailScreen({
           <div className="min-w-0 rounded-lg bg-[var(--aios-canvas)] p-3">
             <dt className="flex items-center gap-2 text-xs font-medium text-[var(--aios-muted)]">
               <Building2 size={15} aria-hidden="true" />
-              Organization
+              组织
             </dt>
             <dd className="mt-1 text-sm font-semibold">{scopeLabels.organizationName}</dd>
             <dd className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">
@@ -315,7 +395,7 @@ export function TaskDetailScreen({
           <div className="min-w-0 rounded-lg bg-[var(--aios-canvas)] p-3">
             <dt className="flex items-center gap-2 text-xs font-medium text-[var(--aios-muted)]">
               <Network size={15} aria-hidden="true" />
-              Workspace
+              工作空间
             </dt>
             <dd className="mt-1 text-sm font-semibold">{scopeLabels.workspaceName}</dd>
             <dd className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">
@@ -325,7 +405,7 @@ export function TaskDetailScreen({
           <div className="min-w-0 rounded-lg bg-[var(--aios-canvas)] p-3">
             <dt className="flex items-center gap-2 text-xs font-medium text-[var(--aios-muted)]">
               <Fingerprint size={15} aria-hidden="true" />
-              Initiator
+              发起人
             </dt>
             <dd className="mt-1 break-words text-sm font-semibold">
               {userLabel(task.initiator.userId)}
@@ -334,23 +414,23 @@ export function TaskDetailScreen({
           <div className="min-w-0 rounded-lg bg-[var(--aios-canvas)] p-3">
             <dt className="flex items-center gap-2 text-xs font-medium text-[var(--aios-muted)]">
               <Bot size={15} aria-hidden="true" />
-              Agent / CurrentOwner
+              AI 员工 / 当前负责人
             </dt>
             <dd className="mt-1 text-sm font-semibold">
               {task.assignedAgentName
                 ? actorName(task.assignedAgentName)
-                : "尚未分配 Agent"}
+                : "尚未分配 AI 员工"}
             </dd>
             <dd className="mt-1 space-y-1 break-words text-xs text-[var(--aios-muted)]">
               <span className="block">
-                CurrentOwner：
+                当前负责人：
                 {task.currentOwner
                   ? actorName(task.currentOwner.displayName)
                   : "尚未产生"}
               </span>
               {!task.currentOwner && task.assignedAgent ? (
                 <span className="block">
-                  Human Owner：{task.assignedAgent.humanOwner.displayName} ·{" "}
+                  人工负责人：{task.assignedAgent.humanOwner.displayName} ·{" "}
                   {task.assignedAgent.autonomyLevel.replace("L1辅助", "L1 辅助")}
                 </span>
               ) : null}
@@ -360,7 +440,7 @@ export function TaskDetailScreen({
       </header>
 
       <nav
-        aria-label="Task 详情导航"
+        aria-label="任务详情导航"
         className="sticky top-0 z-10 mt-5 overflow-x-auto rounded-[10px] border border-[color-mix(in_srgb,var(--aios-muted)_25%,var(--aios-surface))] bg-[var(--aios-surface)] p-2 shadow-sm"
       >
         <div className="flex min-w-max gap-1">
@@ -382,7 +462,7 @@ export function TaskDetailScreen({
             <Card className="min-w-0 p-5">
               <div className="space-y-5">
                 <div>
-                  <h3 className="font-semibold">Goal</h3>
+                  <h3 className="font-semibold">目标</h3>
                   <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
                     {task.goal}
                   </p>
@@ -433,7 +513,7 @@ export function TaskDetailScreen({
                   className="text-[var(--aios-primary)]"
                   aria-hidden="true"
                 />
-                <h3 className="font-semibold">固定 VersionRef</h3>
+                <h3 className="font-semibold">固定版本引用</h3>
               </div>
               <p className="mt-2 text-xs leading-5 text-[var(--aios-muted)]">
                 仅展示引用身份与摘要；知识正文不会在此页面展开。
@@ -476,7 +556,7 @@ export function TaskDetailScreen({
               <Card className="p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-semibold">
-                    ExecutionRun · AI Employee Runtime
+                    执行记录 · AI 员工运行时
                   </h3>
                   <Badge
                     tone={
@@ -485,7 +565,7 @@ export function TaskDetailScreen({
                         : "info"
                     }
                   >
-                    {task.executionRun.status}
+                    {EXECUTION_RUN_STATUS_LABELS[task.executionRun.status]}
                   </Badge>
                 </div>
                 <p className="mt-3 break-all font-mono text-xs text-[var(--aios-muted)]">
@@ -494,15 +574,15 @@ export function TaskDetailScreen({
                 <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-1">
                   <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                     <dt className="text-xs text-[var(--aios-muted)]">
-                      Runtime Progress
+                      运行时进度
                     </dt>
                     <dd className="mt-1 font-semibold">
-                      已完成 {completedRuntimeStepCount} / 4 个 Runtime Step
+                      已完成 {completedRuntimeStepCount} / 4 个运行时步骤
                     </dd>
                   </div>
                   <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                     <dt className="text-xs text-[var(--aios-muted)]">
-                      Checkpoint
+                      检查点
                     </dt>
                     <dd className="mt-1 font-semibold">
                       {task.executionRun.checkpoints.length} 个持久化检查点
@@ -510,7 +590,7 @@ export function TaskDetailScreen({
                   </div>
                   <div className="rounded-lg bg-[var(--aios-canvas)] p-3 sm:col-span-2 xl:col-span-1">
                     <dt className="text-xs text-[var(--aios-muted)]">
-                      Execution Package Digest
+                      执行包摘要
                     </dt>
                     <dd className="mt-1 break-all font-mono text-xs">
                       {task.executionRun.executionPackageDigest}
@@ -518,14 +598,14 @@ export function TaskDetailScreen({
                   </div>
                 </dl>
                 <p className="mt-4 text-xs leading-5 text-[var(--aios-muted)]">
-                  此 Runtime 会通过 Tool Broker 调用真实 CodeGraph MCP
-                  只读 Action；Artifact 编排保持确定性，尚未调用外部 AI
-                  模型、写入型 Tool 或生产系统。
+                  此运行时会通过工具代理调用真实 CodeGraph MCP
+                  只读动作；成果编排保持确定性，尚未调用外部 AI
+                  模型、写入型工具或生产系统。
                 </p>
               </Card>
 
               <Card className="p-5">
-                <h3 className="font-semibold">Step 与 Checkpoint</h3>
+                <h3 className="font-semibold">步骤与检查点</h3>
                 <ol className="mt-4 space-y-3">
                   {task.executionRun.steps.map((step) => (
                     <li
@@ -560,7 +640,7 @@ export function TaskDetailScreen({
                                 : "neutral"
                           }
                         >
-                          {step.status}
+                          {EXECUTION_STEP_STATUS_LABELS[step.status]}
                         </Badge>
                       </div>
                       {step.summary ? (
@@ -577,7 +657,7 @@ export function TaskDetailScreen({
                   ))}
                 </ol>
                 <p className="mt-4 text-xs leading-5 text-[var(--aios-muted)]">
-                  第 5 步是 Human Review，不由 Agent Runtime 自动完成。
+                  第 5 步是人工验收，不由 AI 员工运行时自动完成。
                 </p>
               </Card>
 
@@ -585,7 +665,7 @@ export function TaskDetailScreen({
                 <Card className="p-5 xl:col-span-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-semibold">
-                      Tool Invocation · 真实 MCP 调用证据
+                      工具调用 · 真实 MCP 调用证据
                     </h3>
                     <Badge tone="info">{toolInvocations.length} 次调用</Badge>
                   </div>
@@ -601,7 +681,7 @@ export function TaskDetailScreen({
                               {invocation.id}
                             </p>
                             <p className="mt-1 text-sm font-semibold">
-                              {invocation.action} · {invocation.operationType}/
+                              {invocation.action} · 读取/
                               {invocation.riskLevel}
                             </p>
                           </div>
@@ -614,7 +694,7 @@ export function TaskDetailScreen({
                                   : "error"
                             }
                           >
-                            {invocation.status}
+                            {TOOL_INVOCATION_STATUS_LABELS[invocation.status]}
                           </Badge>
                         </div>
                         <p className="mt-3 text-sm leading-6 text-[var(--aios-muted)]">
@@ -623,7 +703,7 @@ export function TaskDetailScreen({
                         <dl className="mt-3 grid gap-3 text-xs md:grid-cols-2">
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                             <dt className="text-[var(--aios-muted)]">
-                              MCP Server
+                              MCP 服务
                             </dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.serverIdentity}@
@@ -632,7 +712,7 @@ export function TaskDetailScreen({
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                             <dt className="text-[var(--aios-muted)]">
-                              Duration
+                              耗时
                             </dt>
                             <dd className="mt-1 font-mono">
                               {invocation.durationMs} ms
@@ -640,7 +720,7 @@ export function TaskDetailScreen({
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                             <dt className="text-[var(--aios-muted)]">
-                              Input Digest
+                              输入摘要
                             </dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.inputDigest}
@@ -648,7 +728,7 @@ export function TaskDetailScreen({
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
                             <dt className="text-[var(--aios-muted)]">
-                              Output Digest
+                              输出摘要
                             </dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.outputDigest ?? "未确认"}
@@ -674,7 +754,7 @@ export function TaskDetailScreen({
                 <Card className="p-5 xl:col-span-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-semibold">
-                      Model Invocation · LiteLLM 推理证据
+                      模型调用 · LiteLLM 推理证据
                     </h3>
                     <Badge tone="info">{modelInvocations.length} 次调用</Badge>
                   </div>
@@ -703,7 +783,7 @@ export function TaskDetailScreen({
                                   : "error"
                             }
                           >
-                            {invocation.status}
+                            {MODEL_INVOCATION_STATUS_LABELS[invocation.status]}
                           </Badge>
                         </div>
                         <p className="mt-3 text-sm leading-6 text-[var(--aios-muted)]">
@@ -711,37 +791,37 @@ export function TaskDetailScreen({
                         </p>
                         <dl className="mt-3 grid gap-3 text-xs md:grid-cols-2 xl:grid-cols-3">
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-                            <dt className="text-[var(--aios-muted)]">Model Policy</dt>
+                            <dt className="text-[var(--aios-muted)]">模型策略</dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.modelPolicyProfile}
                             </dd>
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-                            <dt className="text-[var(--aios-muted)]">PromptVersion</dt>
+                            <dt className="text-[var(--aios-muted)]">提示词版本</dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.promptVersionId}
                             </dd>
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-                            <dt className="text-[var(--aios-muted)]">Duration</dt>
+                            <dt className="text-[var(--aios-muted)]">耗时</dt>
                             <dd className="mt-1 font-mono">
                               {invocation.durationMs} ms
                             </dd>
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-                            <dt className="text-[var(--aios-muted)]">Input Digest</dt>
+                            <dt className="text-[var(--aios-muted)]">输入摘要</dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.inputDigest}
                             </dd>
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-                            <dt className="text-[var(--aios-muted)]">Prompt Digest</dt>
+                            <dt className="text-[var(--aios-muted)]">提示词摘要</dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.promptDigest}
                             </dd>
                           </div>
                           <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
-                            <dt className="text-[var(--aios-muted)]">Output Digest</dt>
+                            <dt className="text-[var(--aios-muted)]">输出摘要</dt>
                             <dd className="mt-1 break-all font-mono">
                               {invocation.outputDigest ?? "未确认"}
                             </dd>
@@ -749,18 +829,18 @@ export function TaskDetailScreen({
                         </dl>
                         {invocation.usage ? (
                           <p className="mt-3 text-xs text-[var(--aios-muted)]">
-                            Tokens：{invocation.usage.promptTokens} input /{" "}
-                            {invocation.usage.completionTokens} output /{" "}
-                            {invocation.usage.totalTokens} total
+                            词元：输入 {invocation.usage.promptTokens} /{" "}
+                            输出 {invocation.usage.completionTokens} /{" "}
+                            总计 {invocation.usage.totalTokens}
                           </p>
                         ) : null}
                         {invocation.errorClassification ? (
                           <p className="mt-3 break-all font-mono text-xs text-[var(--aios-error-foreground)]">
-                            {invocation.errorClassification}
+                            {MODEL_ERROR_LABELS[invocation.errorClassification]}
                           </p>
                         ) : null}
                         <p className="mt-3 text-xs leading-5 text-[var(--aios-muted)]">
-                          出于数据最小化要求，此处只保存版本、Digest、用量和校验结果，不保存完整 Prompt。
+                          出于数据最小化要求，此处只保存版本、摘要、用量和校验结果，不保存完整提示词。
                         </p>
                       </li>
                     ))}
@@ -780,8 +860,8 @@ export function TaskDetailScreen({
                   <h3 className="font-semibold">尚未开始</h3>
                   <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
                     {task.status === "NEED_APPROVAL"
-                      ? "当前 Task 停止在计划确认审批点。Reviewer 批准后才创建 ExecutionRun。"
-                      : `当前持久化状态为 ${TASK_STATUS_LABELS[task.status]}，尚无 ExecutionRun 证据。`}
+                      ? "当前任务停止在计划确认审批点。验收人批准后才创建执行记录。"
+                      : `当前持久化状态为 ${TASK_STATUS_LABELS[task.status]}，尚无执行记录证据。`}
                   </p>
                 </div>
               </div>
@@ -789,13 +869,13 @@ export function TaskDetailScreen({
           )}
         </ReadonlySection>
 
-        <ReadonlySection id="task-artifact" label="Artifact" icon={FileCheck2}>
+        <ReadonlySection id="task-artifact" label="成果" icon={FileCheck2}>
           <div className="grid gap-5 xl:grid-cols-2">
             <Card className="p-5">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold">预期 Artifact</h3>
+                <h3 className="font-semibold">预期成果</h3>
                 <Badge tone="info">{task.expectedArtifact.artifactType}</Badge>
-                <Badge>{task.expectedArtifact.state}</Badge>
+                <Badge>预期</Badge>
               </div>
               <p className="mt-2 text-sm text-[var(--aios-muted)]">
                 {task.expectedArtifact.knowledgeCitationRequired
@@ -815,18 +895,18 @@ export function TaskDetailScreen({
               </ul>
             </Card>
             <Card className="p-5">
-              <h3 className="font-semibold">ArtifactVersionRef</h3>
+              <h3 className="font-semibold">成果版本引用</h3>
               {task.artifactVersionRefs.length === 0 ? (
                 <div className="mt-4 rounded-lg bg-[var(--aios-canvas)] p-4">
                   <p className="font-semibold">尚未生成</p>
                   <p className="mt-1 text-sm leading-6 text-[var(--aios-muted)]">
-                    这里只展示已持久化的 Artifact 引用，不生成或推测交付内容。
+                    这里只展示已持久化的成果引用，不生成或推测交付内容。
                   </p>
                 </div>
               ) : (
                 <>
                   <p className="mt-3 text-xs leading-5 text-[var(--aios-muted)]">
-                    Artifact 正文由独立 Read Model 提供；此处保留版本引用和验收状态。
+                    成果正文由独立只读视图提供；此处保留版本引用和验收状态。
                   </p>
                   <ul className="mt-4 space-y-3">
                     {task.artifactVersionRefs.map((reference) => (
@@ -835,7 +915,7 @@ export function TaskDetailScreen({
                           href={`/artifacts/${reference.objectId}`}
                           className="mb-2 inline-flex min-h-11 items-center rounded-lg px-1 text-sm font-semibold text-[var(--aios-primary)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-[var(--aios-primary)]"
                         >
-                          查看 Artifact {reference.objectId}
+                          查看成果 {reference.objectId}
                         </Link>
                         <ReferenceCard
                           label={`${reference.artifactType} · ${
@@ -851,7 +931,7 @@ export function TaskDetailScreen({
               )}
               {task.citationRefs.length > 0 ? (
                 <>
-                  <h4 className="mt-5 text-sm font-semibold">CitationRef</h4>
+                  <h4 className="mt-5 text-sm font-semibold">知识引用</h4>
                   <ul className="mt-2 space-y-2 text-xs text-[var(--aios-muted)]">
                     {task.citationRefs.map((citation) => (
                       <li key={`${citation.locator}-${citation.digest}`}>
@@ -874,7 +954,7 @@ export function TaskDetailScreen({
             <dl className="mt-4 grid gap-4 md:grid-cols-3">
               <div className="min-w-0">
                 <dt className="text-xs font-medium text-[var(--aios-muted)]">
-                  Participant
+                  参与人
                 </dt>
                 <dd className="mt-2 break-words text-sm leading-6">
                   {task.participantUserIds.map(userLabel).join("、") || "无"}
@@ -882,7 +962,7 @@ export function TaskDetailScreen({
               </div>
               <div className="min-w-0">
                 <dt className="text-xs font-medium text-[var(--aios-muted)]">
-                  Approver
+                  审批人
                 </dt>
                 <dd className="mt-2 break-words text-sm leading-6">
                   {task.approverUserIds.map(userLabel).join("、") || "无"}
@@ -890,7 +970,7 @@ export function TaskDetailScreen({
               </div>
               <div className="min-w-0">
                 <dt className="text-xs font-medium text-[var(--aios-muted)]">
-                  Reviewer
+                  验收人
                 </dt>
                 <dd className="mt-2 break-words text-sm leading-6">
                   {task.reviewerUserIds.map(userLabel).join("、") || "无"}
@@ -900,11 +980,11 @@ export function TaskDetailScreen({
           </Card>
         </ReadonlySection>
 
-        <ReadonlySection id="task-audit" label="Audit" icon={History}>
+        <ReadonlySection id="task-audit" label="审计" icon={History}>
           <Card className="p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold">持久化状态历史</h3>
-              <Badge>Aggregate v{task.aggregateVersion}</Badge>
+              <Badge>聚合 v{task.aggregateVersion}</Badge>
             </div>
             {task.history.length > 0 ? (
               <ol className="mt-4 space-y-3">
@@ -915,12 +995,14 @@ export function TaskDetailScreen({
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-semibold">
-                        {historyItem.fromStatus ?? "INITIAL"} →{" "}
-                        {historyItem.toStatus}
+                        {historyItem.fromStatus
+                          ? TASK_STATUS_LABELS[historyItem.fromStatus]
+                          : "初始状态"} →{" "}
+                        {TASK_STATUS_LABELS[historyItem.toStatus]}
                       </p>
                       <p className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">
-                        {historyItem.reasonCode} ·{" "}
-                        {historyItem.actor.actorType}:
+                        状态变更 ·{" "}
+                        {historyItem.actor.actorType === "USER" ? "用户" : "AI 员工"}：
                         {historyItem.actor.actorId}
                       </p>
                     </div>
@@ -941,7 +1023,7 @@ export function TaskDetailScreen({
             {toolInvocations.length > 0 ? (
               <>
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] pt-5">
-                  <h4 className="font-semibold">Tool Broker Audit Event</h4>
+                  <h4 className="font-semibold">工具代理审计事件</h4>
                   <Badge>
                     {toolInvocations.reduce(
                       (total, invocation) =>
@@ -960,7 +1042,7 @@ export function TaskDetailScreen({
                       >
                         <div className="min-w-0">
                           <p className="text-sm font-semibold">
-                            {event.eventType}
+                            {TOOL_AUDIT_EVENT_LABELS[event.eventType]}
                           </p>
                           <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
                             {event.summary}
@@ -984,7 +1066,7 @@ export function TaskDetailScreen({
             {modelInvocations.length > 0 ? (
               <>
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] pt-5">
-                  <h4 className="font-semibold">Model Gateway Audit Event</h4>
+                  <h4 className="font-semibold">模型网关审计事件</h4>
                   <Badge>
                     {modelInvocations.reduce(
                       (total, invocation) =>
@@ -1003,7 +1085,7 @@ export function TaskDetailScreen({
                       >
                         <div className="min-w-0">
                           <p className="text-sm font-semibold">
-                            {event.eventType}
+                            {MODEL_AUDIT_EVENT_LABELS[event.eventType]}
                           </p>
                           <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
                             {event.summary}
@@ -1050,12 +1132,11 @@ export function TaskDetailScreen({
             id={controlledActionDescriptionId}
             className="mt-2 text-sm leading-6 text-[var(--aios-muted)]"
           >
-            当前增量开放“计划批准 → 真实只读 MCP Tool Invocation →
-            LiteLLM 受控推理 → 结构化 Artifact 校验 → 人工验收”的首个 AI 员工闭环。
+            当前增量开放“计划批准 → 真实只读 MCP 工具调用 →
+            LiteLLM 受控推理 → 结构化成果校验 → 人工验收”的首个 AI 员工闭环。
           </p>
           <p className="mt-1 text-sm leading-6 text-[var(--aios-muted)]">
-            只有固定 Reviewer / Human Owner 可以推进；其余动作和 Auditor
-            身份保持只读。
+            只有固定验收人 / 人工负责人可以推进；其余动作和审计员身份保持只读。
           </p>
           {actionState.status === "error" ? (
             <p
@@ -1063,7 +1144,7 @@ export function TaskDetailScreen({
               className="mt-4 rounded-lg bg-[color-mix(in_srgb,var(--aios-error)_12%,var(--aios-surface))] p-3 text-sm text-[var(--aios-error-foreground)]"
             >
               {actionState.message ??
-                "受控动作未完成，Task 状态未被推测或覆盖。"}
+                "受控动作未完成，任务状态未被推测或覆盖。"}
             </p>
           ) : null}
           {actionState.status === "working" ? (

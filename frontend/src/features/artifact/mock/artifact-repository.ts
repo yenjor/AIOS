@@ -77,9 +77,9 @@ const technicalSolutionSectionTitles = [
   "知识库引用",
 ] as const;
 const validationNames = [
-  "Artifact 结构完整性",
+  "成果结构完整性",
   "知识库引用可追溯",
-  "Reviewer 人工验收",
+  "验收人人工验收",
 ] as const;
 
 function defaultDelay(): Promise<void> {
@@ -92,7 +92,7 @@ function getBrowserStorage(): ArtifactStorage {
   if (typeof window === "undefined") {
     throw new ArtifactRepositoryError(
       "INVALID_STORE",
-      "Artifact store is only available in the browser mock runtime.",
+      "成果数据仓储仅可在浏览器模拟运行时中使用。",
     );
   }
   return window.localStorage;
@@ -150,7 +150,7 @@ function validateScope(scope: unknown): asserts scope is ArtifactScope {
   if (!isArtifactScope(scope)) {
     throw new ArtifactRepositoryError(
       "NOT_FOUND",
-      "Artifact scope is unavailable.",
+      "成果作用域不可用。",
     );
   }
 }
@@ -164,7 +164,7 @@ function validateActor(actor: unknown): asserts actor is ArtifactActor {
   ) {
     throw new ArtifactRepositoryError(
       "FORBIDDEN",
-      "Artifact actor is unavailable.",
+      "成果操作身份不可用。",
     );
   }
 }
@@ -446,7 +446,7 @@ function validateDraft(
   ) {
     throw new ArtifactRepositoryError(
       "VALIDATION",
-      "Technical solution Artifact draft is invalid.",
+      "技术方案成果草稿无效。",
     );
   }
 }
@@ -463,7 +463,7 @@ export function createArtifactRepository(
     if (!isIsoTimestamp(timestamp)) {
       throw new ArtifactRepositoryError(
         "VALIDATION",
-        "Artifact clock must return an ISO 8601 UTC timestamp.",
+        "成果时钟必须返回 ISO 8601 UTC 时间戳。",
       );
     }
     return timestamp;
@@ -476,7 +476,7 @@ export function createArtifactRepository(
     } catch {
       throw new ArtifactRepositoryError(
         "INVALID_STORE",
-        "Artifact store is unavailable.",
+        "成果数据仓储不可用。",
       );
     }
     if (raw === null) {
@@ -492,11 +492,11 @@ export function createArtifactRepository(
       try {
         storage.removeItem(ARTIFACT_STORE_KEY);
       } catch {
-        // The fail-closed result remains authoritative.
+        // 默认拒绝结果保持权威性。
       }
       throw new ArtifactRepositoryError(
         "INVALID_STORE",
-        "Artifact store failed integrity validation and was cleared.",
+        "成果数据仓储未通过完整性校验，已清除不可信数据。",
       );
     }
   }
@@ -505,7 +505,7 @@ export function createArtifactRepository(
     if (!isEnvelope(envelope)) {
       throw new ArtifactRepositoryError(
         "INVALID_STORE",
-        "Artifact store write failed integrity validation.",
+        "成果数据仓储写入未通过完整性校验。",
       );
     }
     try {
@@ -513,7 +513,7 @@ export function createArtifactRepository(
     } catch {
       throw new ArtifactRepositoryError(
         "VALIDATION",
-        "Artifact store could not persist this change.",
+        "成果数据仓储无法持久化本次变更。",
       );
     }
   }
@@ -526,7 +526,7 @@ export function createArtifactRepository(
       if (!isNonEmptyString(artifactId)) {
         throw new ArtifactRepositoryError(
           "VALIDATION",
-          "Artifact ID is invalid.",
+          "成果标识无效。",
         );
       }
       const artifact = readEnvelope().artifacts.find(
@@ -538,7 +538,7 @@ export function createArtifactRepository(
       if (!artifact) {
         throw new ArtifactRepositoryError(
           "NOT_FOUND",
-          "Artifact was not found.",
+          "未找到成果。",
         );
       }
       return cloneMutable(artifact);
@@ -552,7 +552,7 @@ export function createArtifactRepository(
       ) {
         throw new ArtifactRepositoryError(
           "FORBIDDEN",
-          "Artifact producer is not authorized.",
+          "成果产出者未获授权。",
         );
       }
       validateDraft(draft);
@@ -581,7 +581,7 @@ export function createArtifactRepository(
         validationResults: [
           {
             id: `${artifactId}-validation-structure`,
-            name: "Artifact 结构完整性",
+            name: "成果结构完整性",
             status: "PASSED",
             summary: "八个必需章节均已生成。",
           },
@@ -593,7 +593,7 @@ export function createArtifactRepository(
           },
           {
             id: `${artifactId}-validation-review`,
-            name: "Reviewer 人工验收",
+            name: "验收人人工验收",
             status: "PENDING",
             summary: `等待 ${
               users.find(({ id }) => id === draft.reviewerUserIds[0])?.name ??
@@ -642,13 +642,13 @@ export function createArtifactRepository(
       if (!artifact) {
         throw new ArtifactRepositoryError(
           "NOT_FOUND",
-          "Artifact was not found.",
+          "未找到成果。",
         );
       }
       if (!artifact.reviewerUserIds.includes(actor.userId)) {
         throw new ArtifactRepositoryError(
           "FORBIDDEN",
-          "Artifact reviewer is not authorized.",
+          "成果验收人未获授权。",
         );
       }
       if (artifact.status === "ACCEPTED") {
@@ -660,7 +660,7 @@ export function createArtifactRepository(
       artifact.acceptedAt = timestamp;
       artifact.updatedAt = timestamp;
       artifact.validationResults = artifact.validationResults.map((result) =>
-        result.name === "Reviewer 人工验收"
+        result.name === "验收人人工验收"
           ? {
               ...result,
               status: "PASSED",

@@ -70,7 +70,7 @@ export function WorkspaceDashboardLoader() {
           size={21}
           aria-hidden="true"
         />
-        <span>正在加载 Workspace 数据…</span>
+        <span>正在加载工作空间数据…</span>
       </Card>
     );
   }
@@ -88,7 +88,7 @@ export function WorkspaceDashboardLoader() {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Workspace 数据加载失败</h1>
+            <h1 className="font-semibold">工作空间数据加载失败</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               当前只读快照暂时不可用，请重试加载。
             </p>

@@ -27,7 +27,7 @@ const completeSession = {
   workspace: {
     id: "ws-from-active-session",
     organizationId: "org-guangwei",
-    name: "会话 Workspace",
+    name: "会话工作空间",
     purpose: "验证真实范围",
   },
 };
@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 
 describe("WorkspaceDashboardLoader", () => {
-  it("queries only after hydration and a complete session, using the active Workspace ID", async () => {
+  it("queries only after hydration and a complete session, using the active 工作空间标识", async () => {
     let resolveDashboard!: (value: typeof workspaceDashboard) => void;
     getWorkspaceDashboard.mockReturnValue(
       new Promise((resolve) => {
@@ -54,13 +54,13 @@ describe("WorkspaceDashboardLoader", () => {
     useSession.mockReturnValue(completeSession);
     view.rerender(<WorkspaceDashboardLoader />);
 
-    expect(await screen.findByRole("status")).toHaveTextContent("正在加载 Workspace");
+    expect(await screen.findByRole("status")).toHaveTextContent("正在加载工作空间");
     expect(getWorkspaceDashboard).toHaveBeenCalledTimes(1);
     expect(getWorkspaceDashboard).toHaveBeenCalledWith("ws-from-active-session");
 
     resolveDashboard(workspaceDashboard);
     expect(
-      await screen.findByRole("heading", { name: "Workspace 工作台" }),
+      await screen.findByRole("heading", { name: "工作空间工作台" }),
     ).toBeVisible();
   });
 
@@ -68,7 +68,7 @@ describe("WorkspaceDashboardLoader", () => {
     ["未恢复", { ...completeSession, hydrated: false }],
     ["缺少用户", { ...completeSession, user: undefined }],
     ["缺少组织", { ...completeSession, organization: undefined }],
-    ["缺少 Workspace", { ...completeSession, workspace: undefined }],
+    ["缺少工作空间", { ...completeSession, workspace: undefined }],
   ])("%s时不查询受保护快照", async (_label, session) => {
     useSession.mockReturnValue(session);
 
@@ -78,7 +78,7 @@ describe("WorkspaceDashboardLoader", () => {
     expect(view.container).toBeEmptyDOMElement();
   });
 
-  it("announces an error and retries the same active Workspace", async () => {
+  it("announces an error and retries the same active 工作空间", async () => {
     const interaction = userEvent.setup();
     useSession.mockReturnValue(completeSession);
     getWorkspaceDashboard
@@ -88,17 +88,17 @@ describe("WorkspaceDashboardLoader", () => {
     render(<WorkspaceDashboardLoader />);
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Workspace 数据加载失败");
+    expect(alert).toHaveTextContent("工作空间数据加载失败");
     await interaction.click(screen.getByRole("button", { name: "重试加载" }));
 
     expect(getWorkspaceDashboard).toHaveBeenCalledTimes(2);
     expect(getWorkspaceDashboard).toHaveBeenLastCalledWith("ws-from-active-session");
     expect(
-      await screen.findByRole("heading", { name: "Workspace 工作台" }),
+      await screen.findByRole("heading", { name: "工作空间工作台" }),
     ).toBeVisible();
   });
 
-  it("ignores an older response after the active Workspace changes", async () => {
+  it("ignores an older response after the active 工作空间 changes", async () => {
     let resolveOld!: (value: typeof workspaceDashboard) => void;
     const newerSnapshot = structuredClone(
       workspaceDashboard,

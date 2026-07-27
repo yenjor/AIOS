@@ -164,7 +164,7 @@ export function TaskWizardLoader() {
           className="animate-spin text-[var(--aios-primary)] motion-reduce:animate-none"
           size={21}
         />
-        <span>正在加载 Task 创建权限与草稿…</span>
+        <span>正在加载任务创建权限与草稿…</span>
       </Card>
     );
   }
@@ -182,10 +182,9 @@ export function TaskWizardLoader() {
             size={21}
           />
           <div>
-            <h1 className="font-semibold">当前身份不能创建 Task</h1>
+            <h1 className="font-semibold">当前身份不能创建任务</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-              当前身份在此 Organization 与 Workspace 中只有 Task
-              只读权限。系统未读取或写入任何个人草稿。
+              当前身份在此组织与工作空间中只有任务只读权限。系统未读取或写入任何个人草稿。
             </p>
           </div>
         </div>
@@ -206,11 +205,11 @@ export function TaskWizardLoader() {
             size={21}
           />
           <div>
-            <h1 className="font-semibold">Task 草稿加载失败</h1>
+            <h1 className="font-semibold">任务草稿加载失败</h1>
             <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
               {state.reason === "INVALID_STORE"
                 ? "本地草稿未通过完整性校验，已拒绝加载不可信内容。"
-                : "Task Repository 暂时不可用，未展示任何可能串租户的草稿。"}
+                : "任务仓储暂时不可用，未展示任何可能串租户的草稿。"}
             </p>
             <Button
               className="mt-4"

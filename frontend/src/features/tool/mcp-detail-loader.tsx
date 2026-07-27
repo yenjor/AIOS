@@ -89,7 +89,7 @@ export function McpDetailLoader({ serverId }: { serverId: string }) {
           size={21}
           aria-hidden="true"
         />
-        正在加载 MCP Server、Draft ToolVersion 与测试证据…
+        正在加载 MCP 服务、草稿工具版本与测试证据…
       </Card>
     ) : null;
   }
@@ -103,9 +103,9 @@ export function McpDetailLoader({ serverId }: { serverId: string }) {
           aria-hidden="true"
         />
         <div>
-          <h1 className="font-semibold">MCP Server 不可用</h1>
+          <h1 className="font-semibold">MCP 服务不可用</h1>
           <p className="mt-2 text-sm text-[var(--aios-muted)]">
-            当前 Workspace 或身份不能安全解析该连接。
+            当前工作空间或身份不能安全解析该连接。
           </p>
         </div>
       </Card>

@@ -38,8 +38,8 @@ const auditor: KnowledgeActor = { userId: "user-auditor" };
 
 const registerInput: RegisterKnowledgeInput = {
   code: "task-center-guide",
-  title: "Task Center 使用指南",
-  description: "Task Center 创建、审批、执行和验收说明。",
+  title: "任务中心使用指南",
+  description: "任务中心创建、审批、执行和验收说明。",
   sourceType: "DOCUMENT",
   sourceLocation: "upload://task-center-guide.md",
   sourceAuthority: "研发管理组",
@@ -49,7 +49,7 @@ const registerInput: RegisterKnowledgeInput = {
   fileName: "task-center-guide.md",
   mediaType: "text/markdown",
   content:
-    "# Task Center\n\nTask 必须先审批计划，再由 AI 研发员工执行并生成 Artifact。",
+    "# 任务中心\n\n任务审批成果必须先审批计划，再由 AI 研发员工执行并生成成果。",
   contentDigest:
     "sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 };
@@ -63,7 +63,7 @@ function expectRepositoryError(
   return true;
 }
 
-describe("Knowledge mock repository", () => {
+describe("知识库模拟存储库", () => {
   let storage: MemoryStorage;
 
   beforeEach(() => {
@@ -117,7 +117,7 @@ describe("Knowledge mock repository", () => {
     });
   });
 
-  it("registers a Draft + Ready KnowledgeVersion and restores it after recreation", async () => {
+  it("registers a 草稿 + Ready 知识库版本 and restores it after recreation", async () => {
     const repo = repository();
     await expect(
       repo.registerKnowledge(scope, productManager, registerInput),
@@ -156,7 +156,7 @@ describe("Knowledge mock repository", () => {
     ).resolves.toEqual(created);
   });
 
-  it("publishes explicitly, retrieves with Citation, and preserves version evidence", async () => {
+  it("publishes explicitly, retrieves with 引用, and preserves version evidence", async () => {
     const repo = repository();
     const created = await repo.registerKnowledge(scope, admin, registerInput);
     const published = await repo.publishVersion(
@@ -174,7 +174,7 @@ describe("Knowledge mock repository", () => {
     const retrieval = await repo.retrieve(
       scope,
       productManager,
-      "Task 审批 Artifact",
+      "任务审批成果",
     );
     expect(retrieval).toMatchObject({
       outcome: "RESULTS",
@@ -201,7 +201,7 @@ describe("Knowledge mock repository", () => {
         fileName: "task-center-guide-v2.md",
         mediaType: "text/markdown",
         content:
-          "# Task Center v2\n\nTask 计划审批、Checkpoint、Artifact 验收与 Citation。",
+          "# 任务中心 v2\n\n任务计划审批、检查点、成果验收与引用。",
         contentDigest:
           "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
       },
@@ -226,7 +226,7 @@ describe("Knowledge mock repository", () => {
       publishedAt: "2026-07-26T12:00:00.000Z",
       publishedBy: "user-admin",
       invalidationReason:
-        "由 knowledge-mock-0001-v2 替代，历史 Citation 保留。",
+        "由 knowledge-mock-0001-v2 替代，历史引用保留。",
     });
     expect(v2Published.versions[1].effectiveStatus).toBe("EFFECTIVE");
   });
@@ -238,14 +238,14 @@ describe("Knowledge mock repository", () => {
       lead,
       "knowledge-aios-docs",
       "knowledge-aios-docs-v1",
-      "来源正在复核，暂时停止新 Task 使用。",
+      "来源正在复核，暂时停止新任务使用。",
     );
     expect(invalidated.effectiveVersionId).toBeUndefined();
     expect(invalidated.versions[0]).toMatchObject({
       effectiveStatus: "INVALIDATED",
       publishedAt: "2026-07-25T09:00:00.000Z",
       publishedBy: "user-lead",
-      invalidationReason: "来源正在复核，暂时停止新 Task 使用。",
+      invalidationReason: "来源正在复核，暂时停止新任务使用。",
     });
 
     const restored = await repo.restoreVersion(
@@ -253,7 +253,7 @@ describe("Knowledge mock repository", () => {
       lead,
       "knowledge-aios-docs",
       "knowledge-aios-docs-v1",
-      "来源复核通过，允许恢复新 Task 使用。",
+      "来源复核通过，允许恢复新任务使用。",
     );
     expect(restored.effectiveVersionId).toBe(
       "knowledge-aios-docs-v1",
@@ -268,7 +268,7 @@ describe("Knowledge mock repository", () => {
         {
           targetVersionId: "knowledge-aios-docs-v1",
           reason: "需要修正架构边界描述。",
-          evidenceReference: "Task task-mock-0001",
+          evidenceReference: "任务 task-mock-0001",
           evidenceDigest: "sha256:evidence:task-mock-0001:architecture",
         },
       ),
@@ -283,7 +283,7 @@ describe("Knowledge mock repository", () => {
       {
         targetVersionId: "knowledge-aios-docs-v1",
         reason: "需要修正架构边界描述。",
-        evidenceReference: "Task task-mock-0001",
+        evidenceReference: "任务 task-mock-0001",
         evidenceDigest: "sha256:evidence:task-mock-0001:architecture",
       },
     );

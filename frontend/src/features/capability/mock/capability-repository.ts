@@ -168,7 +168,7 @@ function getBrowserStorage(): CapabilityStorage {
   if (typeof window === "undefined") {
     throw new CapabilityRepositoryError(
       "INVALID_STORE",
-      "能力中心仅可在浏览器 Mock Runtime 中使用。",
+      "能力中心仅可在浏览器模拟运行时中使用。",
     );
   }
   return window.localStorage;
@@ -225,10 +225,10 @@ function permissionFor(
     canManage,
     canReviewAndPublish: canManage,
     reason: canManage
-      ? "当前身份可构建、评测、审查和发布 Workspace 能力版本。"
+      ? "当前身份可构建、评测、审查和发布工作空间能力版本。"
       : actor.userId === "user-auditor"
-        ? "Auditor 仅可查看能力版本、评测与状态迁移证据。"
-        : "当前身份可发现并在 Task 中使用已发布能力，不能修改版本。",
+        ? "审计员仅可查看能力版本、评测与状态迁移证据。"
+        : "当前身份可发现并在任务中使用已发布能力，不能修改版本。",
   };
 }
 
@@ -236,7 +236,7 @@ function requireManager(actor: CapabilityActor): void {
   if (!managerActorIds.has(actor.userId)) {
     throw new CapabilityRepositoryError(
       "FORBIDDEN",
-      "只有 Capability Builder 或 Workspace Admin 可执行此操作。",
+      "只有能力构建器或工作空间管理员可执行此操作。",
     );
   }
 }
@@ -292,10 +292,10 @@ function buildVersion(
       name: input.code.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
       taskTypes: [input.taskType],
       purpose: input.purpose,
-      inputContract: "Task Goal、Scope、Constraints 与 CompletionCriteria",
+      inputContract: "任务目标、范围、约束与完成标准",
       outputContract: input.artifactType,
       stepIntents: ["理解任务", "读取授权上下文", "生成结构化成果", "提交人工验收"],
-      knownLimitations: ["不执行超出 Task Scope 的动作", "不绕过人工审批与 Artifact 验收"],
+      knownLimitations: ["不执行超出任务范围的动作", "不绕过人工审批与成果验收"],
       riskClassification: input.toolAction ? "R1" : "R0",
     },
     promptTemplateRef: {
@@ -373,9 +373,9 @@ function buildVersion(
       artifactType: input.artifactType,
       requiresReview: true,
       completionCriteriaMapping: [
-        "结构满足 Artifact Schema",
-        "内容覆盖 Task CompletionCriteria",
-        "授权知识必须生成 Citation",
+        "结构满足成果结构规范",
+        "内容覆盖任务完成标准",
+        "授权知识必须生成引用",
       ],
     },
     evaluationGate: {
@@ -444,7 +444,7 @@ function seedCapability(
   if (status === "SUSPENDED") {
     version.suspendedAt = timestamp;
     version.suspendedBy = "user-admin";
-    version.suspensionReason = "Required Tool 健康检查失败，停止新 Task 解析。";
+    version.suspensionReason = "必需工具健康检查失败，停止新任务解析。";
   }
   if (status === "DEPRECATED") {
     version.deprecatedAt = timestamp;
@@ -479,7 +479,7 @@ function defaultEnvelope(): CapabilityStoreEnvelope {
         {
           code: "TECHNICAL_SOLUTION",
           name: "技术方案生成",
-          purpose: "根据 Task 目标、约束和授权知识生成可验收的技术方案 Artifact。",
+          purpose: "根据任务目标、约束和授权知识生成可验收的技术方案成果。",
           ownerId: "user-lead",
           taskType: "GENERATE_TECHNICAL_DESIGN",
           promptId: "prompt-technical-solution",
@@ -594,7 +594,7 @@ function validateInput(input: CreateCapabilityInput): void {
   ) {
     throw new CapabilityRepositoryError(
       "VALIDATION",
-      "能力配置不完整，或 TaskType 与 ArtifactContract 不匹配。",
+      "能力配置不完整，或任务类型与成果契约不匹配。",
     );
   }
 }
@@ -689,7 +689,7 @@ export function createCapabilityRepository(
       try {
         storage.removeItem(CAPABILITY_STORE_KEY);
       } catch {
-        // Fail closed even when cleanup is blocked.
+        // 即使清理受阻，也必须保持默认拒绝。
       }
       throw new CapabilityRepositoryError(
         "INVALID_STORE",
@@ -716,7 +716,7 @@ export function createCapabilityRepository(
     if (!capability || capability.scope.workspaceId !== canonicalScope.workspaceId) {
       throw new CapabilityRepositoryError(
         "NOT_FOUND",
-        "能力在当前 Workspace 中不可用。",
+        "能力在当前工作空间中不可用。",
       );
     }
     return capability;
@@ -806,7 +806,7 @@ export function createCapabilityRepository(
       ) {
         throw new CapabilityRepositoryError(
           "CONFLICT",
-          "Capability Code 在当前 Workspace 中必须唯一。",
+          "能力编码在当前工作空间中必须唯一。",
         );
       }
       const sequence = envelope.nextCapabilitySequence;
@@ -843,7 +843,7 @@ export function createCapabilityRepository(
       if (latestVersion(capability).status === "DRAFT") {
         throw new CapabilityRepositoryError(
           "CONFLICT",
-          "已有 Draft 版本，请先完成该版本治理。",
+          "已有草稿版本，请先完成该版本治理。",
         );
       }
       const source = latestVersion(capability);
@@ -888,7 +888,7 @@ export function createCapabilityRepository(
       if (version.status !== "DRAFT") {
         throw new CapabilityRepositoryError(
           "CONFLICT",
-          "只有 Draft 版本可提交确定性 Mock 评测。",
+          "只有草稿版本可提交确定性模拟评测。",
         );
       }
       const timestamp = now();
@@ -921,7 +921,7 @@ export function createCapabilityRepository(
       ) {
         throw new CapabilityRepositoryError(
           "CAPABILITY_NOT_PUBLISHABLE",
-          "评测、安全、ArtifactContract 与人工审查门禁必须全部通过。",
+          "评测、安全、成果契约与人工审查门禁必须全部通过。",
         );
       }
       const timestamp = now();
@@ -955,7 +955,7 @@ export function createCapabilityRepository(
       if (!version || version.status !== "PUBLISHED") {
         throw new CapabilityRepositoryError(
           "CONFLICT",
-          "只有 Published 版本可以暂停。",
+          "只有已发布版本可以暂停。",
         );
       }
       const timestamp = now();
@@ -978,7 +978,7 @@ export function createCapabilityRepository(
       if (!version || version.status !== "SUSPENDED") {
         throw new CapabilityRepositoryError(
           "CONFLICT",
-          "只有 Suspended 版本可在依赖复核后恢复。",
+          "只有已暂停版本可在依赖复核后恢复。",
         );
       }
       const timestamp = now();
@@ -999,7 +999,7 @@ export function createCapabilityRepository(
       if (!version || version.status !== "PUBLISHED") {
         throw new CapabilityRepositoryError(
           "CONFLICT",
-          "只有 Published 版本可进入 Deprecated。",
+          "只有已发布版本可进入已弃用。",
         );
       }
       const timestamp = now();
@@ -1041,7 +1041,7 @@ export function createCapabilityRepository(
       if (!option) {
         throw new CapabilityRepositoryError(
           "NOT_FOUND",
-          "能力版本未发布、已暂停、TaskType 不匹配或当前身份无权使用。",
+          "能力版本未发布、已暂停、任务类型不匹配或当前身份无权使用。",
         );
       }
       return cloneMutable(option);

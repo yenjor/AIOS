@@ -36,11 +36,11 @@ test("renders all five mock identities with accessible selection buttons", () =>
   expect(screen.getByText(/不是真实登录/)).toBeInTheDocument();
 
   for (const accessibleName of [
-    "使用 林悦（产品经理）身份",
-    "使用 周航（开发工程师）身份",
-    "使用 陈明（研发负责人）身份",
-    "使用 吴桐（Workspace Admin）身份",
-    "使用 赵岚（Auditor）身份",
+    "使用林悦（产品经理）身份",
+    "使用周航（开发工程师）身份",
+    "使用陈明（研发负责人）身份",
+    "使用吴桐（工作空间管理员）身份",
+    "使用赵岚（审计员）身份",
   ]) {
     expect(
       screen.getByRole("button", { name: accessibleName }),
@@ -59,7 +59,7 @@ test("selects the identity before navigating to organizations", async () => {
   );
 
   await interaction.click(
-    screen.getByRole("button", { name: "使用 陈明（研发负责人）身份" }),
+    screen.getByRole("button", { name: "使用陈明（研发负责人）身份" }),
   );
 
   expect(screen.getByRole("status", { name: "当前演示身份" })).toHaveTextContent(

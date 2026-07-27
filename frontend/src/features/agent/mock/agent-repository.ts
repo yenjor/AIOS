@@ -185,7 +185,7 @@ function getBrowserStorage(): AgentStorage {
   if (typeof window === "undefined") {
     throw new AgentRepositoryError(
       "INVALID_STORE",
-      "AI 员工中心仅可在浏览器 Mock Runtime 中使用。",
+      "AI 员工中心仅可在浏览器模拟运行时中使用。",
     );
   }
   return window.localStorage;
@@ -253,10 +253,10 @@ function permissionFor(actor: AgentActor): AgentPermissionDecision {
     canManage,
     canGovern: canManage,
     reason: canManage
-      ? "当前身份可创建、测试、发布和治理 Workspace 内的 AI 员工。"
+      ? "当前身份可创建、测试、发布和治理工作空间内的 AI 员工。"
       : actor.userId === "user-auditor"
-        ? "Auditor 仅可查看 AgentVersion、Assignment 与治理证据。"
-        : "当前身份可在 Task 中使用已启用 AI 员工，不能修改配置。",
+        ? "审计员仅可查看 AI 员工版本、分配与治理证据。"
+        : "当前身份可在任务中使用已启用 AI 员工，不能修改配置。",
   };
 }
 
@@ -264,7 +264,7 @@ function requireManager(actor: AgentActor): void {
   if (!managerActorIds.has(actor.userId)) {
     throw new AgentRepositoryError(
       "FORBIDDEN",
-      "只有 Workspace Admin 或 Agent Builder 可执行此操作。",
+      "只有工作空间管理员或 AI 员工构建器可执行此操作。",
     );
   }
 }
@@ -347,16 +347,16 @@ function buildVersion({
         }
       }),
       responsibilityBoundary:
-        "仅在固定 Task、CapabilityVersion、Workspace 与 Permission 交集内生成 Artifact Draft。",
+        "仅在固定任务、能力版本、工作空间与权限交集内生成成果草稿。",
       humanCollaboration:
-        "由 Human Owner 负责计划批准、异常接管与 Artifact 验收。",
+        "由人工负责人负责计划批准、异常接管与成果验收。",
       escalationPolicy:
-        "缺少信息进入 NeedInput；越权或高风险动作停止并请求人工。",
+        "缺少信息时进入待补充状态；越权或高风险动作停止并请求人工处理。",
       dataClassificationCeiling: "INTERNAL",
       permanentProhibitions: [
-        "不得自行增加 Capability、知识范围、Tool Grant 或 Permission",
-        "不得接受自己产生且需要职责分离的 Artifact",
-        "不得修改 Task、知识库、Audit 或 Human Owner 事实",
+        "不得自行增加能力、知识范围、工具授权或权限",
+        "不得接受自己产生且需要职责分离的成果",
+        "不得修改任务、知识库、审计或人工负责人事实",
       ],
     },
     workspaceAssignments: [
@@ -524,7 +524,7 @@ function seedAgent({
           suspendedAt: timestamp,
           suspendedBy: "user-admin",
           suspensionReason:
-            "Tool Health 事件待复核，已阻止新的 Task Assignment。",
+            "工具健康状态事件待复核，已阻止新的任务分配。",
         }
       : {}),
   };
@@ -538,9 +538,9 @@ function defaultEnvelope(): AgentStoreEnvelope {
       seedAgent({
         id: "agent-rd-001",
         code: "AI_RD_EMPLOYEE",
-        name: "AI研发员工",
+        name: "AI 研发员工",
         roleDescription:
-          "理解研发任务，读取授权知识和代码上下文，生成可验收的研发 Artifact。",
+          "理解研发任务，读取授权知识和代码上下文，生成可验收的研发成果。",
         ownerId: "user-lead",
         status: "ENABLED",
         timestamp: "2026-07-25T09:45:00.000Z",
@@ -549,7 +549,7 @@ function defaultEnvelope(): AgentStoreEnvelope {
       seedAgent({
         id: "agent-quality-001",
         code: "AI_QUALITY_REVIEWER",
-        name: "AI质量审查助手",
+        name: "AI 质量审查助手",
         roleDescription:
           "在只读范围内检查交付证据并生成质量审查报告草稿。",
         ownerId: "user-lead",
@@ -559,9 +559,9 @@ function defaultEnvelope(): AgentStoreEnvelope {
       seedAgent({
         id: "agent-research-001",
         code: "AI_RESEARCH_ASSISTANT",
-        name: "AI技术调研助手",
+        name: "AI 技术调研助手",
         roleDescription:
-          "整理授权技术资料并形成供 Human Owner 审查的技术调研草稿。",
+          "整理授权技术资料并形成供人工负责人审查的技术调研草稿。",
         ownerId: "user-dev",
         status: "TESTING",
         timestamp: "2026-07-25T14:00:00.000Z",
@@ -851,7 +851,7 @@ function validateInput(input: CreateAgentInput): void {
   ) {
     throw new AgentRepositoryError(
       "VALIDATION",
-      "Agent Profile、Human Owner、Capability Assignment 或 AutonomyLevel 不完整。",
+      "AI 员工配置档案、人工负责人、能力分配或自主等级不完整。",
     );
   }
 }
@@ -887,7 +887,7 @@ async function resolveAssignments(
   if (selected.some((option) => !option)) {
     throw new AgentRepositoryError(
       "VALIDATION",
-      "Capability Assignment 包含未发布、已暂停或无权使用的版本。",
+      "能力分配包含未发布、已暂停或无权使用的版本。",
     );
   }
   return {
@@ -924,7 +924,7 @@ async function validateToolGrants(
   if (!valid) {
     throw new AgentRepositoryError(
       "VALIDATION",
-      "Tool Grant 包含未发布、Health 不可用或 Digest 不匹配的 Action。",
+      "工具授权包含未发布、健康状态不可用或摘要不匹配的动作。",
     );
   }
 }
@@ -1016,7 +1016,7 @@ export function createAgentRepository(
       try {
         storage.removeItem(AGENT_STORE_KEY);
       } catch {
-        // Fail closed even when cleanup is unavailable.
+        // 即使无法清理，也必须保持默认拒绝。
       }
       throw new AgentRepositoryError(
         "INVALID_STORE",
@@ -1040,7 +1040,7 @@ export function createAgentRepository(
     if (!agent || agent.scope.workspaceId !== canonicalScope.workspaceId) {
       throw new AgentRepositoryError(
         "NOT_FOUND",
-        "AI 员工在当前 Workspace 中不可用。",
+        "AI 员工在当前工作空间中不可用。",
       );
     }
     return agent;
@@ -1139,7 +1139,7 @@ export function createAgentRepository(
       if (missingRequiredActions.length > 0) {
         throw new AgentRepositoryError(
           "VALIDATION",
-          `Capability Assignment 缺少已发布 Tool Grant：${missingRequiredActions.join(", ")}`,
+          `能力分配缺少已发布工具授权：${missingRequiredActions.join(", ")}`,
         );
       }
       if (
@@ -1148,7 +1148,7 @@ export function createAgentRepository(
       ) {
         throw new AgentRepositoryError(
           "VALIDATION",
-          "Capability Assignment 需要当前 Workspace Knowledge Scope。",
+          "能力分配需要当前工作空间知识库范围。",
         );
       }
       const envelope = readEnvelope();
@@ -1160,7 +1160,7 @@ export function createAgentRepository(
       ) {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "Agent Code 在当前 Workspace 中必须唯一。",
+          "AI 员工编码在当前工作空间中必须唯一。",
         );
       }
       const id = `agent-custom-${String(envelope.nextAgentSequence).padStart(3, "0")}`;
@@ -1204,13 +1204,13 @@ export function createAgentRepository(
       if (agent.status === "DISABLED") {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "Disabled Agent 不允许创建新版本。",
+          "已停用 AI 员工不允许创建新版本。",
         );
       }
       if (latestVersion(agent).status === "DRAFT") {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "已有 Draft AgentVersion，请先完成测试与发布。",
+          "已有草稿 AI 员工版本，请先完成测试与发布。",
         );
       }
       const source =
@@ -1263,7 +1263,7 @@ export function createAgentRepository(
       if (!version || version.status !== "DRAFT") {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "只有 Draft AgentVersion 可运行确定性测试。",
+          "只有草稿 AI 员工版本可运行确定性测试。",
         );
       }
       for (const assignment of version.capabilityAssignments) {
@@ -1285,13 +1285,13 @@ export function createAgentRepository(
               break;
             }
           } catch {
-            // Try the next declared task type.
+            // 尝试下一个已声明的任务类型。
           }
         }
         if (!isResolvable) {
           throw new AgentRepositoryError(
             "VALIDATION",
-            "AgentVersion 包含不可解析的 Capability Assignment。",
+            "AI 员工版本包含不可解析的能力分配。",
           );
         }
       }
@@ -1325,13 +1325,13 @@ export function createAgentRepository(
       ) {
         throw new AgentRepositoryError(
           "AGENT_NOT_PUBLISHABLE",
-          "Capability、知识、Tool、Permission、安全测试与 Artifact Draft 门禁必须全部通过。",
+          "能力、知识、工具、权限、安全测试与成果草稿门禁必须全部通过。",
         );
       }
       if (agent.status === "SUSPENDED") {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "Suspended Agent 必须先完成风险复核与恢复。",
+          "已暂停 AI 员工必须先完成风险复核与恢复。",
         );
       }
       const timestamp = now();
@@ -1365,7 +1365,7 @@ export function createAgentRepository(
       if (agent.status !== "ENABLED") {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "只有 Enabled Agent 可以暂停。",
+          "只有已启用 AI 员工可以暂停。",
         );
       }
       const timestamp = now();
@@ -1384,7 +1384,7 @@ export function createAgentRepository(
       if (agent.status !== "SUSPENDED" || !agent.publishedVersionId) {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "只有保留 Published AgentVersion 的 Suspended Agent 可恢复。",
+          "只有保留已发布 AI 员工版本的已暂停 AI 员工可恢复。",
         );
       }
       const timestamp = now();
@@ -1403,13 +1403,13 @@ export function createAgentRepository(
       if (!["ENABLED", "SUSPENDED"].includes(agent.status)) {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "只有 Enabled 或 Suspended Agent 可有序停用。",
+          "只有已启用或已暂停 AI 员工可有序停用。",
         );
       }
       if (agent.referencedTaskIds.length > 0) {
         throw new AgentRepositoryError(
           "CONFLICT",
-          "仍有历史或活动 Task 引用；MVP 不允许直接停用该 Agent。",
+          "仍有历史或活动任务引用；MVP 不允许直接停用该 AI 员工。",
         );
       }
       const timestamp = now();
@@ -1514,7 +1514,7 @@ export function createAgentRepository(
       if (!option) {
         throw new AgentRepositoryError(
           "NOT_FOUND",
-          "AgentVersion 未发布、Agent 未启用、Capability 未绑定或当前身份无权使用。",
+          "AI 员工版本未发布、AI 员工未启用、能力未绑定或当前身份无权使用。",
         );
       }
       return cloneMutable(option);

@@ -7,8 +7,8 @@ export type WorkspaceRole =
   | "产品经理"
   | "开发工程师"
   | "研发负责人"
-  | "Workspace Admin"
-  | "Auditor";
+  | "工作空间管理员"
+  | "审计员";
 
 export type BadgeTone = "info" | "warning" | "success" | "error";
 
@@ -93,7 +93,7 @@ export interface RiskSummary {
 
 export interface QuickAction {
   id: string;
-  label: "理解代码" | "分析需求" | "生成技术方案" | "辅助编码" | "Code Review" | "自动测试";
+  label: "理解代码" | "分析需求" | "生成技术方案" | "辅助编码" | "代码审查" | "自动测试";
 }
 
 export interface WorkspaceDashboard {

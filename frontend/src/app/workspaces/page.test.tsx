@@ -20,7 +20,7 @@ function WorkspaceTestControls() {
     <>
       <button onClick={() => selectUser("user-lead")}>建立演示身份</button>
       <button onClick={() => selectOrganization("org-guangwei")}>建立组织范围</button>
-      <output aria-label="当前 Workspace">{workspace?.name ?? "未选择"}</output>
+      <output aria-label="当前工作空间">{workspace?.name ?? "未选择"}</output>
     </>
   );
 }
@@ -40,7 +40,7 @@ test("offers the correct fallback while identity and organization are missing", 
   );
 
   expect(
-    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+    screen.getByRole("heading", { name: "正在恢复模拟会话" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("heading", { name: "请先选择身份" }),
@@ -53,11 +53,11 @@ test("offers the correct fallback while identity and organization are missing", 
   await interaction.click(screen.getByRole("button", { name: "建立演示身份" }));
 
   expect(
-    screen.getByRole("link", { name: "返回 Organization 选择" }),
+    screen.getByRole("link", { name: "返回组织选择" }),
   ).toHaveAttribute("href", "/organizations");
 });
 
-test("restores identity and Organization without flashing a scope error", async () => {
+test("restores identity and 组织 without flashing a scope error", async () => {
   window.sessionStorage.setItem(
     "aios.mock.session.v1",
     JSON.stringify({
@@ -73,13 +73,13 @@ test("restores identity and Organization without flashing a scope error", async 
   );
 
   expect(
-    screen.getByRole("heading", { name: "正在恢复 Mock Session" }),
+    screen.getByRole("heading", { name: "正在恢复模拟会话" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("heading", { name: /请先选择/ }),
   ).not.toBeInTheDocument();
   expect(
-    await screen.findByRole("heading", { name: "选择 Workspace" }),
+    await screen.findByRole("heading", { name: "选择工作空间" }),
   ).toBeVisible();
   expect(
     screen.queryByRole("heading", { name: /请先选择/ }),
@@ -99,14 +99,14 @@ test("updates the workspace before navigating to the workspace home", async () =
   await interaction.click(screen.getByRole("button", { name: "建立演示身份" }));
   await interaction.click(screen.getByRole("button", { name: "建立组织范围" }));
   await interaction.click(
-    screen.getByRole("button", { name: "选择 Workspace AI 智能业务线" }),
+    screen.getByRole("button", { name: "选择工作空间 AI 智能业务线" }),
   );
 
-  expect(screen.getByLabelText("当前 Workspace")).toHaveTextContent("AI 智能业务线");
+  expect(screen.getByLabelText("当前工作空间")).toHaveTextContent("AI 智能业务线");
   expect(push).toHaveBeenCalledWith("/workspace");
 });
 
-test("shows accessible and archived Workspace scope information", async () => {
+test("shows accessible and archived 工作空间 scope information", async () => {
   const interaction = userEvent.setup();
 
   render(
@@ -132,9 +132,9 @@ test("shows accessible and archived Workspace scope information", async () => {
   expect(accessBadge.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
   expect(archivedBadge.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
   expect(
-    screen.getByText("该 Workspace 已归档，仅可查看范围信息"),
+    screen.getByText("该工作空间已归档，仅可查看范围信息"),
   ).toBeVisible();
   expect(
-    screen.getByRole("button", { name: "Workspace 历史研发试验区 不可进入" }),
+    screen.getByRole("button", { name: "工作空间历史研发试验区不可进入" }),
   ).toBeDisabled();
 });

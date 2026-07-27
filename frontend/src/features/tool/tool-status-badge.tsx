@@ -7,6 +7,26 @@ import type {
   ToolVersionStatus,
 } from "./model";
 
+const statusLabels: Record<
+  ToolStatus | ToolVersionStatus | McpServerStatus,
+  string
+> = {
+  DRAFT: "草稿",
+  TESTING: "测试中",
+  PUBLISHED: "已发布",
+  DEPRECATED: "已弃用",
+  RETIRED: "已退役",
+  ENABLED: "已启用",
+  SUSPENDED: "已暂停",
+};
+
+const healthLabels: Record<ToolHealthStatus, string> = {
+  UNKNOWN: "未知",
+  HEALTHY: "健康",
+  DEGRADED: "性能下降",
+  UNAVAILABLE: "不可用",
+};
+
 export function ToolStatusBadge({
   status,
 }: {
@@ -21,7 +41,7 @@ export function ToolStatusBadge({
           ? "warning"
           : "neutral";
 
-  return <Badge tone={tone}>{status}</Badge>;
+  return <Badge tone={tone}>{statusLabels[status]}</Badge>;
 }
 
 export function ToolHealthBadge({ status }: { status: ToolHealthStatus }) {
@@ -34,5 +54,5 @@ export function ToolHealthBadge({ status }: { status: ToolHealthStatus }) {
           ? "error"
           : "neutral";
 
-  return <Badge tone={tone}>{status}</Badge>;
+  return <Badge tone={tone}>{healthLabels[status]}</Badge>;
 }

@@ -26,6 +26,7 @@ import type {
 } from "@/features/capability/model";
 import { useSession } from "@/features/session/session-provider";
 import { listPublishedToolActionOptions } from "@/features/tool/mock/tool-repository";
+import { TOOL_OPERATION_TYPE_LABELS } from "@/features/tool/tool-display";
 import type { ToolActionSelectionOption } from "@/features/tool/model";
 import { users } from "@/mock/fixtures";
 
@@ -115,7 +116,7 @@ export function AgentCreateLoader() {
             message:
               caught instanceof AgentRepositoryError
                 ? caught.message
-                : "Agent Builder 上下文加载失败。",
+                : "AI 员工构建器上下文加载失败。",
           });
         }
       });
@@ -141,7 +142,7 @@ export function AgentCreateLoader() {
           size={20}
           aria-hidden="true"
         />
-        正在加载 Agent Builder 权限与 Published CapabilityVersion…
+        正在加载 AI 员工构建器权限与已发布能力版本…
       </Card>
     ) : null;
   }
@@ -156,7 +157,7 @@ export function AgentCreateLoader() {
             aria-hidden="true"
           />
           <div>
-            <h1 className="font-semibold">Agent Builder 加载失败</h1>
+            <h1 className="font-semibold">AI 员工构建器加载失败</h1>
             <p className="mt-2 text-sm text-[var(--aios-muted)]">
               {state.message}
             </p>
@@ -222,7 +223,7 @@ export function AgentCreateLoader() {
     );
     if (missingRequired.length > 0) {
       setError(
-        `Capability 依赖的 Tool Action 当前未发布或 Health 不可用：${missingRequired.join(", ")}`,
+        `能力依赖的工具动作当前未发布或健康状态不可用：${missingRequired.join(", ")}`,
       );
       setSaving(false);
       return;
@@ -285,12 +286,12 @@ export function AgentCreateLoader() {
       </Link>
       <header className="mt-3">
         <p className="text-sm font-semibold text-[var(--aios-primary)]">
-          Agent Builder
+          AI 员工构建器
         </p>
-        <h1 className="mt-1 text-3xl font-semibold">创建 AI 员工 Draft</h1>
+        <h1 className="mt-1 text-3xl font-semibold">创建 AI 员工草稿</h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--aios-muted)]">
-          Agent 是 AI 员工身份与版本容器。配置只记录 Human Owner、固定版本引用和权限上限；
-          创建后必须通过确定性测试并显式发布，不能直接进入 Task。
+          AI 员工是 AI 员工身份与版本容器。配置只记录人工负责人、固定版本引用和权限上限；
+          创建后必须通过确定性测试并显式发布，不能直接进入任务。
         </p>
       </header>
 
@@ -312,11 +313,11 @@ export function AgentCreateLoader() {
         <Card className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Bot size={19} aria-hidden="true" />
-            Agent Identity 与 Human Owner
+            AI 员工身份与人工负责人
           </h2>
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="text-sm font-semibold">
-              Agent Code
+              AI 员工编码
               <input
                 required
                 name="code"
@@ -335,7 +336,7 @@ export function AgentCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold">
-              Job Title
+              岗位名称
               <input
                 required
                 name="jobTitle"
@@ -344,7 +345,7 @@ export function AgentCreateLoader() {
               />
             </label>
             <label className="text-sm font-semibold">
-              Human Owner
+              人工负责人
               <select
                 name="humanOwnerId"
                 defaultValue="user-lead"
@@ -360,7 +361,7 @@ export function AgentCreateLoader() {
               </select>
             </label>
             <label className="text-sm font-semibold md:col-span-2">
-              Role Description
+              角色说明
               <textarea
                 required
                 name="roleDescription"
@@ -375,16 +376,16 @@ export function AgentCreateLoader() {
         <Card className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <Boxes size={19} aria-hidden="true" />
-            Capability Assignment
+            能力分配
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-            只能绑定当前 Workspace 可用的 Published CapabilityVersion。绑定是能力上限，
-            不会绕过 TaskType、Permission、知识或 Tool 校验。
+            只能绑定当前工作空间可用的已发布能力版本。绑定是能力上限，
+            不会绕过任务类型、权限、知识或工具校验。
           </p>
           {capabilities.length ? (
             <fieldset className="mt-4 grid gap-3">
               <legend className="sr-only">
-                选择 CapabilityVersion，至少一项
+                选择能力版本，至少一项
               </legend>
               {capabilities.map((option, index) => (
                 <label
@@ -415,11 +416,11 @@ export function AgentCreateLoader() {
                       {option.versionRef.digest}
                     </span>
                     <span className="mt-2 block leading-5 text-[var(--aios-muted)]">
-                      Knowledge {option.knowledgeRequired ? "Required" : "Optional"} ·
-                      Tool Actions{" "}
+                      知识库{option.knowledgeRequired ? "必需" : "可选"} ·
+                      工具动作{" "}
                       {option.toolActions.length
                         ? option.toolActions.join(", ")
-                        : "None"}
+                        : "无"}
                     </span>
                   </span>
                 </label>
@@ -430,7 +431,7 @@ export function AgentCreateLoader() {
               role="alert"
               className="mt-4 rounded-lg border border-[var(--aios-control-border)] p-4 text-sm"
             >
-              当前没有可绑定的 Published CapabilityVersion，请先在能力中心完成发布。
+              当前没有可绑定的已发布能力版本，请先在能力中心完成发布。
             </p>
           )}
         </Card>
@@ -438,11 +439,11 @@ export function AgentCreateLoader() {
         <Card className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <ShieldCheck size={19} aria-hidden="true" />
-            Runtime 权限上限
+            运行时权限上限
           </h2>
           <div className="mt-5 grid gap-5 md:grid-cols-2">
             <label className="text-sm font-semibold">
-              AutonomyLevel
+              自主等级
               <select
                 name="autonomyLevel"
                 defaultValue="L1辅助"
@@ -455,12 +456,10 @@ export function AgentCreateLoader() {
             </label>
             <fieldset className="md:col-span-2">
               <legend className="text-sm font-semibold">
-                已验证 Tool Action
+                已验证工具动作
               </legend>
               <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
-                仅列出当前 Workspace 中 Enabled MCP Server、Published
-                ToolVersion 且 Health 为 Healthy 的只读 Action。Capability
-                必需项会自动加入固定引用。
+                仅列出当前工作空间中已启用 MCP 服务、已发布工具版本且健康状态为健康的只读动作。能力必需项会自动加入固定引用。
               </p>
               {availableToolActions.length ? (
                 <div className="mt-3 grid gap-3">
@@ -481,7 +480,7 @@ export function AgentCreateLoader() {
                           {option.action}
                         </span>
                         <span className="mt-1 block leading-5 text-[var(--aios-muted)]">
-                          {option.toolName} · {option.operationType} ·{" "}
+                          {option.toolName} · {TOOL_OPERATION_TYPE_LABELS[option.operationType]} ·{" "}
                           {option.riskLevel} · {option.mcpServerName}
                         </span>
                         <span className="mt-1 block break-all font-mono text-xs text-[var(--aios-muted)]">
@@ -493,7 +492,7 @@ export function AgentCreateLoader() {
                 </div>
               ) : (
                 <p role="alert" className="mt-3 text-sm text-[var(--aios-muted)]">
-                  当前没有可绑定的已验证 Tool Action。
+                  当前没有可绑定的已验证工具动作。
                 </p>
               )}
             </fieldset>
@@ -507,11 +506,11 @@ export function AgentCreateLoader() {
               <span>
                 <span className="flex items-center gap-2 font-semibold">
                   <BrainCircuit size={17} aria-hidden="true" />
-                  绑定当前 Workspace 内部知识范围
+                  绑定当前工作空间内部知识范围
                 </span>
                 <span className="mt-1 block leading-6 text-[var(--aios-muted)]">
-                  只保存 Knowledge Scope Assignment 与 Citation Required；
-                  不保存知识正文，Runtime 仍执行权限交集。
+                  只保存知识库范围分配与必须提供引用；
+                  不保存知识正文，运行时仍执行权限交集。
                 </span>
               </span>
             </label>
@@ -524,12 +523,12 @@ export function AgentCreateLoader() {
             发布门禁
           </h2>
           <ul className="mt-3 grid gap-2 text-sm leading-6 text-[var(--aios-muted)] sm:grid-cols-2">
-            <li>• Capability Assignment 可解析</li>
-            <li>• Knowledge Scope 与 Citation 有效</li>
-            <li>• Tool Grant 只读且风险不超上限</li>
-            <li>• Permission Default Deny 负向测试</li>
-            <li>• Artifact Draft 生成测试</li>
-            <li>• Prompt Injection 防护测试</li>
+            <li>• 能力分配可解析</li>
+            <li>• 知识库范围与引用有效</li>
+            <li>• 工具授权只读且风险不超上限</li>
+            <li>• 权限默认拒绝负向测试</li>
+            <li>• 成果草稿生成测试</li>
+            <li>• 提示词注入防护测试</li>
           </ul>
         </Card>
 
@@ -544,7 +543,7 @@ export function AgentCreateLoader() {
             disabled={saving || capabilities.length === 0}
             type="submit"
           >
-            {saving ? "正在创建…" : "创建 Draft"}
+            {saving ? "正在创建…" : "创建草稿"}
           </Button>
         </div>
       </form>

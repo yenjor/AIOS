@@ -31,7 +31,7 @@ test("login does not navigate when identity selection fails", async () => {
   render(<LoginPage />);
 
   await interaction.click(
-    screen.getByRole("button", { name: "使用 陈明（研发负责人）身份" }),
+    screen.getByRole("button", { name: "使用陈明（研发负责人）身份" }),
   );
 
   expect(push).not.toHaveBeenCalled();
@@ -47,7 +47,7 @@ test("organization selection failure does not navigate", async () => {
 
   render(<OrganizationsPage />);
 
-  await interaction.click(screen.getByRole("button", { name: "选择组织 光位科技" }));
+  await interaction.click(screen.getByRole("button", { name: "选择组织光位科技" }));
 
   expect(push).not.toHaveBeenCalled();
 });
@@ -64,7 +64,7 @@ test("workspace selection failure does not navigate", async () => {
   render(<WorkspacesPage />);
 
   await interaction.click(
-    screen.getByRole("button", { name: "选择 Workspace AI 智能业务线" }),
+    screen.getByRole("button", { name: "选择工作空间 AI 智能业务线" }),
   );
 
   expect(push).not.toHaveBeenCalled();
