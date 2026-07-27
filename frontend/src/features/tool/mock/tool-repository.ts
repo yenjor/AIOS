@@ -15,10 +15,11 @@ import type {
   ToolScope,
   ToolStatus,
   ToolSummary,
+  ToolInvocationResult,
   ToolVersion,
 } from "../model";
 
-export const TOOL_STORE_KEY = "aios.mock.tool-store.v1";
+export const TOOL_STORE_KEY = "aios.mock.tool-store.v2";
 const STORE_SCHEMA_VERSION = 1;
 const DEFAULT_LATENCY_MS = 30;
 
@@ -51,6 +52,7 @@ interface ToolStoreEnvelope {
   nextSequence: number;
   tools: Tool[];
   mcpServers: McpServerRegistration[];
+  invocations: ToolInvocationResult[];
 }
 
 export interface ToolRepository {
@@ -110,6 +112,16 @@ export interface ToolRepository {
     toolVersionId: string,
     action: string,
   ): Promise<ToolActionSelectionOption>;
+  recordInvocation(
+    scope: ToolScope,
+    actor: ToolActor,
+    result: ToolInvocationResult,
+  ): Promise<ToolInvocationResult>;
+  listTaskInvocations(
+    scope: ToolScope,
+    actor: ToolActor,
+    taskId: string,
+  ): Promise<ToolInvocationResult[]>;
 }
 
 export interface CreateToolRepositoryOptions {
@@ -348,6 +360,7 @@ function seedEnvelope(): ToolStoreEnvelope {
         updatedBy: "user-admin",
       },
     ],
+    invocations: [],
   };
 }
 
@@ -473,6 +486,87 @@ function validateServer(value: unknown): value is McpServerRegistration {
   );
 }
 
+function validateInvocation(value: unknown): value is ToolInvocationResult {
+  if (!isRecord(value) || !isRecord(value.scope)) return false;
+  const status = String(value.status);
+  const validStatus = ["SUCCEEDED", "FAILED", "DENIED", "UNKNOWN"].includes(
+    status,
+  );
+  const validErrorClassification =
+    value.errorClassification === undefined ||
+    [
+      "MCP_UNAVAILABLE",
+      "TRANSPORT_TIMEOUT",
+      "INVALID_RESULT",
+      "PERMISSION_DENIED",
+    ].includes(String(value.errorClassification));
+  const auditEventTypes = new Set([
+    "TOOL_INVOCATION_REQUESTED",
+    "TOOL_PERMISSION_ALLOWED",
+    "MCP_SESSION_INITIALIZED",
+    "TOOL_INVOCATION_SUCCEEDED",
+    "TOOL_INVOCATION_FAILED",
+    "TOOL_INVOCATION_UNKNOWN",
+  ]);
+  const validAuditEvents =
+    Array.isArray(value.auditEvents) &&
+    value.auditEvents.length >= 3 &&
+    value.auditEvents.every(
+      (event, index) =>
+        isRecord(event) &&
+        event.sequence === index + 1 &&
+        auditEventTypes.has(String(event.eventType)) &&
+        isIsoTimestamp(event.occurredAt) &&
+        isNonEmptyString(event.summary),
+    );
+  return (
+    isNonEmptyString(value.id) &&
+    value.scope.organizationId === canonicalScope.organizationId &&
+    value.scope.workspaceId === canonicalScope.workspaceId &&
+    isNonEmptyString(value.taskId) &&
+    isNonEmptyString(value.runId) &&
+    isNonEmptyString(value.actorId) &&
+    isNonEmptyString(value.agentId) &&
+    isNonEmptyString(value.agentVersionId) &&
+    Array.isArray(value.capabilityVersionIds) &&
+    value.capabilityVersionIds.length > 0 &&
+    value.capabilityVersionIds.every(isNonEmptyString) &&
+    isNonEmptyString(value.toolId) &&
+    isNonEmptyString(value.toolVersionId) &&
+    isNonEmptyString(value.toolVersionDigest) &&
+    isNonEmptyString(value.action) &&
+    isNonEmptyString(value.actionDigest) &&
+    value.operationType === "READ" &&
+    value.riskLevel === "R0" &&
+    validStatus &&
+    isNonEmptyString(value.idempotencyKey) &&
+    isNonEmptyString(value.inputDigest) &&
+    (value.outputDigest === undefined ||
+      isNonEmptyString(value.outputDigest)) &&
+    (value.resultReference === undefined ||
+      isNonEmptyString(value.resultReference)) &&
+    (value.resultExcerpt === undefined ||
+      typeof value.resultExcerpt === "string") &&
+    isNonEmptyString(value.summary) &&
+    validErrorClassification &&
+    isIsoTimestamp(value.requestedAt) &&
+    isIsoTimestamp(value.completedAt) &&
+    typeof value.durationMs === "number" &&
+    Number.isFinite(value.durationMs) &&
+    value.durationMs >= 0 &&
+    isNonEmptyString(value.serverIdentity) &&
+    isNonEmptyString(value.serverVersion) &&
+    isNonEmptyString(value.schemaDigest) &&
+    validAuditEvents &&
+    (status !== "SUCCEEDED" ||
+      (isNonEmptyString(value.outputDigest) &&
+        isNonEmptyString(value.resultReference) &&
+        typeof value.resultExcerpt === "string")) &&
+    (status === "SUCCEEDED" ||
+      isNonEmptyString(value.errorClassification))
+  );
+}
+
 function isEnvelope(value: unknown): value is ToolStoreEnvelope {
   if (!isRecord(value)) return false;
   if (
@@ -482,7 +576,9 @@ function isEnvelope(value: unknown): value is ToolStoreEnvelope {
     !Array.isArray(value.tools) ||
     !value.tools.every(validateTool) ||
     !Array.isArray(value.mcpServers) ||
-    !value.mcpServers.every(validateServer)
+    !value.mcpServers.every(validateServer) ||
+    !Array.isArray(value.invocations) ||
+    !value.invocations.every(validateInvocation)
   ) {
     return false;
   }
@@ -1058,6 +1154,82 @@ export function createToolRepository(
       }
       return option;
     },
+
+    async recordInvocation(scope, actor, result) {
+      context(scope, actor);
+      requireManager(actor);
+      await delay();
+      if (
+        !validateInvocation(result) ||
+        result.scope.organizationId !== scope.organizationId ||
+        result.scope.workspaceId !== scope.workspaceId ||
+        result.actorId !== actor.userId
+      ) {
+        throw new ToolRepositoryError(
+          "VALIDATION",
+          "ToolInvocationResult 与当前 Workspace、Actor 或结果契约不一致。",
+        );
+      }
+      const envelope = load();
+      const tool = findTool(envelope, result.toolId);
+      const version = tool.versions.find(
+        ({ id }) => id === result.toolVersionId,
+      );
+      const action = version?.actions.find(
+        ({ name }) => name === result.action,
+      );
+      if (
+        !version ||
+        !action ||
+        version.contentDigest !== result.toolVersionDigest ||
+        action.definitionDigest !== result.actionDigest ||
+        action.operationType !== result.operationType ||
+        action.riskLevel !== result.riskLevel
+      ) {
+        throw new ToolRepositoryError(
+          "CONFLICT",
+          "ToolInvocationResult 未命中固定 ToolVersion / ActionDefinition。",
+        );
+      }
+      const repeated = envelope.invocations.find(
+        ({ idempotencyKey }) => idempotencyKey === result.idempotencyKey,
+      );
+      if (repeated) {
+        if (
+          repeated.id !== result.id ||
+          repeated.inputDigest !== result.inputDigest
+        ) {
+          throw new ToolRepositoryError(
+            "CONFLICT",
+            "IdempotencyKey 已绑定不同的 Tool Invocation。",
+          );
+        }
+        return cloneMutable(repeated);
+      }
+      envelope.invocations.push(cloneMutable(result));
+      save(envelope);
+      return cloneMutable(result);
+    },
+
+    async listTaskInvocations(scope, actor, taskId) {
+      context(scope, actor);
+      if (!isNonEmptyString(taskId)) {
+        throw new ToolRepositoryError(
+          "VALIDATION",
+          "TaskId 不能为空。",
+        );
+      }
+      await delay();
+      return cloneMutable(
+        load()
+          .invocations.filter(
+            (invocation) => invocation.taskId === taskId,
+          )
+          .sort((left, right) =>
+            left.requestedAt.localeCompare(right.requestedAt),
+          ),
+      );
+    },
   };
 }
 
@@ -1129,3 +1301,13 @@ export const resolvePublishedToolActionOption = (
     toolVersionId,
     action,
   );
+export const recordToolInvocation = (
+  scope: ToolScope,
+  actor: ToolActor,
+  result: ToolInvocationResult,
+) => repository().recordInvocation(scope, actor, result);
+export const listTaskToolInvocations = (
+  scope: ToolScope,
+  actor: ToolActor,
+  taskId: string,
+) => repository().listTaskInvocations(scope, actor, taskId);

@@ -274,7 +274,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await approvePlan.click();
   await expect(page.locator('[data-task-status="EXECUTING"]')).toBeVisible();
   await expect(
-    page.getByText("ExecutionRun · 确定性 Mock Runtime", { exact: true }),
+    page.getByText("ExecutionRun · AI Employee Runtime", { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText("已完成 0 / 4 个 Runtime Step", { exact: true }),
@@ -293,6 +293,27 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
           exact: true,
         }),
       ).toBeVisible();
+    }
+    if (completed === 2) {
+      await expect(
+        page.getByRole("heading", {
+          name: "Tool Invocation · 真实 MCP 调用证据",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("codegraph.context · READ/R0", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("SUCCEEDED", { exact: true }).last(),
+      ).toBeVisible();
+      await expect(
+        page.getByText("MCP_SESSION_INITIALIZED", { exact: true }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: join(SCREENSHOT_DIRECTORY, "real-tool-invocation-mvp.png"),
+        fullPage: true,
+      });
     }
   }
 
@@ -326,6 +347,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
   await expect(
     page.getByText("README.md#5-系统整体架构", { exact: true }),
   ).toBeVisible();
+  await expect(page.getByText(/Tool Broker 已固定/)).toBeVisible();
   await expect(
     page.getByText("Artifact 等待 Reviewer 验收", { exact: true }),
   ).toBeVisible();

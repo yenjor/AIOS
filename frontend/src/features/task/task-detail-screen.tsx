@@ -21,6 +21,7 @@ import { useId } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import type { ToolInvocationResult } from "@/features/tool/model";
 import type { DeepReadonly, WorkspaceRole } from "@/types/domain";
 
 import { ExecutionPlan } from "./execution-plan";
@@ -55,6 +56,7 @@ export interface TaskDetailActionState {
 
 export interface TaskDetailScreenProps {
   task: DeepReadonly<TaskDetail>;
+  toolInvocations?: DeepReadonly<ToolInvocationResult[]>;
   scopeLabels: TaskScopeLabels;
   viewer: TaskDetailViewer;
   actionState?: TaskDetailActionState;
@@ -205,6 +207,7 @@ function ReadonlySection({
 
 export function TaskDetailScreen({
   task,
+  toolInvocations = [],
   scopeLabels,
   viewer,
   actionState = { status: "idle" },
@@ -470,7 +473,7 @@ export function TaskDetailScreen({
               <Card className="p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-semibold">
-                    ExecutionRun · 确定性 Mock Runtime
+                    ExecutionRun · AI Employee Runtime
                   </h3>
                   <Badge
                     tone={
@@ -512,8 +515,9 @@ export function TaskDetailScreen({
                   </div>
                 </dl>
                 <p className="mt-4 text-xs leading-5 text-[var(--aios-muted)]">
-                  此 Runtime 仅验证 AIOS 的执行契约；不调用外部模型、写入型
-                  Tool 或生产系统。
+                  此 Runtime 会通过 Tool Broker 调用真实 CodeGraph MCP
+                  只读 Action；Artifact 编排保持确定性，尚未调用外部 AI
+                  模型、写入型 Tool 或生产系统。
                 </p>
               </Card>
 
@@ -573,6 +577,96 @@ export function TaskDetailScreen({
                   第 5 步是 Human Review，不由 Agent Runtime 自动完成。
                 </p>
               </Card>
+
+              {toolInvocations.length > 0 ? (
+                <Card className="p-5 xl:col-span-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="font-semibold">
+                      Tool Invocation · 真实 MCP 调用证据
+                    </h3>
+                    <Badge tone="info">{toolInvocations.length} 次调用</Badge>
+                  </div>
+                  <ol className="mt-4 space-y-4">
+                    {toolInvocations.map((invocation) => (
+                      <li
+                        key={invocation.id}
+                        className="rounded-lg border border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] p-4"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-mono text-xs text-[var(--aios-muted)]">
+                              {invocation.id}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold">
+                              {invocation.action} · {invocation.operationType}/
+                              {invocation.riskLevel}
+                            </p>
+                          </div>
+                          <Badge
+                            tone={
+                              invocation.status === "SUCCEEDED"
+                                ? "success"
+                                : invocation.status === "UNKNOWN"
+                                  ? "warning"
+                                  : "error"
+                            }
+                          >
+                            {invocation.status}
+                          </Badge>
+                        </div>
+                        <p className="mt-3 text-sm leading-6 text-[var(--aios-muted)]">
+                          {invocation.summary}
+                        </p>
+                        <dl className="mt-3 grid gap-3 text-xs md:grid-cols-2">
+                          <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
+                            <dt className="text-[var(--aios-muted)]">
+                              MCP Server
+                            </dt>
+                            <dd className="mt-1 break-all font-mono">
+                              {invocation.serverIdentity}@
+                              {invocation.serverVersion}
+                            </dd>
+                          </div>
+                          <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
+                            <dt className="text-[var(--aios-muted)]">
+                              Duration
+                            </dt>
+                            <dd className="mt-1 font-mono">
+                              {invocation.durationMs} ms
+                            </dd>
+                          </div>
+                          <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
+                            <dt className="text-[var(--aios-muted)]">
+                              Input Digest
+                            </dt>
+                            <dd className="mt-1 break-all font-mono">
+                              {invocation.inputDigest}
+                            </dd>
+                          </div>
+                          <div className="rounded-lg bg-[var(--aios-canvas)] p-3">
+                            <dt className="text-[var(--aios-muted)]">
+                              Output Digest
+                            </dt>
+                            <dd className="mt-1 break-all font-mono">
+                              {invocation.outputDigest ?? "未确认"}
+                            </dd>
+                          </div>
+                        </dl>
+                        {invocation.resultExcerpt ? (
+                          <details className="mt-3 rounded-lg bg-[var(--aios-canvas)] p-3">
+                            <summary className="cursor-pointer text-sm font-semibold">
+                              查看结果摘要
+                            </summary>
+                            <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-5 text-[var(--aios-muted)]">
+                              {invocation.resultExcerpt}
+                            </pre>
+                          </details>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ol>
+                </Card>
+              ) : null}
             </div>
           ) : (
             <Card className="p-5">
@@ -744,6 +838,49 @@ export function TaskDetailScreen({
                 无持久化历史记录。
               </p>
             )}
+            {toolInvocations.length > 0 ? (
+              <>
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[color-mix(in_srgb,var(--aios-muted)_22%,var(--aios-surface))] pt-5">
+                  <h4 className="font-semibold">Tool Broker Audit Event</h4>
+                  <Badge>
+                    {toolInvocations.reduce(
+                      (total, invocation) =>
+                        total + invocation.auditEvents.length,
+                      0,
+                    )}{" "}
+                    条证据
+                  </Badge>
+                </div>
+                <ol className="mt-4 space-y-3">
+                  {toolInvocations.flatMap((invocation) =>
+                    invocation.auditEvents.map((event) => (
+                      <li
+                        key={`${invocation.id}-${event.sequence}`}
+                        className="grid gap-2 rounded-lg bg-[var(--aios-canvas)] p-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">
+                            {event.eventType}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-[var(--aios-muted)]">
+                            {event.summary}
+                          </p>
+                          <p className="mt-1 break-all font-mono text-xs text-[var(--aios-muted)]">
+                            {invocation.id}
+                          </p>
+                        </div>
+                        <time
+                          className="text-xs text-[var(--aios-muted)] sm:text-right"
+                          dateTime={event.occurredAt}
+                        >
+                          {event.occurredAt}
+                        </time>
+                      </li>
+                    )),
+                  )}
+                </ol>
+              </>
+            ) : null}
           </Card>
         </ReadonlySection>
       </div>
@@ -770,8 +907,8 @@ export function TaskDetailScreen({
             id={controlledActionDescriptionId}
             className="mt-2 text-sm leading-6 text-[var(--aios-muted)]"
           >
-            当前增量开放“计划批准 → 确定性 Mock Runtime → Artifact
-            验收”的首个 AI 员工闭环。
+            当前增量开放“计划批准 → 真实只读 MCP Tool Invocation →
+            确定性 Artifact 编排 → 人工验收”的首个 AI 员工闭环。
           </p>
           <p className="mt-1 text-sm leading-6 text-[var(--aios-muted)]">
             只有固定 Reviewer / Human Owner 可以推进；其余动作和 Auditor

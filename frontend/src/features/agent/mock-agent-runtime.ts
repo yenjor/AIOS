@@ -6,6 +6,7 @@ import type {
   ArtifactSection,
   TechnicalSolutionArtifactDraft,
 } from "@/features/artifact/model";
+import type { ToolInvocationResult } from "@/features/tool/model";
 
 export class MockAgentRuntimeError extends Error {
   constructor(message: string) {
@@ -21,7 +22,6 @@ export interface MockAgentRuntimeOutput {
 
 const RUNTIME_STEP_SUMMARIES: Readonly<Record<number, string>> = {
   1: "已在 Task Goal、Constraints、Completion Criteria 与 Scope Digest 内确认执行边界。",
-  2: "已通过固定知识库版本与只读 ToolVersion 完成授权资料检索，并保留引用证据。",
   3: "已依据固定 CapabilityVersion 与 WorkflowVersion 形成结构化技术方案草稿。",
   4: "已完成八个必需章节、知识库引用与 Reviewer 门禁检查。",
 };
@@ -30,14 +30,77 @@ function normalizeList(values: readonly string[]): string {
   return values.length > 0 ? values.join("；") : "未提供";
 }
 
-function buildSections(task: TaskDetail): ArtifactSection[] {
+function invocationHighlights(invocation: ToolInvocationResult): string[] {
+  const highlights = (invocation.resultExcerpt ?? "")
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .replace(/[\u0000-\u001F\u007F]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
+    .filter((line) => line.length >= 12)
+    .slice(0, 4)
+    .map((line, index) => `MCP 证据摘要 ${index + 1}：${line.slice(0, 240)}`);
+  return highlights.length > 0
+    ? highlights
+    : ["CodeGraph MCP 已返回有效结果，但没有可展示的文本摘要。"];
+}
+
+function requireSuccessfulInvocation(
+  task: TaskDetail,
+  invocation: ToolInvocationResult | undefined,
+): ToolInvocationResult {
+  const toolRef = task.toolVersionRefs.find(
+    ({ actionId }) => actionId === "codegraph.context",
+  );
+  const expectedCapabilityVersions = task.capabilityVersionRefs
+    .map(({ versionId }) => versionId)
+    .sort();
+  const invocationCapabilityVersions = invocation?.capabilityVersionIds
+    .slice()
+    .sort();
+  if (
+    !invocation ||
+    invocation.status !== "SUCCEEDED" ||
+    invocation.scope.organizationId !== task.scope.organizationId ||
+    invocation.scope.workspaceId !== task.scope.workspaceId ||
+    invocation.taskId !== task.id ||
+    invocation.runId !== task.executionRun?.id ||
+    invocation.actorId !== task.assignedAgent?.humanOwner.userId ||
+    invocation.agentId !== task.assignedAgent?.agentId ||
+    invocation.agentVersionId !==
+      task.assignedAgent?.agentVersionRef.versionId ||
+    JSON.stringify(invocationCapabilityVersions) !==
+      JSON.stringify(expectedCapabilityVersions) ||
+    invocation.toolId !== toolRef?.objectId ||
+    invocation.toolVersionId !== toolRef?.versionId ||
+    invocation.toolVersionDigest !== toolRef?.digest ||
+    invocation.action !== toolRef?.actionId ||
+    invocation.actionDigest !== "sha256:codegraph-context-action-v1" ||
+    invocation.operationType !== "READ" ||
+    invocation.riskLevel !== "R0" ||
+    !invocation.outputDigest ||
+    !invocation.resultReference
+  ) {
+    throw new MockAgentRuntimeError(
+      "A successful invocation of the pinned codegraph.context ToolVersion is required.",
+    );
+  }
+  return invocation;
+}
+
+function buildSections(
+  task: TaskDetail,
+  invocation: ToolInvocationResult,
+): ArtifactSection[] {
   return [
     {
       title: "目标理解",
       paragraphs: [
         task.goal,
         `当前问题：${task.goalSummary}`,
-        "本次结果由确定性 Mock Agent Runtime 生成，用于验证 AIOS 执行契约；未调用外部模型。",
+        "本次结果由确定性 Agent Runtime 编排并使用真实 CodeGraph MCP 只读上下文；尚未调用外部 AI 模型。",
       ],
     },
     {
@@ -50,8 +113,8 @@ function buildSections(task: TaskDetail): ArtifactSection[] {
     {
       title: "影响模块与文件",
       paragraphs: [
-        "影响分析限定在 Task 声明范围内，重点覆盖 Task Center、创建向导、详情 Read Model 与受控执行交互。",
-        "只读 Tool Action 为 codegraph.context；当前 Mock Runtime 不执行代码写入、命令执行或外部系统变更。",
+        ...invocationHighlights(invocation),
+        `只读 Tool Action 为 ${invocation.action}，调用证据为 ${invocation.id}，输出 Digest 为 ${invocation.outputDigest}。`,
       ],
     },
     {
@@ -59,6 +122,7 @@ function buildSections(task: TaskDetail): ArtifactSection[] {
       paragraphs: [
         "Task 保持核心协调入口，运行期仅使用已固定的 Agent、Capability、知识库、Workflow 与 Tool VersionRef。",
         "每次只推进一个有界 Step，并在步骤完成后保存 WorkflowCheckpoint。",
+        `Tool Broker 已固定 ${invocation.toolVersionId} / ${invocation.action}，并记录 Input、Output 与 Schema Digest。`,
         "Artifact 作为独立对象进入人工验收；Agent Runtime 不直接把 Task 标记为 Completed。",
       ],
     },
@@ -66,7 +130,7 @@ function buildSections(task: TaskDetail): ArtifactSection[] {
       title: "风险",
       paragraphs: [
         `当前 Task 风险等级为 ${task.riskLevel}，自治等级为 ${task.assignedAgent?.autonomyLevel ?? "未分配"}。`,
-        "Mock Runtime 只生成候选 Artifact，不使用写入型 Tool，不扩大 Workspace 权限。",
+        "当前 Runtime 只生成候选 Artifact；真实 Tool Invocation 限定为 READ/R0，不使用写入型 Tool，不扩大 Workspace 权限。",
       ],
     },
     {
@@ -78,7 +142,7 @@ function buildSections(task: TaskDetail): ArtifactSection[] {
     {
       title: "回退考虑",
       paragraphs: [
-        "本次执行无外部副作用；验收前可拒绝 Artifact 并返回返工路径。",
+        "本次 Tool Invocation 为只读操作且无外部写入副作用；验收前可拒绝 Artifact 并返回返工路径。",
         "运行证据和状态转换只追加，禁止通过覆盖历史伪造回退。",
       ],
     },
@@ -102,6 +166,7 @@ function packageDigest(task: TaskDetail): string {
 
 export function executeNextTechnicalSolutionStep(
   task: TaskDetail,
+  toolInvocation?: ToolInvocationResult,
 ): MockAgentRuntimeOutput {
   if (
     task.status !== "EXECUTING" ||
@@ -130,17 +195,28 @@ export function executeNextTechnicalSolutionStep(
     throw new MockAgentRuntimeError("Workflow Step is unavailable.");
   }
 
+  const invocation =
+    planStep.sequence >= 2
+      ? requireSuccessfulInvocation(task, toolInvocation)
+      : undefined;
   const isArtifactStep = planStep.sequence === 4;
+  const isToolStep = planStep.sequence === 2;
   const outputReference = isArtifactStep
     ? `artifact-draft-${task.id}`
-    : `run-${task.id}-step-${String(planStep.sequence).padStart(2, "0")}-output`;
-  const outputDigest = `sha256:${packageDigest(task)}:step-${planStep.sequence}`;
+    : isToolStep
+      ? invocation!.resultReference!
+      : `run-${task.id}-step-${String(planStep.sequence).padStart(2, "0")}-output`;
+  const outputDigest = isToolStep
+    ? invocation!.outputDigest!
+    : `sha256:${packageDigest(task)}:step-${planStep.sequence}`;
   const stepResult: RuntimeStepResult = {
     stepId: planStep.id,
     resultType: isArtifactStep ? "ARTIFACT_DRAFT" : "STEP_SUCCEEDED",
     summary:
-      RUNTIME_STEP_SUMMARIES[planStep.sequence] ??
-      "步骤已按固定 WorkflowVersion 完成。",
+      isToolStep
+        ? `${invocation!.summary} Invocation ${invocation!.id} 已进入 Audit。`
+        : RUNTIME_STEP_SUMMARIES[planStep.sequence] ??
+          "步骤已按固定 WorkflowVersion 完成。",
     outputReference,
     outputDigest,
   };
@@ -162,7 +238,7 @@ export function executeNextTechnicalSolutionStep(
     taskId: task.id,
     runId: task.executionRun.id,
     title: `${task.title} · 技术方案`,
-    sections: buildSections(task),
+    sections: buildSections(task, invocation!),
     citations: [citation],
     agentVersionId: task.assignedAgent.agentVersionRef.versionId,
     capabilityVersionIds: task.capabilityVersionRefs.map(

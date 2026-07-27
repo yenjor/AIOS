@@ -199,3 +199,79 @@ export interface ToolActionSelectionOption {
   mcpServerId: string;
   mcpServerName: string;
 }
+
+export type ToolInvocationStatus =
+  | "SUCCEEDED"
+  | "FAILED"
+  | "DENIED"
+  | "UNKNOWN";
+
+export interface ToolInvocationAuditEvent {
+  sequence: number;
+  eventType:
+    | "TOOL_INVOCATION_REQUESTED"
+    | "TOOL_PERMISSION_ALLOWED"
+    | "MCP_SESSION_INITIALIZED"
+    | "TOOL_INVOCATION_SUCCEEDED"
+    | "TOOL_INVOCATION_FAILED"
+    | "TOOL_INVOCATION_UNKNOWN";
+  occurredAt: string;
+  summary: string;
+}
+
+export interface ToolInvocationResult {
+  id: string;
+  scope: ToolScope;
+  taskId: string;
+  runId: string;
+  actorId: string;
+  agentId: string;
+  agentVersionId: string;
+  capabilityVersionIds: string[];
+  toolId: string;
+  toolVersionId: string;
+  toolVersionDigest: string;
+  action: string;
+  actionDigest: string;
+  operationType: "READ";
+  riskLevel: "R0";
+  status: ToolInvocationStatus;
+  idempotencyKey: string;
+  inputDigest: string;
+  outputDigest?: string;
+  resultReference?: string;
+  resultExcerpt?: string;
+  summary: string;
+  errorClassification?:
+    | "MCP_UNAVAILABLE"
+    | "TRANSPORT_TIMEOUT"
+    | "INVALID_RESULT"
+    | "PERMISSION_DENIED";
+  requestedAt: string;
+  completedAt: string;
+  durationMs: number;
+  serverIdentity: string;
+  serverVersion: string;
+  schemaDigest: string;
+  auditEvents: ToolInvocationAuditEvent[];
+}
+
+export interface InvokeCodeGraphContextInput {
+  scope: ToolScope;
+  actorId: string;
+  humanOwnerUserId: string;
+  taskId: string;
+  runId: string;
+  agentId: string;
+  agentVersionId: string;
+  capabilityVersionIds: string[];
+  executionPackageDigest: string;
+  toolVersionId: "tool-codegraph-read-v1";
+  toolVersionDigest: "sha256:tool-codegraph-read-v1";
+  action: "codegraph.context";
+  actionDigest: "sha256:codegraph-context-action-v1";
+  operationType: "READ";
+  riskLevel: "R0";
+  idempotencyKey: string;
+  query: string;
+}

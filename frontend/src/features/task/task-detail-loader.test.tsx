@@ -9,8 +9,9 @@ import {
 import type { TaskDetail } from "./model";
 import { TaskDetailLoader } from "./task-detail-loader";
 
-const { getTask, useSession } = vi.hoisted(() => ({
+const { getTask, listTaskToolInvocations, useSession } = vi.hoisted(() => ({
   getTask: vi.fn<TaskRepository["getTask"]>(),
+  listTaskToolInvocations: vi.fn().mockResolvedValue([]),
   useSession: vi.fn(),
 }));
 
@@ -21,6 +22,14 @@ vi.mock("@/features/session/session-provider", () => ({
 vi.mock("./mock/task-repository", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./mock/task-repository")>();
   return { ...actual, getTask };
+});
+
+vi.mock("@/features/tool/mock/tool-repository", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/features/tool/mock/tool-repository")
+    >();
+  return { ...actual, listTaskToolInvocations };
 });
 
 const completeSession = {
@@ -95,6 +104,8 @@ function minimumDetail(): TaskDetail {
 
 beforeEach(() => {
   getTask.mockReset();
+  listTaskToolInvocations.mockReset();
+  listTaskToolInvocations.mockResolvedValue([]);
   useSession.mockReset();
 });
 

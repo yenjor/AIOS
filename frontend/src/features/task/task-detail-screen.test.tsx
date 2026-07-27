@@ -2,6 +2,8 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
+import type { ToolInvocationResult } from "@/features/tool/model";
+
 import type { PlannedTaskDetail } from "./model";
 import { TaskDetailScreen } from "./task-detail-screen";
 
@@ -227,6 +229,64 @@ const scopeLabels = {
   workspaceName: "AI 智能业务线",
 };
 
+const invocation: ToolInvocationResult = {
+  id: "invocation-task-golden-step-02",
+  scope: { organizationId: "org-guangwei", workspaceId: "ws-ai" },
+  taskId: "task-golden-technical-solution",
+  runId: "run-task-golden-technical-solution-01",
+  actorId: "user-lead",
+  agentId: "agent-rd-001",
+  agentVersionId: "agent-rd-001-v1",
+  capabilityVersionIds: ["capability-technical-solution-v1"],
+  toolId: "tool-codegraph-read",
+  toolVersionId: "tool-codegraph-read-v1",
+  toolVersionDigest: "sha256:tool-codegraph-read-v1",
+  action: "codegraph.context",
+  actionDigest: "sha256:codegraph-context-action-v1",
+  operationType: "READ",
+  riskLevel: "R0",
+  status: "SUCCEEDED",
+  idempotencyKey:
+    "run-task-golden-technical-solution-01:step-02:codegraph.context:attempt-01",
+  inputDigest: "sha256:input",
+  outputDigest: "sha256:output",
+  resultReference: "mcp://codegraph/invocation-task-golden-step-02",
+  resultExcerpt: "TaskDetailLoader -> Tool Broker -> CodeGraph MCP",
+  summary: "CodeGraph MCP 返回受控代码上下文。",
+  requestedAt: "2026-07-27T08:00:00.000Z",
+  completedAt: "2026-07-27T08:00:01.000Z",
+  durationMs: 1_000,
+  serverIdentity: "codegraph",
+  serverVersion: "0.9.0",
+  schemaDigest: "sha256:codegraph-context-output-v1",
+  auditEvents: [
+    {
+      sequence: 1,
+      eventType: "TOOL_INVOCATION_REQUESTED",
+      occurredAt: "2026-07-27T08:00:00.000Z",
+      summary: "Tool Invocation 已创建。",
+    },
+    {
+      sequence: 2,
+      eventType: "TOOL_PERMISSION_ALLOWED",
+      occurredAt: "2026-07-27T08:00:00.000Z",
+      summary: "权限交集校验通过。",
+    },
+    {
+      sequence: 3,
+      eventType: "MCP_SESSION_INITIALIZED",
+      occurredAt: "2026-07-27T08:00:01.000Z",
+      summary: "MCP 会话已初始化。",
+    },
+    {
+      sequence: 4,
+      eventType: "TOOL_INVOCATION_SUCCEEDED",
+      occurredAt: "2026-07-27T08:00:01.000Z",
+      summary: "结果已固定。",
+    },
+  ],
+};
+
 describe("TaskDetailScreen", () => {
   it("shows the governed Task identity and complete active scope", () => {
     render(
@@ -383,7 +443,7 @@ describe("TaskDetailScreen", () => {
       const action = screen.getByRole("button", { name: actionName });
       expect(action).toBeDisabled();
       expect(action).toHaveAccessibleDescription(
-        "当前增量开放“计划批准 → 确定性 Mock Runtime → Artifact 验收”的首个 AI 员工闭环。",
+        "当前增量开放“计划批准 → 真实只读 MCP Tool Invocation → 确定性 Artifact 编排 → 人工验收”的首个 AI 员工闭环。",
       );
     }
     expect(
@@ -438,6 +498,52 @@ describe("TaskDetailScreen", () => {
     expect(audit).toHaveTextContent("DRAFT");
     expect(audit).toHaveTextContent("NEED_APPROVAL");
     expect(audit).not.toHaveTextContent("已批准");
+  });
+
+  it("renders persisted MCP result and Tool Broker audit evidence", () => {
+    const task = plannedTask();
+    task.status = "EXECUTING";
+    task.executionRun = {
+      id: "run-task-golden-technical-solution-01",
+      taskId: task.id,
+      runNumber: 1,
+      status: "RUNNING",
+      workflowVersionId: task.workflowVersionRef.versionId,
+      agentVersionId: task.assignedAgent.agentVersionRef.versionId,
+      executionPackageDigest: "sha256:execution-package-v1",
+      currentStepId: "step-03",
+      currentCheckpointId: "checkpoint-step-02",
+      idempotencyKey: "run-task-golden-technical-solution-01",
+      workerPool: "agent-reasoning",
+      attemptCount: 1,
+      startedAt: "2026-07-27T07:59:00.000Z",
+      checkpointedAt: "2026-07-27T08:00:01.000Z",
+      steps: task.executionPlan.steps.map((step) => ({
+        stepId: step.id,
+        sequence: step.sequence,
+        name: step.name,
+        status: step.sequence <= 2 ? "SUCCEEDED" : "PENDING",
+        ...(step.sequence === 5 ? { resultType: "HUMAN_REVIEW" as const } : {}),
+      })),
+      checkpoints: [],
+    };
+
+    render(
+      <TaskDetailScreen
+        task={task}
+        toolInvocations={[invocation]}
+        scopeLabels={scopeLabels}
+        viewer={{ userId: "user-lead", name: "陈明", role: "研发负责人" }}
+      />,
+    );
+
+    const execution = screen.getByRole("region", { name: "执行" });
+    expect(execution).toHaveTextContent("真实 MCP 调用证据");
+    expect(execution).toHaveTextContent("codegraph.context");
+    expect(execution).toHaveTextContent("sha256:output");
+    const audit = screen.getByRole("region", { name: "Audit" });
+    expect(audit).toHaveTextContent("MCP_SESSION_INITIALIZED");
+    expect(audit).toHaveTextContent("TOOL_INVOCATION_SUCCEEDED");
   });
 
   it("supports an unplanned seed without fabricating plan or Artifact content", () => {

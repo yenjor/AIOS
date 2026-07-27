@@ -2236,7 +2236,7 @@ export function createTaskRepository(
     if (task.assignedAgent?.humanOwner.userId !== actor.userId) {
       throw new TaskRepositoryError(
         "FORBIDDEN",
-        "Only the AI employee Human Owner can advance the deterministic Mock Runtime.",
+        "Only the AI employee Human Owner can advance the controlled Agent Runtime.",
       );
     }
   }

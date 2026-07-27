@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type {
   CreateMcpServerInput,
   ToolActor,
+  ToolInvocationResult,
   ToolScope,
 } from "../model";
 import {
@@ -49,6 +50,64 @@ const input: CreateMcpServerInput = {
   actionName: "requirement.read",
   actionDescription: "读取固定范围内的需求文档。",
   riskLevel: "R0",
+};
+
+const invocation: ToolInvocationResult = {
+  id: "invocation-task-golden-step-02",
+  scope,
+  taskId: "task-golden-technical-solution",
+  runId: "run-task-golden-technical-solution-01",
+  actorId: "user-lead",
+  agentId: "agent-ai-rd",
+  agentVersionId: "agent-ai-rd-v1",
+  capabilityVersionIds: ["capability-technical-solution-v1"],
+  toolId: "tool-codegraph-read",
+  toolVersionId: "tool-codegraph-read-v1",
+  toolVersionDigest: "sha256:tool-codegraph-read-v1",
+  action: "codegraph.context",
+  actionDigest: "sha256:codegraph-context-action-v1",
+  operationType: "READ",
+  riskLevel: "R0",
+  status: "SUCCEEDED",
+  idempotencyKey:
+    "run-task-golden-technical-solution-01:step-02:codegraph.context",
+  inputDigest: "sha256:input",
+  outputDigest: "sha256:output",
+  resultReference: "mcp://codegraph/invocation-task-golden-step-02",
+  resultExcerpt: "TaskDetailLoader -> Tool Broker -> CodeGraph MCP",
+  summary: "CodeGraph MCP 返回受控代码上下文。",
+  requestedAt: "2026-07-27T08:00:00.000Z",
+  completedAt: "2026-07-27T08:00:01.000Z",
+  durationMs: 1_000,
+  serverIdentity: "codegraph",
+  serverVersion: "0.9.0",
+  schemaDigest: "sha256:codegraph-context-output-v1",
+  auditEvents: [
+    {
+      sequence: 1,
+      eventType: "TOOL_INVOCATION_REQUESTED",
+      occurredAt: "2026-07-27T08:00:00.000Z",
+      summary: "Tool Invocation 已创建。",
+    },
+    {
+      sequence: 2,
+      eventType: "TOOL_PERMISSION_ALLOWED",
+      occurredAt: "2026-07-27T08:00:00.000Z",
+      summary: "权限交集校验通过。",
+    },
+    {
+      sequence: 3,
+      eventType: "MCP_SESSION_INITIALIZED",
+      occurredAt: "2026-07-27T08:00:01.000Z",
+      summary: "MCP 会话已初始化。",
+    },
+    {
+      sequence: 4,
+      eventType: "TOOL_INVOCATION_SUCCEEDED",
+      occurredAt: "2026-07-27T08:00:01.000Z",
+      summary: "结果已固定。",
+    },
+  ],
 };
 
 function repository(storage = new MemoryStorage()) {
@@ -158,5 +217,30 @@ describe("Tool / MCP Mock Repository", () => {
       ToolRepositoryError,
     );
     expect(storage.getItem(TOOL_STORE_KEY)).toBeNull();
+  });
+
+  it("persists immutable Tool Invocation evidence per Task", async () => {
+    const repo = repository();
+
+    expect(
+      await repo.recordInvocation(scope, manager, invocation),
+    ).toEqual(invocation);
+    expect(
+      await repo.recordInvocation(scope, manager, invocation),
+    ).toEqual(invocation);
+    expect(
+      await repo.listTaskInvocations(
+        scope,
+        auditor,
+        "task-golden-technical-solution",
+      ),
+    ).toEqual([invocation]);
+
+    await expect(
+      repo.recordInvocation(scope, manager, {
+        ...invocation,
+        id: "invocation-conflict",
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 });

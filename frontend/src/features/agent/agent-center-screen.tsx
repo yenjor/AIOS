@@ -476,7 +476,7 @@ export function AgentCenterScreen({
           size={17}
           aria-hidden="true"
         />
-        当前是确定性 Mock Runtime：实现领域状态、权限边界和版本引用，不保存真实模型凭据，不执行外部 Tool。
+        当前 Runtime 已开放受控的 CodeGraph MCP 只读 Tool Invocation；领域状态、权限边界与版本引用仍由本地持久化实现，不保存真实模型凭据，也不执行写入型 Tool。
       </Card>
     </div>
   );

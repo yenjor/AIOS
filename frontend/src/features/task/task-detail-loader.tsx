@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/features/session/session-provider";
+import { listTaskToolInvocations } from "@/features/tool/mock/tool-repository";
+import type { ToolInvocationResult } from "@/features/tool/model";
 
 import {
   getTask,
@@ -25,7 +27,12 @@ import {
 
 type LoaderState =
   | { status: "idle" }
-  | { status: "ready"; requestKey: string; task: TaskDetail }
+  | {
+      status: "ready";
+      requestKey: string;
+      task: TaskDetail;
+      toolInvocations: ToolInvocationResult[];
+    }
   | { status: "unavailable"; requestKey: string }
   | {
       status: "error";
@@ -73,17 +80,23 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
     const requestId = ++latestRequestRef.current;
     let active = true;
 
-    void getTask(
-      {
-        organizationId: organization.id,
-        workspaceId: workspace.id,
-      },
-      { userId: user.id },
-      taskId,
-    )
-      .then((task) => {
+    const scope = {
+      organizationId: organization.id,
+      workspaceId: workspace.id,
+    };
+    const actor = { userId: user.id };
+    void Promise.all([
+      getTask(scope, actor, taskId),
+      listTaskToolInvocations(scope, actor, taskId),
+    ])
+      .then(([task, toolInvocations]) => {
         if (active && requestId === latestRequestRef.current) {
-          setState({ status: "ready", requestKey, task });
+          setState({
+            status: "ready",
+            requestKey,
+            task,
+            toolInvocations,
+          });
         }
       })
       .catch((error: unknown) => {
@@ -235,14 +248,40 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
           : action === "开始执行"
             ? await advanceFirstAiEmployee(scope, actor, taskId)
             : await acceptTaskArtifact(scope, actor, taskId);
-      setState({ status: "ready", requestKey, task });
+      const toolInvocations = await listTaskToolInvocations(
+        scope,
+        actor,
+        taskId,
+      );
+      setState({
+        status: "ready",
+        requestKey,
+        task,
+        toolInvocations,
+      });
       setActionState({ status: "idle" });
-    } catch {
+    } catch (error) {
+      try {
+        const [task, toolInvocations] = await Promise.all([
+          getTask(scope, actor, taskId),
+          listTaskToolInvocations(scope, actor, taskId),
+        ]);
+        setState({
+          status: "ready",
+          requestKey,
+          task,
+          toolInvocations,
+        });
+      } catch {
+        // Preserve the last known valid Read Model if evidence reload fails.
+      }
       setActionState({
         status: "error",
         action,
         message:
-          "受控动作未完成。系统已保留最后一个有效状态，请确认当前身份和 Task 状态后重试。",
+          error instanceof Error
+            ? `受控动作未完成：${error.message}`
+            : "受控动作未完成。系统已保留最后一个有效状态，请确认当前身份和 Task 状态后重试。",
       });
     }
   }
@@ -250,6 +289,7 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
   return (
     <TaskDetailScreen
       task={state.task}
+      toolInvocations={state.toolInvocations}
       scopeLabels={{
         organizationName: organization.name,
         workspaceName: workspace.name,
