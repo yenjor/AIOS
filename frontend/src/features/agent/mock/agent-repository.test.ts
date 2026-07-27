@@ -11,6 +11,11 @@ import {
   createAgentRepository,
   type AgentStorage,
 } from "./agent-repository";
+import {
+  resumeMcpServer,
+  suspendMcpServer,
+  TOOL_STORE_KEY,
+} from "@/features/tool/mock/tool-repository";
 
 class MemoryStorage implements AgentStorage {
   values = new Map<string, string>();
@@ -45,7 +50,17 @@ const input: CreateAgentInput = {
   capabilityVersionIds: ["capability-technical-solution-v1"],
   autonomyLevel: "L1辅助",
   includeKnowledgeScope: true,
-  toolActions: ["codegraph.context"],
+  toolGrantReferences: [
+    {
+      toolId: "tool-codegraph-read",
+      toolVersionId: "tool-codegraph-read-v1",
+      toolVersionDigest: "sha256:tool-codegraph-read-v1",
+      action: "codegraph.context",
+      actionDigest: "sha256:codegraph-context-action-v1",
+      operationType: "READ",
+      riskCeiling: "R0",
+    },
+  ],
 };
 
 function repository(storage = new MemoryStorage()) {
@@ -59,6 +74,7 @@ function repository(storage = new MemoryStorage()) {
 describe("Agent Mock Repository", () => {
   beforeEach(() => {
     window.localStorage.removeItem(AGENT_STORE_KEY);
+    window.localStorage.removeItem(TOOL_STORE_KEY);
   });
 
   it("only exposes Enabled Agent with a Published version and valid runtime bindings", async () => {
@@ -155,6 +171,33 @@ describe("Agent Mock Repository", () => {
 
     const resumed = await repo.resumeAgent(scope, manager, before.id);
     expect(resumed.status).toBe("ENABLED");
+  });
+
+  it("fails closed when an Agent Tool Grant points to a suspended MCP Server", async () => {
+    const repo = repository();
+    await suspendMcpServer(
+      scope,
+      manager,
+      "mcp-codegraph-local",
+      "连接安全复核期间停止新的 Agent Execution",
+    );
+
+    expect(
+      await repo.listEnabledOptions(
+        scope,
+        developer,
+        "GENERATE_TECHNICAL_DESIGN",
+      ),
+    ).toHaveLength(0);
+
+    await resumeMcpServer(scope, manager, "mcp-codegraph-local");
+    expect(
+      await repo.listEnabledOptions(
+        scope,
+        developer,
+        "GENERATE_TECHNICAL_DESIGN",
+      ),
+    ).toHaveLength(1);
   });
 
   it("enforces Agent Builder permissions and fails closed on corrupted storage", async () => {

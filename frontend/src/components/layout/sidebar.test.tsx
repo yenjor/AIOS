@@ -43,13 +43,13 @@ describe("Sidebar", () => {
     expect(within(navigation).getByText("3")).toBeVisible();
   });
 
-  it("enables Workspace, Task, AI 员工, 知识库 and 能力中心 while explaining future items", () => {
+  it("enables implemented work, AI resource and enterprise connection modules", () => {
     render(<Sidebar open onClose={vi.fn()} />);
 
     const navigation = screen.getByRole("navigation", { name: "主要导航" });
     const enabledLinks = navigation.querySelectorAll("a[href]");
 
-    expect(enabledLinks).toHaveLength(5);
+    expect(enabledLinks).toHaveLength(7);
     expect(enabledLinks[0]).toHaveAccessibleName("工作台");
     expect(enabledLinks[0]).toHaveAttribute("href", "/workspace");
     expect(enabledLinks[0]).toHaveAttribute("aria-current", "page");
@@ -61,13 +61,15 @@ describe("Sidebar", () => {
     expect(enabledLinks[3]).toHaveAttribute("href", "/knowledge");
     expect(enabledLinks[4]).toHaveAccessibleName("能力中心");
     expect(enabledLinks[4]).toHaveAttribute("href", "/capabilities");
+    expect(enabledLinks[5]).toHaveAccessibleName("Tool");
+    expect(enabledLinks[5]).toHaveAttribute("href", "/tools");
+    expect(enabledLinks[6]).toHaveAccessibleName("MCP 连接");
+    expect(enabledLinks[6]).toHaveAttribute("href", "/tools/mcp");
 
     const disabledLabels = [
       "审批待办，3 项待处理",
       "Artifact",
       "Workflow",
-      "Tool",
-      "MCP 连接",
       "Plugin 管理",
       "Organization",
       "成员与权限",

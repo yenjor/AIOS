@@ -2,6 +2,10 @@ import {
   listPublishedCapabilityOptions,
   resolvePublishedCapabilityVersion,
 } from "@/features/capability/mock/capability-repository";
+import {
+  listPublishedToolActionOptions,
+  resolvePublishedToolActionOption,
+} from "@/features/tool/mock/tool-repository";
 import type {
   CapabilitySelectionOption,
   CapabilityTaskType,
@@ -28,7 +32,7 @@ import type {
 } from "../model";
 import { toAgentVersionRef } from "../model";
 
-export const AGENT_STORE_KEY = "aios.mock.agent-store.v1";
+export const AGENT_STORE_KEY = "aios.mock.agent-store.v2";
 const STORE_SCHEMA_VERSION = 1;
 const DEFAULT_LATENCY_MS = 30;
 
@@ -300,7 +304,14 @@ function buildVersion({
 }): AgentVersion {
   const versionId = `${agentId}-v${versionNumber}`;
   const distinctTaskTypes = Array.from(new Set(acceptedTaskTypes));
-  const toolActions = Array.from(new Set(input.toolActions));
+  const toolGrantReferences = Array.from(
+    new Map(
+      input.toolGrantReferences.map((reference) => [
+        `${reference.toolVersionId}:${reference.action}`,
+        reference,
+      ]),
+    ).values(),
+  );
   const digest =
     agentId === "agent-rd-001" && versionNumber === 1
       ? "sha256:agent-rd-001-v1"
@@ -372,14 +383,10 @@ function buildVersion({
           },
         ]
       : [],
-    toolGrantReferences: toolActions.map((action) => ({
-      toolId: "tool-codegraph-read",
-      toolVersionId: "tool-codegraph-read-v1",
-      action,
-      operationType: "READ",
-      riskCeiling: "R0",
+    toolGrantReferences: toolGrantReferences.map((reference) => ({
+      ...cloneMutable(reference),
       scopeDigest: stableDigest(
-        `${canonicalScope.workspaceId}:tool:${action}`,
+        `${canonicalScope.workspaceId}:tool:${reference.toolVersionId}:${reference.action}`,
       ),
     })),
     autonomyLevel: input.autonomyLevel,
@@ -394,7 +401,7 @@ function buildVersion({
             },
           ]
         : []),
-      ...toolActions.map(() => ({
+      ...toolGrantReferences.map(() => ({
         resource: "TOOL" as const,
         action: "USE" as const,
         scope: "CURRENT_WORKSPACE" as const,
@@ -461,7 +468,17 @@ function seedAgent({
     capabilityVersionIds: ["capability-technical-solution-v1"],
     autonomyLevel: "L1辅助",
     includeKnowledgeScope: true,
-    toolActions: ["codegraph.context"],
+    toolGrantReferences: [
+      {
+        toolId: "tool-codegraph-read",
+        toolVersionId: "tool-codegraph-read-v1",
+        toolVersionDigest: "sha256:tool-codegraph-read-v1",
+        action: "codegraph.context",
+        actionDigest: "sha256:codegraph-context-action-v1",
+        operationType: "READ",
+        riskCeiling: "R0",
+      },
+    ],
   };
   const version = buildVersion({
     agentId: id,
@@ -658,7 +675,9 @@ function isStoredAgentVersion(
         isRecord(grant) &&
         isNonEmptyString(grant.toolId) &&
         isNonEmptyString(grant.toolVersionId) &&
+        isNonEmptyString(grant.toolVersionDigest) &&
         isNonEmptyString(grant.action) &&
+        isNonEmptyString(grant.actionDigest) &&
         grant.operationType === "READ" &&
         (grant.riskCeiling === "R0" || grant.riskCeiling === "R1") &&
         isNonEmptyString(grant.scopeDigest),
@@ -816,8 +835,19 @@ function validateInput(input: CreateAgentInput): void {
     input.capabilityVersionIds.length === 0 ||
     !input.capabilityVersionIds.every(isNonEmptyString) ||
     !autonomyLevels.has(input.autonomyLevel) ||
-    !Array.isArray(input.toolActions) ||
-    !input.toolActions.every(isNonEmptyString)
+    !Array.isArray(input.toolGrantReferences) ||
+    !input.toolGrantReferences.every(
+      (reference) =>
+        isRecord(reference) &&
+        isNonEmptyString(reference.toolId) &&
+        isNonEmptyString(reference.toolVersionId) &&
+        isNonEmptyString(reference.toolVersionDigest) &&
+        isNonEmptyString(reference.action) &&
+        isNonEmptyString(reference.actionDigest) &&
+        reference.operationType === "READ" &&
+        (reference.riskCeiling === "R0" ||
+          reference.riskCeiling === "R1"),
+    )
   ) {
     throw new AgentRepositoryError(
       "VALIDATION",
@@ -864,6 +894,39 @@ async function resolveAssignments(
     refs: selected.map((option) => cloneMutable(option!.versionRef)),
     options: selected as CapabilitySelectionOption[],
   };
+}
+
+async function validateToolGrants(
+  scope: AgentScope,
+  actor: AgentActor,
+  grants: CreateAgentInput["toolGrantReferences"],
+): Promise<void> {
+  const resolved = await Promise.all(
+    grants.map((grant) =>
+      resolvePublishedToolActionOption(
+        scope,
+        actor,
+        grant.toolVersionId,
+        grant.action,
+      ),
+    ),
+  );
+  const valid = resolved.every((option, index) => {
+    const grant = grants[index];
+    return (
+      option.toolId === grant.toolId &&
+      option.toolVersionDigest === grant.toolVersionDigest &&
+      option.actionDigest === grant.actionDigest &&
+      option.operationType === grant.operationType &&
+      option.riskLevel === grant.riskCeiling
+    );
+  });
+  if (!valid) {
+    throw new AgentRepositoryError(
+      "VALIDATION",
+      "Tool Grant 包含未发布、Health 不可用或 Digest 不匹配的 Action。",
+    );
+  }
 }
 
 function latestVersion(agent: Agent): AgentVersion {
@@ -1062,6 +1125,32 @@ export function createAgentRepository(
         actor,
         input.capabilityVersionIds,
       );
+      await validateToolGrants(scope, actor, input.toolGrantReferences);
+      const grantedActions = new Set(
+        input.toolGrantReferences.map(({ action }) => action),
+      );
+      const missingRequiredActions = Array.from(
+        new Set(
+          assignments.options
+            .flatMap(({ toolActions }) => toolActions)
+            .filter((action) => !grantedActions.has(action)),
+        ),
+      );
+      if (missingRequiredActions.length > 0) {
+        throw new AgentRepositoryError(
+          "VALIDATION",
+          `Capability Assignment 缺少已发布 Tool Grant：${missingRequiredActions.join(", ")}`,
+        );
+      }
+      if (
+        assignments.options.some(({ knowledgeRequired }) => knowledgeRequired) &&
+        !input.includeKnowledgeScope
+      ) {
+        throw new AgentRepositoryError(
+          "VALIDATION",
+          "Capability Assignment 需要当前 Workspace Knowledge Scope。",
+        );
+      }
       const envelope = readEnvelope();
       if (
         envelope.items.some(
@@ -1139,7 +1228,15 @@ export function createAgentRepository(
         autonomyLevel: source.autonomyLevel,
         includeKnowledgeScope:
           source.knowledgeScopeAssignments.length > 0,
-        toolActions: source.toolGrantReferences.map(({ action }) => action),
+        toolGrantReferences: source.toolGrantReferences.map((reference) => ({
+          toolId: reference.toolId,
+          toolVersionId: reference.toolVersionId,
+          toolVersionDigest: reference.toolVersionDigest,
+          action: reference.action,
+          actionDigest: reference.actionDigest,
+          operationType: reference.operationType,
+          riskCeiling: reference.riskCeiling,
+        })),
       };
       const timestamp = now();
       agent.versions.push(
@@ -1332,6 +1429,13 @@ export function createAgentRepository(
         actor,
         taskType,
       );
+      const toolOptions = await listPublishedToolActionOptions(scope, actor);
+      const availableToolGrants = new Set(
+        toolOptions.map(
+          (option) =>
+            `${option.toolVersionId}:${option.toolVersionDigest}:${option.action}:${option.actionDigest}`,
+        ),
+      );
       const publishedByVersion = new Map(
         capabilities.map((option) => [
           option.versionRef.versionId,
@@ -1364,6 +1468,11 @@ export function createAgentRepository(
                 published.digest === reference.digest &&
                 (!option.knowledgeRequired ||
                   version.knowledgeScopeAssignments.length > 0) &&
+                version.toolGrantReferences.every((grant) =>
+                  availableToolGrants.has(
+                    `${grant.toolVersionId}:${grant.toolVersionDigest}:${grant.action}:${grant.actionDigest}`,
+                  ),
+                ) &&
                 option.toolActions.every((action) =>
                   version.toolGrantReferences.some(
                     (grant) => grant.action === action,

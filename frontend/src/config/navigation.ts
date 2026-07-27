@@ -57,8 +57,8 @@ export const navigation: NavigationGroup[] = [
   {
     label: "企业连接",
     items: [
-      { label: "Tool", href: "/tools", enabled: false, icon: Wrench },
-      { label: "MCP 连接", href: "/tools/mcp", enabled: false, icon: Plug },
+      { label: "Tool", href: "/tools", enabled: true, icon: Wrench },
+      { label: "MCP 连接", href: "/tools/mcp", enabled: true, icon: Plug },
       { label: "Plugin 管理", href: "/plugins", enabled: false, icon: Puzzle },
     ],
   },

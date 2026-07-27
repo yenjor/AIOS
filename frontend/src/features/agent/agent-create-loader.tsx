@@ -25,6 +25,8 @@ import type {
   CapabilityTaskType,
 } from "@/features/capability/model";
 import { useSession } from "@/features/session/session-provider";
+import { listPublishedToolActionOptions } from "@/features/tool/mock/tool-repository";
+import type { ToolActionSelectionOption } from "@/features/tool/model";
 import { users } from "@/mock/fixtures";
 
 import {
@@ -61,6 +63,7 @@ type LoaderState =
       status: "ready";
       permission: AgentPermissionDecision;
       capabilities: CapabilitySelectionOption[];
+      toolActions: ToolActionSelectionOption[];
     }
   | { status: "error"; message: string };
 
@@ -82,11 +85,12 @@ export function AgentCreateLoader() {
     const actor = { userId: user.id };
     void Promise.all([
       getAgentPermission(scope, actor),
-      ...taskTypes.map((taskType) =>
+      Promise.all(taskTypes.map((taskType) =>
         listPublishedCapabilityOptions(scope, actor, taskType),
-      ),
+      )),
+      listPublishedToolActionOptions(scope, actor),
     ])
-      .then(([permission, ...capabilityPages]) => {
+      .then(([permission, capabilityPages, toolActions]) => {
         if (!active) return;
         const byVersionId = new Map<string, CapabilitySelectionOption>();
         for (const option of capabilityPages.flat()) {
@@ -101,6 +105,7 @@ export function AgentCreateLoader() {
               "zh-CN",
             ),
           ),
+          toolActions,
         });
       })
       .catch((caught: unknown) => {
@@ -192,6 +197,7 @@ export function AgentCreateLoader() {
   const activeWorkspace = workspace;
   const activeUser = user;
   const capabilities = state.capabilities;
+  const availableToolActions = state.toolActions;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -204,12 +210,27 @@ export function AgentCreateLoader() {
     const assigned = capabilities.filter((option) =>
       capabilityVersionIds.includes(option.versionRef.versionId),
     );
-    const additionalToolAction = String(data.get("toolAction")).trim();
-    const toolActions = Array.from(
-      new Set([
-        ...assigned.flatMap((option) => option.toolActions),
-        ...(additionalToolAction ? [additionalToolAction] : []),
-      ]),
+    const selectedActionKeys = new Set(
+      data.getAll("toolActionKey").map(String),
+    );
+    const requiredActionNames = new Set(
+      assigned.flatMap((option) => option.toolActions),
+    );
+    const missingRequired = [...requiredActionNames].filter(
+      (action) =>
+        !availableToolActions.some((option) => option.action === action),
+    );
+    if (missingRequired.length > 0) {
+      setError(
+        `Capability 依赖的 Tool Action 当前未发布或 Health 不可用：${missingRequired.join(", ")}`,
+      );
+      setSaving(false);
+      return;
+    }
+    const selectedToolActions = availableToolActions.filter(
+      (option) =>
+        selectedActionKeys.has(`${option.toolVersionId}:${option.action}`) ||
+        requiredActionNames.has(option.action),
     );
     const includeKnowledgeScope =
       data.get("includeKnowledgeScope") === "on" ||
@@ -223,7 +244,15 @@ export function AgentCreateLoader() {
       capabilityVersionIds,
       autonomyLevel: String(data.get("autonomyLevel")) as AutonomyLevel,
       includeKnowledgeScope,
-      toolActions,
+      toolGrantReferences: selectedToolActions.map((option) => ({
+        toolId: option.toolId,
+        toolVersionId: option.toolVersionId,
+        toolVersionDigest: option.toolVersionDigest,
+        action: option.action,
+        actionDigest: option.actionDigest,
+        operationType: "READ",
+        riskCeiling: option.riskLevel as "R0" | "R1",
+      })),
     };
     try {
       const agent = await createAgent(
@@ -424,14 +453,50 @@ export function AgentCreateLoader() {
                 <option value="L2受控执行">L2受控执行 · 仅低风险受控动作</option>
               </select>
             </label>
-            <label className="text-sm font-semibold">
-              额外只读 Tool Action（可选）
-              <input
-                name="toolAction"
-                placeholder="codegraph.context"
-                className={inputClass}
-              />
-            </label>
+            <fieldset className="md:col-span-2">
+              <legend className="text-sm font-semibold">
+                已验证 Tool Action
+              </legend>
+              <p className="mt-2 text-sm leading-6 text-[var(--aios-muted)]">
+                仅列出当前 Workspace 中 Enabled MCP Server、Published
+                ToolVersion 且 Health 为 Healthy 的只读 Action。Capability
+                必需项会自动加入固定引用。
+              </p>
+              {availableToolActions.length ? (
+                <div className="mt-3 grid gap-3">
+                  {availableToolActions.map((option) => (
+                    <label
+                      key={`${option.toolVersionId}:${option.action}`}
+                      className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        name="toolActionKey"
+                        value={`${option.toolVersionId}:${option.action}`}
+                        defaultChecked={option.action === "codegraph.context"}
+                        className="mt-1 accent-[var(--aios-primary)]"
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-mono font-semibold">
+                          {option.action}
+                        </span>
+                        <span className="mt-1 block leading-5 text-[var(--aios-muted)]">
+                          {option.toolName} · {option.operationType} ·{" "}
+                          {option.riskLevel} · {option.mcpServerName}
+                        </span>
+                        <span className="mt-1 block break-all font-mono text-xs text-[var(--aios-muted)]">
+                          {option.toolVersionId} · {option.actionDigest}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p role="alert" className="mt-3 text-sm text-[var(--aios-muted)]">
+                  当前没有可绑定的已验证 Tool Action。
+                </p>
+              )}
+            </fieldset>
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--aios-control-border)] bg-[var(--aios-canvas)] p-4 text-sm md:col-span-2">
               <input
                 type="checkbox"

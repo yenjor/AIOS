@@ -62,7 +62,9 @@ export interface KnowledgeScopeAssignment {
 export interface ToolGrantReference {
   toolId: string;
   toolVersionId: string;
+  toolVersionDigest: string;
   action: string;
+  actionDigest: string;
   operationType: "READ";
   riskCeiling: "R0" | "R1";
   scopeDigest: string;
@@ -194,7 +196,7 @@ export interface CreateAgentInput {
   capabilityVersionIds: string[];
   autonomyLevel: AutonomyLevel;
   includeKnowledgeScope: boolean;
-  toolActions: string[];
+  toolGrantReferences: Omit<ToolGrantReference, "scopeDigest">[];
 }
 
 export interface AgentSelectionOption {
