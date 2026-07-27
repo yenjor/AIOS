@@ -12,6 +12,7 @@ function request(
       method: "POST",
       headers: {
         Origin: "http://127.0.0.1:3000",
+        Host: "127.0.0.1:3000",
         "Sec-Fetch-Site": "same-origin",
         "Content-Type": "application/json",
         "X-AIOS-Runtime-Contract": "local-pilot-v1",
@@ -42,5 +43,26 @@ describe("CodeGraph Tool Invocation route boundary", () => {
 
     expect(malformed.status).toBe(400);
     expect(oversized.status).toBe(413);
+  });
+
+  it("accepts a browser origin matching Host when the internal URL differs", async () => {
+    const response = await POST(
+      new Request(
+        "http://localhost:3000/api/runtime/tool-invocations/codegraph-context",
+        {
+          method: "POST",
+          headers: {
+            Origin: "http://127.0.0.1:3000",
+            Host: "127.0.0.1:3000",
+            "Sec-Fetch-Site": "same-origin",
+            "Content-Type": "application/json",
+            "X-AIOS-Runtime-Contract": "local-pilot-v1",
+          },
+          body: "{",
+        },
+      ),
+    );
+
+    expect(response.status).toBe(400);
   });
 });

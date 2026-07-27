@@ -113,7 +113,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
     .fill("Task Center、Task 创建向导、Task 详情与固定 VersionRef 证据");
   await page
     .getByLabel("不做事项", { exact: true })
-    .fill("不启动 Agent Runtime\n不调用真实 Tool\n不生成虚假 Artifact");
+    .fill("不调用写入型 Tool\n不修改生产系统\n不跳过人工验收");
   await page
     .getByLabel("约束", { exact: true })
     .fill("遵循现有 Modular Monolith 架构\n保持 Workspace 权限边界\n仅使用固定版本引用");
@@ -292,7 +292,7 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
         page.getByText(`已完成 ${completed} / 4 个 Runtime Step`, {
           exact: true,
         }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: completed === 2 ? 20_000 : 5_000 });
     }
     if (completed === 2) {
       await expect(

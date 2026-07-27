@@ -14,10 +14,22 @@ const MAX_REQUEST_BYTES = 32_768;
 
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
-  const expectedOrigin = new URL(request.url).origin;
+  const requestUrl = new URL(request.url);
+  const expectedOrigins = new Set([requestUrl.origin]);
+  const requestHost = request.headers.get("host");
+  if (requestHost) {
+    const forwardedProtocol = request.headers
+      .get("x-forwarded-proto")
+      ?.split(",", 1)[0]
+      .trim();
+    expectedOrigins.add(
+      `${forwardedProtocol || requestUrl.protocol.replace(":", "")}://${requestHost}`,
+    );
+  }
   const fetchSite = request.headers.get("sec-fetch-site");
   if (
-    origin !== expectedOrigin ||
+    !origin ||
+    !expectedOrigins.has(origin) ||
     (fetchSite !== null && fetchSite !== "same-origin") ||
     request.headers.get("x-aios-runtime-contract") !== "local-pilot-v1"
   ) {
