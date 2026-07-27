@@ -3,6 +3,17 @@ import {
   submitTechnicalSolution,
 } from "@/features/artifact/mock/artifact-repository";
 import { executeNextTechnicalSolutionStep } from "@/features/agent/mock-agent-runtime";
+import { getCapability } from "@/features/capability/mock/capability-repository";
+import type { CapabilityVersion } from "@/features/capability/model";
+import {
+  listTaskModelInvocations,
+  recordModelInvocation,
+} from "@/features/model-gateway/mock/model-invocation-repository";
+import { invokeTechnicalDesignModel } from "@/features/model-gateway/model-invocation-client";
+import type {
+  InvokeTechnicalDesignModelInput,
+  ModelInvocationResult,
+} from "@/features/model-gateway/model";
 import {
   listTaskToolInvocations,
   recordToolInvocation,
@@ -85,6 +96,93 @@ function latestSuccessfulInvocation(
     .at(-1);
 }
 
+function latestSuccessfulModelInvocation(
+  invocations: ModelInvocationResult[],
+): ModelInvocationResult | undefined {
+  return invocations.filter(({ status }) => status === "SUCCEEDED").at(-1);
+}
+
+async function resolvePinnedCapabilityVersion(
+  task: TaskDetail,
+  actor: TaskActor,
+): Promise<CapabilityVersion> {
+  const reference = task.capabilityVersionRefs[0];
+  if (!reference) throw new Error("Execution Package requires CapabilityVersion.");
+  const capability = await getCapability(task.scope, actor, reference.objectId);
+  const version = capability.versions.find(({ id }) => id === reference.versionId);
+  if (
+    !version ||
+    capability.publishedVersionId !== version.id ||
+    version.status !== "PUBLISHED" ||
+    version.contentDigest !== reference.digest ||
+    version.skillDefinition.taskTypes.length !== 1 ||
+    version.skillDefinition.taskTypes[0] !== "GENERATE_TECHNICAL_DESIGN" ||
+    version.artifactContract.artifactType !== "TECHNICAL_DESIGN" ||
+    version.modelPolicy.profile !== "reasoning-structured-output" ||
+    !version.modelPolicy.structuredOutputRequired ||
+    !version.modelPolicy.toolCallingRequired
+  ) {
+    throw new Error(
+      "Published CapabilityVersion no longer matches the pinned technical-design execution contract.",
+    );
+  }
+  return version;
+}
+
+function createModelRequest(
+  task: TaskDetail,
+  actor: TaskActor,
+  capabilityVersion: CapabilityVersion,
+  toolInvocation: ToolInvocationResult,
+  attemptNumber: number,
+): InvokeTechnicalDesignModelInput {
+  if (!task.executionRun || !task.assignedAgent || !task.workflowVersionRef) {
+    throw new Error("ExecutionRun, Agent and WorkflowVersion are required.");
+  }
+  if (
+    toolInvocation.status !== "SUCCEEDED" ||
+    !toolInvocation.outputDigest ||
+    !toolInvocation.resultReference
+  ) {
+    throw new Error("A successful Tool Invocation is required before model reasoning.");
+  }
+  return {
+    scope: { ...task.scope },
+    actorId: actor.userId,
+    humanOwnerUserId: task.assignedAgent.humanOwner.userId,
+    taskId: task.id,
+    runId: task.executionRun.id,
+    agentId: task.assignedAgent.agentId,
+    agentVersionId: task.assignedAgent.agentVersionRef.versionId,
+    capabilityVersionId: capabilityVersion.id,
+    capabilityVersionDigest: capabilityVersion.contentDigest,
+    promptVersionId: capabilityVersion.promptTemplateRef.versionId,
+    promptVersionDigest: capabilityVersion.promptTemplateRef.digest,
+    promptVariableSchema: capabilityVersion.promptTemplateRef.variableSchema,
+    promptOutputSchema: capabilityVersion.promptTemplateRef.outputSchema,
+    modelPolicyProfile: capabilityVersion.modelPolicy.profile,
+    executionPackageDigest: task.executionRun.executionPackageDigest,
+    workflowVersionId: task.workflowVersionRef.versionId,
+    toolInvocationId: toolInvocation.id,
+    toolResultReference: toolInvocation.resultReference,
+    toolOutputDigest: toolInvocation.outputDigest,
+    toolResultExcerpt: toolInvocation.resultExcerpt ?? toolInvocation.summary,
+    title: task.title,
+    goal: task.goal,
+    goalSummary: task.goalSummary,
+    constraints: [...task.constraints],
+    outOfScope: [...task.outOfScope],
+    completionCriteria: [...task.completionCriteria],
+    knowledgeVersions: task.knowledgeVersionRefs.map(({ versionId, digest }) => ({
+      versionId,
+      digest,
+    })),
+    idempotencyKey: `${task.executionRun.id}:step-03:model:attempt-${String(
+      attemptNumber,
+    ).padStart(2, "0")}`,
+  };
+}
+
 export async function approvePlanAndStartExecution(
   scope: TaskScope,
   actor: TaskActor,
@@ -105,6 +203,12 @@ export async function advanceFirstAiEmployee(
   );
   const invocations = await listTaskToolInvocations(scope, actor, taskId);
   let invocation = latestSuccessfulInvocation(invocations);
+  const modelInvocations = await listTaskModelInvocations(
+    scope,
+    actor,
+    taskId,
+  );
+  let modelInvocation = latestSuccessfulModelInvocation(modelInvocations);
   if (nextStep?.sequence === 2) {
     const publishedAction = await resolvePublishedToolActionOption(
       scope,
@@ -146,7 +250,51 @@ export async function advanceFirstAiEmployee(
       );
     }
   }
-  const runtimeOutput = executeNextTechnicalSolutionStep(task, invocation);
+  if (nextStep?.sequence === 3 && !modelInvocation) {
+    if (!invocation) {
+      throw new Error("Model reasoning requires successful CodeGraph evidence.");
+    }
+    const capabilityVersion = await resolvePinnedCapabilityVersion(task, actor);
+    const currentRunModelInvocations = modelInvocations.filter(
+      ({ runId }) => runId === task.executionRun?.id,
+    );
+    if (currentRunModelInvocations.some(({ status }) => status === "UNKNOWN")) {
+      throw new Error(
+        "Model completion state is UNKNOWN; automatic retry is disabled and Human Owner review is required.",
+      );
+    }
+    if (
+      currentRunModelInvocations.length >= capabilityVersion.failurePolicy.retryLimit
+    ) {
+      throw new Error(
+        `Model retry limit ${capabilityVersion.failurePolicy.retryLimit} reached; Human Owner review is required.`,
+      );
+    }
+    const invocationResult = await invokeTechnicalDesignModel(
+      createModelRequest(
+        task,
+        actor,
+        capabilityVersion,
+        invocation,
+        currentRunModelInvocations.length + 1,
+      ),
+    );
+    modelInvocation = await recordModelInvocation(
+      scope,
+      actor,
+      invocationResult,
+    );
+    if (modelInvocation.status !== "SUCCEEDED") {
+      throw new Error(
+        `Model Invocation ${modelInvocation.id} ended as ${modelInvocation.status}: ${modelInvocation.summary}`,
+      );
+    }
+  }
+  const runtimeOutput = executeNextTechnicalSolutionStep(
+    task,
+    invocation,
+    modelInvocation,
+  );
   let stepResult: RuntimeStepResult = runtimeOutput.stepResult;
 
   if (runtimeOutput.artifactDraft) {

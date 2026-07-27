@@ -61,6 +61,12 @@ const draft: TechnicalSolutionArtifactDraft = {
   knowledgeVersionIds: ["knowledge-aios-docs-v1"],
   workflowVersionId: "workflow-technical-solution-v1",
   toolVersionIds: ["tool-codegraph-read-v1"],
+  promptVersionId: "prompt-technical-solution-v1",
+  modelPolicyProfile: "reasoning-structured-output",
+  modelInvocationId: "model-invocation-0123456789abcdef",
+  modelAlias: "aios-technical-design",
+  resolvedModel: "test-provider-model",
+  modelOutputDigest: "sha256:model-output",
   reviewerUserIds: ["user-lead"],
   contentDigest: "sha256:artifact-task-mock-0001-v1:content",
 };

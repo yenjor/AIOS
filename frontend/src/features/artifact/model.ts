@@ -53,6 +53,12 @@ export interface ArtifactProvenance {
   knowledgeVersionIds: string[];
   workflowVersionId: string;
   toolVersionIds: string[];
+  promptVersionId?: string;
+  modelPolicyProfile?: string;
+  modelInvocationId?: string;
+  modelAlias?: string;
+  resolvedModel?: string;
+  modelOutputDigest?: string;
   generatedAt: string;
   contentDigest: string;
 }
@@ -87,6 +93,12 @@ export interface TechnicalSolutionArtifactDraft {
   knowledgeVersionIds: string[];
   workflowVersionId: string;
   toolVersionIds: string[];
+  promptVersionId: string;
+  modelPolicyProfile: string;
+  modelInvocationId: string;
+  modelAlias: string;
+  resolvedModel: string;
+  modelOutputDigest: string;
   reviewerUserIds: string[];
   contentDigest: string;
 }

@@ -67,10 +67,88 @@ async function expectNoPageOverflow(page: Page) {
     .toBe(true);
 }
 
+async function installLiteLlmContractFixture(page: Page) {
+  await page.route(
+    "**/api/runtime/model-invocations/technical-design",
+    async (route) => {
+      const input = route.request().postDataJSON() as Record<string, unknown>;
+      const requestedAt = "2026-07-27T10:00:00.000Z";
+      const completedAt = "2026-07-27T10:00:01.000Z";
+      const sectionParagraphs: Record<string, string> = {
+        目标理解: "根据当前 Task 的目标与约束生成可供 Reviewer 验收的技术方案。",
+        范围与不做事项: "范围限定在 AIOS 现有模块，不执行外部写入，不绕过人工验收。",
+        影响模块与文件: "CodeGraph 上下文表明本次改动涉及 Task Runtime、Artifact 和测试入口。",
+        技术决策: "Tool Broker 已固定只读 ToolVersion；模型输出必须通过结构校验后才能提交 Artifact。",
+        风险: "主要风险是模型输出越界、结构不完整或网关结果未知，均应停止自动推进。",
+        测试建议: "验证模型版本固定、八章节结构、失败状态、审计证据与人工验收路径。",
+        回退考虑: "模型调用不产生业务写入副作用，失败时保留证据并停留在当前 Workflow Step。",
+        知识库引用: "只使用执行包固定的知识库版本，最终定位信息由 Runtime 进行确定性校验。",
+      };
+      const sections = Object.entries(sectionParagraphs).map(
+        ([title, paragraph]) => ({ title, paragraphs: [paragraph] }),
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            id: "model-invocation-abcdef0123456789",
+            scope: input.scope,
+            taskId: input.taskId,
+            runId: input.runId,
+            actorId: input.actorId,
+            agentId: input.agentId,
+            agentVersionId: input.agentVersionId,
+            capabilityVersionId: input.capabilityVersionId,
+            promptVersionId: input.promptVersionId,
+            modelPolicyProfile: input.modelPolicyProfile,
+            modelAlias: "e2e-litellm-contract-fixture",
+            resolvedModel: "deterministic-test-model",
+            provider: "playwright-test-adapter",
+            status: "SUCCEEDED",
+            idempotencyKey: input.idempotencyKey,
+            inputDigest: "sha256:e2e-model-input",
+            promptDigest: "sha256:e2e-compiled-prompt",
+            outputDigest: "sha256:e2e-model-output",
+            resultReference:
+              "model://litellm/model-invocation-abcdef0123456789",
+            sections,
+            summary:
+              "LiteLLM-compatible E2E contract fixture returned a validated technical design.",
+            requestedAt,
+            completedAt,
+            durationMs: 1_000,
+            usage: {
+              promptTokens: 400,
+              completionTokens: 800,
+              totalTokens: 1_200,
+            },
+            auditEvents: [
+              "MODEL_INVOCATION_REQUESTED",
+              "MODEL_POLICY_ALLOWED",
+              "MODEL_GATEWAY_DISPATCHED",
+              "MODEL_RESPONSE_RECEIVED",
+              "MODEL_OUTPUT_VALIDATED",
+            ].map((eventType, index) => ({
+              sequence: index + 1,
+              eventType,
+              occurredAt: index < 3 ? requestedAt : completedAt,
+              summary: `${eventType} E2E contract evidence`,
+            })),
+          },
+          meta: { runtime: "litellm-compatible-e2e-contract-fixture" },
+        }),
+      });
+    },
+  );
+}
+
 test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持证据", async ({
   page,
 }) => {
   test.setTimeout(120_000);
+
+  await installLiteLlmContractFixture(page);
 
   await enterWorkspace(page, "使用 林悦（产品经理）身份");
 
@@ -315,6 +393,27 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
         fullPage: true,
       });
     }
+    if (completed === 3) {
+      await expect(
+        page.getByRole("heading", {
+          name: "Model Invocation · LiteLLM 推理证据",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(
+          "e2e-litellm-contract-fixture → deterministic-test-model",
+          { exact: true },
+        ),
+      ).toBeVisible();
+      await expect(
+        page.getByText("MODEL_OUTPUT_VALIDATED", { exact: true }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: join(SCREENSHOT_DIRECTORY, "real-model-gateway-contract.png"),
+        fullPage: true,
+      });
+    }
   }
 
   await expect(page.locator('[data-task-status="REVIEW"]')).toBeVisible();
@@ -348,6 +447,12 @@ test("产品经理完成 Task 黄金路径并在刷新与列表检索后保持�
     page.getByText("README.md#5-系统整体架构", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText(/Tool Broker 已固定/)).toBeVisible();
+  await expect(
+    page.getByText("prompt-technical-solution-v1", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("model-invocation-abcdef0123456789", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByText("Artifact 等待 Reviewer 验收", { exact: true }),
   ).toBeVisible();

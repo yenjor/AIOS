@@ -7,6 +7,7 @@ import type {
   TechnicalSolutionArtifactDraft,
 } from "@/features/artifact/model";
 import type { ToolInvocationResult } from "@/features/tool/model";
+import type { ModelInvocationResult } from "@/features/model-gateway/model";
 
 export class MockAgentRuntimeError extends Error {
   constructor(message: string) {
@@ -25,10 +26,6 @@ const RUNTIME_STEP_SUMMARIES: Readonly<Record<number, string>> = {
   3: "已依据固定 CapabilityVersion 与 WorkflowVersion 形成结构化技术方案草稿。",
   4: "已完成八个必需章节、知识库引用与 Reviewer 门禁检查。",
 };
-
-function normalizeList(values: readonly string[]): string {
-  return values.length > 0 ? values.join("；") : "未提供";
-}
 
 function invocationHighlights(invocation: ToolInvocationResult): string[] {
   const highlights = (invocation.resultExcerpt ?? "")
@@ -90,70 +87,56 @@ function requireSuccessfulInvocation(
   return invocation;
 }
 
+function requireSuccessfulModelInvocation(
+  task: TaskDetail,
+  invocation: ModelInvocationResult | undefined,
+): ModelInvocationResult {
+  const capabilityRef = task.capabilityVersionRefs[0];
+  if (
+    !invocation ||
+    invocation.status !== "SUCCEEDED" ||
+    invocation.scope.organizationId !== task.scope.organizationId ||
+    invocation.scope.workspaceId !== task.scope.workspaceId ||
+    invocation.taskId !== task.id ||
+    invocation.runId !== task.executionRun?.id ||
+    invocation.actorId !== task.assignedAgent?.humanOwner.userId ||
+    invocation.agentId !== task.assignedAgent?.agentId ||
+    invocation.agentVersionId !== task.assignedAgent?.agentVersionRef.versionId ||
+    invocation.capabilityVersionId !== capabilityRef?.versionId ||
+    invocation.promptVersionId !== "prompt-technical-solution-v1" ||
+    invocation.modelPolicyProfile !== "reasoning-structured-output" ||
+    !invocation.outputDigest ||
+    !invocation.resultReference ||
+    !invocation.resolvedModel ||
+    !invocation.sections ||
+    invocation.sections.length !== 8
+  ) {
+    throw new MockAgentRuntimeError(
+      "A successful structured Model Invocation for the pinned CapabilityVersion is required.",
+    );
+  }
+  return invocation;
+}
+
 function buildSections(
   task: TaskDetail,
   invocation: ToolInvocationResult,
+  modelInvocation: ModelInvocationResult,
 ): ArtifactSection[] {
-  return [
-    {
-      title: "目标理解",
-      paragraphs: [
-        task.goal,
-        `当前问题：${task.goalSummary}`,
-        "本次结果由确定性 Agent Runtime 编排并使用真实 CodeGraph MCP 只读上下文；尚未调用外部 AI 模型。",
-      ],
-    },
-    {
-      title: "范围与不做事项",
-      paragraphs: [
-        `约束：${normalizeList(task.constraints)}`,
-        `不做事项：${normalizeList(task.outOfScope)}`,
-      ],
-    },
-    {
-      title: "影响模块与文件",
-      paragraphs: [
-        ...invocationHighlights(invocation),
-        `只读 Tool Action 为 ${invocation.action}，调用证据为 ${invocation.id}，输出 Digest 为 ${invocation.outputDigest}。`,
-      ],
-    },
-    {
-      title: "技术决策",
-      paragraphs: [
-        "Task 保持核心协调入口，运行期仅使用已固定的 Agent、Capability、知识库、Workflow 与 Tool VersionRef。",
-        "每次只推进一个有界 Step，并在步骤完成后保存 WorkflowCheckpoint。",
-        `Tool Broker 已固定 ${invocation.toolVersionId} / ${invocation.action}，并记录 Input、Output 与 Schema Digest。`,
-        "Artifact 作为独立对象进入人工验收；Agent Runtime 不直接把 Task 标记为 Completed。",
-      ],
-    },
-    {
-      title: "风险",
-      paragraphs: [
-        `当前 Task 风险等级为 ${task.riskLevel}，自治等级为 ${task.assignedAgent?.autonomyLevel ?? "未分配"}。`,
-        "当前 Runtime 只生成候选 Artifact；真实 Tool Invocation 限定为 READ/R0，不使用写入型 Tool，不扩大 Workspace 权限。",
-      ],
-    },
-    {
-      title: "测试建议",
-      paragraphs: task.completionCriteria.map(
-        (criterion) => `验证：${criterion}`,
-      ),
-    },
-    {
-      title: "回退考虑",
-      paragraphs: [
-        "本次 Tool Invocation 为只读操作且无外部写入副作用；验收前可拒绝 Artifact 并返回返工路径。",
-        "运行证据和状态转换只追加，禁止通过覆盖历史伪造回退。",
-      ],
-    },
-    {
-      title: "知识库引用",
-      paragraphs: task.knowledgeVersionRefs.map(
-        (reference) =>
-          `${reference.versionId} · ${reference.digest} · locator: README.md#5-系统整体架构`,
-      ),
-    },
-  ];
+  const sections = structuredClone(modelInvocation.sections!);
+  const impact = sections.find(({ title }) => title === "影响模块与文件");
+  if (impact) {
+    const evidence = `${invocationHighlights(invocation)[0]}；Tool Invocation ${invocation.id}；Output Digest ${invocation.outputDigest}。`;
+    impact.paragraphs = [...impact.paragraphs.slice(0, 7), evidence];
+  }
+  const knowledge = sections.find(({ title }) => title === "知识库引用");
+  if (knowledge) {
+    knowledge.paragraphs = task.knowledgeVersionRefs.map(
+      (reference) =>
+        `${reference.versionId} · ${reference.digest} · locator: README.md#5-系统整体架构`,
+    );
+  }
+  return sections;
 }
 
 function packageDigest(task: TaskDetail): string {
@@ -167,6 +150,7 @@ function packageDigest(task: TaskDetail): string {
 export function executeNextTechnicalSolutionStep(
   task: TaskDetail,
   toolInvocation?: ToolInvocationResult,
+  modelInvocation?: ModelInvocationResult,
 ): MockAgentRuntimeOutput {
   if (
     task.status !== "EXECUTING" ||
@@ -199,15 +183,23 @@ export function executeNextTechnicalSolutionStep(
     planStep.sequence >= 2
       ? requireSuccessfulInvocation(task, toolInvocation)
       : undefined;
+  const structuredModelInvocation =
+    planStep.sequence >= 3
+      ? requireSuccessfulModelInvocation(task, modelInvocation)
+      : undefined;
   const isArtifactStep = planStep.sequence === 4;
   const isToolStep = planStep.sequence === 2;
   const outputReference = isArtifactStep
     ? `artifact-draft-${task.id}`
     : isToolStep
       ? invocation!.resultReference!
+      : planStep.sequence === 3
+        ? structuredModelInvocation!.resultReference!
       : `run-${task.id}-step-${String(planStep.sequence).padStart(2, "0")}-output`;
   const outputDigest = isToolStep
     ? invocation!.outputDigest!
+    : planStep.sequence === 3
+      ? structuredModelInvocation!.outputDigest!
     : `sha256:${packageDigest(task)}:step-${planStep.sequence}`;
   const stepResult: RuntimeStepResult = {
     stepId: planStep.id,
@@ -215,6 +207,8 @@ export function executeNextTechnicalSolutionStep(
     summary:
       isToolStep
         ? `${invocation!.summary} Invocation ${invocation!.id} 已进入 Audit。`
+        : planStep.sequence === 3
+          ? `${structuredModelInvocation!.summary} Invocation ${structuredModelInvocation!.id} 已进入 Audit。`
         : RUNTIME_STEP_SUMMARIES[planStep.sequence] ??
           "步骤已按固定 WorkflowVersion 完成。",
     outputReference,
@@ -238,7 +232,7 @@ export function executeNextTechnicalSolutionStep(
     taskId: task.id,
     runId: task.executionRun.id,
     title: `${task.title} · 技术方案`,
-    sections: buildSections(task, invocation!),
+    sections: buildSections(task, invocation!, structuredModelInvocation!),
     citations: [citation],
     agentVersionId: task.assignedAgent.agentVersionRef.versionId,
     capabilityVersionIds: task.capabilityVersionRefs.map(
@@ -249,6 +243,12 @@ export function executeNextTechnicalSolutionStep(
     ),
     workflowVersionId: task.workflowVersionRef.versionId,
     toolVersionIds: task.toolVersionRefs.map(({ versionId }) => versionId),
+    promptVersionId: structuredModelInvocation!.promptVersionId,
+    modelPolicyProfile: structuredModelInvocation!.modelPolicyProfile,
+    modelInvocationId: structuredModelInvocation!.id,
+    modelAlias: structuredModelInvocation!.modelAlias,
+    resolvedModel: structuredModelInvocation!.resolvedModel!,
+    modelOutputDigest: structuredModelInvocation!.outputDigest!,
     reviewerUserIds: [...task.reviewerUserIds],
     contentDigest: `sha256:${artifactVersionId}:content`,
   };

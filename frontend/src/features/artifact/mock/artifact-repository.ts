@@ -278,17 +278,28 @@ function isArtifact(value: unknown): value is TechnicalSolutionArtifact {
     version.versionNumber !== 1 ||
     version.digest !== `sha256:${value.id}-v1` ||
     !isRecord(provenance) ||
-    !hasExactKeys(provenance, [
-      "taskId",
-      "runId",
-      "agentVersionId",
-      "capabilityVersionIds",
-      "knowledgeVersionIds",
-      "workflowVersionId",
-      "toolVersionIds",
-      "generatedAt",
-      "contentDigest",
-    ]) ||
+    !hasExactKeys(
+      provenance,
+      [
+        "taskId",
+        "runId",
+        "agentVersionId",
+        "capabilityVersionIds",
+        "knowledgeVersionIds",
+        "workflowVersionId",
+        "toolVersionIds",
+        "generatedAt",
+        "contentDigest",
+      ],
+      [
+        "promptVersionId",
+        "modelPolicyProfile",
+        "modelInvocationId",
+        "modelAlias",
+        "resolvedModel",
+        "modelOutputDigest",
+      ],
+    ) ||
     !isNonEmptyString(provenance.taskId) ||
     value.id !== `artifact-${provenance.taskId}` ||
     !isNonEmptyString(provenance.runId) ||
@@ -309,6 +320,30 @@ function isArtifact(value: unknown): value is TechnicalSolutionArtifact {
     !value.validationResults.every((result, index) =>
       isValidationResult(result, artifactId, artifactStatus, index),
     )
+  ) {
+    return false;
+  }
+
+  const modelKeys = [
+    "promptVersionId",
+    "modelPolicyProfile",
+    "modelInvocationId",
+    "modelAlias",
+    "resolvedModel",
+    "modelOutputDigest",
+  ] as const;
+  const presentModelKeys = modelKeys.filter((key) => Object.hasOwn(provenance, key));
+  if (
+    presentModelKeys.length !== 0 &&
+    (presentModelKeys.length !== modelKeys.length ||
+      provenance.promptVersionId !== "prompt-technical-solution-v1" ||
+      provenance.modelPolicyProfile !== "reasoning-structured-output" ||
+      !isNonEmptyString(provenance.modelInvocationId) ||
+      !provenance.modelInvocationId.startsWith("model-invocation-") ||
+      !isNonEmptyString(provenance.modelAlias) ||
+      !isNonEmptyString(provenance.resolvedModel) ||
+      !isNonEmptyString(provenance.modelOutputDigest) ||
+      !provenance.modelOutputDigest.startsWith("sha256:"))
   ) {
     return false;
   }
@@ -361,6 +396,12 @@ function validateDraft(
       "knowledgeVersionIds",
       "workflowVersionId",
       "toolVersionIds",
+      "promptVersionId",
+      "modelPolicyProfile",
+      "modelInvocationId",
+      "modelAlias",
+      "resolvedModel",
+      "modelOutputDigest",
       "reviewerUserIds",
       "contentDigest",
     ]) ||
@@ -388,6 +429,14 @@ function validateDraft(
     !Array.isArray(draft.toolVersionIds) ||
     draft.toolVersionIds.length !== 1 ||
     draft.toolVersionIds[0] !== "tool-codegraph-read-v1" ||
+    draft.promptVersionId !== "prompt-technical-solution-v1" ||
+    draft.modelPolicyProfile !== "reasoning-structured-output" ||
+    !isNonEmptyString(draft.modelInvocationId) ||
+    !draft.modelInvocationId.startsWith("model-invocation-") ||
+    !isNonEmptyString(draft.modelAlias) ||
+    !isNonEmptyString(draft.resolvedModel) ||
+    !isNonEmptyString(draft.modelOutputDigest) ||
+    !draft.modelOutputDigest.startsWith("sha256:") ||
     !Array.isArray(draft.reviewerUserIds) ||
     draft.reviewerUserIds.length !== 1 ||
     !validActorIds.has(draft.reviewerUserIds[0]) ||
@@ -561,6 +610,12 @@ export function createArtifactRepository(
           knowledgeVersionIds: cloneMutable(draft.knowledgeVersionIds),
           workflowVersionId: draft.workflowVersionId,
           toolVersionIds: cloneMutable(draft.toolVersionIds),
+          promptVersionId: draft.promptVersionId,
+          modelPolicyProfile: draft.modelPolicyProfile,
+          modelInvocationId: draft.modelInvocationId,
+          modelAlias: draft.modelAlias,
+          resolvedModel: draft.resolvedModel,
+          modelOutputDigest: draft.modelOutputDigest,
           generatedAt: timestamp,
           contentDigest: draft.contentDigest,
         },

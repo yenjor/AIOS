@@ -14,5 +14,6 @@ export default defineConfig({
     setupFiles: ["./src/test/setup-tests.ts"],
     exclude: [...configDefaults.exclude, "tests/**"],
     css: true,
+    maxWorkers: 2,
   },
 });

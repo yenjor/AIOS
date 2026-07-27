@@ -443,7 +443,7 @@ describe("TaskDetailScreen", () => {
       const action = screen.getByRole("button", { name: actionName });
       expect(action).toBeDisabled();
       expect(action).toHaveAccessibleDescription(
-        "当前增量开放“计划批准 → 真实只读 MCP Tool Invocation → 确定性 Artifact 编排 → 人工验收”的首个 AI 员工闭环。",
+        "当前增量开放“计划批准 → 真实只读 MCP Tool Invocation → LiteLLM 受控推理 → 结构化 Artifact 校验 → 人工验收”的首个 AI 员工闭环。",
       );
     }
     expect(

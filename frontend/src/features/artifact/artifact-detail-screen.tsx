@@ -152,10 +152,30 @@ export function ArtifactDetailScreen({
                 label="ExecutionRun"
                 values={[artifact.provenance.runId]}
               />
+              {artifact.provenance.promptVersionId ? (
+                <VersionList
+                  label="PromptVersion"
+                  values={[artifact.provenance.promptVersionId]}
+                />
+              ) : null}
+              {artifact.provenance.modelInvocationId ? (
+                <VersionList
+                  label="Model Invocation"
+                  values={[
+                    artifact.provenance.modelInvocationId,
+                    `${artifact.provenance.modelAlias} → ${artifact.provenance.resolvedModel}`,
+                  ]}
+                />
+              ) : null}
             </dl>
             <p className="mt-4 break-all font-mono text-xs text-[var(--aios-muted)]">
               Content Digest：{artifact.provenance.contentDigest}
             </p>
+            {artifact.provenance.modelOutputDigest ? (
+              <p className="mt-2 break-all font-mono text-xs text-[var(--aios-muted)]">
+                Model Output Digest：{artifact.provenance.modelOutputDigest}
+              </p>
+            ) : null}
           </Card>
         </section>
 

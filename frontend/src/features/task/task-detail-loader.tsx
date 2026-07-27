@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/features/session/session-provider";
+import { listTaskModelInvocations } from "@/features/model-gateway/mock/model-invocation-repository";
+import type { ModelInvocationResult } from "@/features/model-gateway/model";
 import { listTaskToolInvocations } from "@/features/tool/mock/tool-repository";
 import type { ToolInvocationResult } from "@/features/tool/model";
 
@@ -32,6 +34,7 @@ type LoaderState =
       requestKey: string;
       task: TaskDetail;
       toolInvocations: ToolInvocationResult[];
+      modelInvocations: ModelInvocationResult[];
     }
   | { status: "unavailable"; requestKey: string }
   | {
@@ -88,14 +91,16 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
     void Promise.all([
       getTask(scope, actor, taskId),
       listTaskToolInvocations(scope, actor, taskId),
+      listTaskModelInvocations(scope, actor, taskId),
     ])
-      .then(([task, toolInvocations]) => {
+      .then(([task, toolInvocations, modelInvocations]) => {
         if (active && requestId === latestRequestRef.current) {
           setState({
             status: "ready",
             requestKey,
             task,
             toolInvocations,
+            modelInvocations,
           });
         }
       })
@@ -248,29 +253,31 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
           : action === "开始执行"
             ? await advanceFirstAiEmployee(scope, actor, taskId)
             : await acceptTaskArtifact(scope, actor, taskId);
-      const toolInvocations = await listTaskToolInvocations(
-        scope,
-        actor,
-        taskId,
-      );
+      const [toolInvocations, modelInvocations] = await Promise.all([
+        listTaskToolInvocations(scope, actor, taskId),
+        listTaskModelInvocations(scope, actor, taskId),
+      ]);
       setState({
         status: "ready",
         requestKey,
         task,
         toolInvocations,
+        modelInvocations,
       });
       setActionState({ status: "idle" });
     } catch (error) {
       try {
-        const [task, toolInvocations] = await Promise.all([
+        const [task, toolInvocations, modelInvocations] = await Promise.all([
           getTask(scope, actor, taskId),
           listTaskToolInvocations(scope, actor, taskId),
+          listTaskModelInvocations(scope, actor, taskId),
         ]);
         setState({
           status: "ready",
           requestKey,
           task,
           toolInvocations,
+          modelInvocations,
         });
       } catch {
         // Preserve the last known valid Read Model if evidence reload fails.
@@ -290,6 +297,7 @@ export function TaskDetailLoader({ taskId }: TaskDetailLoaderProps) {
     <TaskDetailScreen
       task={state.task}
       toolInvocations={state.toolInvocations}
+      modelInvocations={state.modelInvocations}
       scopeLabels={{
         organizationName: organization.name,
         workspaceName: workspace.name,
